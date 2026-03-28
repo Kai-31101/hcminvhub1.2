@@ -154,8 +154,8 @@ const httpServer = createServer(async (req, res) => {
 
   if (req.method === "GET" && url.pathname === "/") {
     res
-      .writeHead(200, { "content-type": "text/plain; charset=utf-8" })
-      .end("HCMInvHub MCP server is running. Use /mcp for ChatGPT or /preview to view the app.");
+      .writeHead(302, { location: "/preview" })
+      .end();
     return;
   }
 
