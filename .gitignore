@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.codex-tunnel/
+.chrome-codex-clean/
+.chrome-codex-profile/
+vite.out.log
+vite.err.log
+ui-capture.log
+*.tmp
+.DS_Store

@@ -1,0 +1,33 @@
+| User                    | Flow (Giai đoạn) | Làm gì (Action)                 | Chức năng (Feature/Screen)               | Mục đích                    |
+| ----------------------- | ---------------- | ------------------------------- | ---------------------------------------- | --------------------------- |
+| **Government Operator** | Project Setup    | Tạo & cập nhật Project          | Project Management (Create/Edit Project) | Tạo “nguồn cung” đầu tư     |
+| Government Operator     | Data Governance  | Hoàn thiện dữ liệu, fix missing | Project + Data Quality Dashboard         | Đảm bảo dữ liệu đủ & đúng   |
+| Government Operator     | Publish          | Publish project                 | Project Detail → Publish                 | Đưa dự án lên Explorer      |
+| **Investor**            | Explorer         | Tìm kiếm, filter project        | Explorer (Search/List/Detail)            | Tìm dự án phù hợp           |
+| Investor                | Discovery        | Xem chi tiết project            | Project Detail (read-only)               | Đánh giá cơ hội             |
+| Investor                | Engagement       | Follow / hỏi câu hỏi            | Project Detail (Follow / Q&A)            | Thể hiện quan tâm           |
+| Investor                | Intake           | Submit nhu cầu đầu tư           | Intake Form                              | Biến interest thành dữ liệu |
+| **System**              | Conversion       | Tạo Opportunity                 | Auto (sau Intake)                        | Tạo deal object             |
+| **Government Operator** | Pipeline         | Xem danh sách Opportunity       | Opportunity List                         | Quản lý pipeline            |
+| Government Operator     | Deal Review      | Xem chi tiết deal               | Opportunity Detail                       | Đánh giá investor           |
+| Government Operator     | Deal Progress    | Update stage, activity          | Opportunity Detail                       | Theo dõi tiến trình         |
+| Government Operator     | Approval         | Approve Opportunity             | Opportunity Detail (Approve button)      | Chốt deal                   |
+| **System**              | Post-Approval    | Tạo Execution Workspace         | Auto                                     | Bắt đầu triển khai          |
+| **Investor**            | Execution        | Xem tiến độ project             | Execution Workspace Dashboard            | Theo dõi dự án              |
+| Investor                | Support          | Gửi yêu cầu hỗ trợ              | Support Request                          | Nhờ chính phủ hỗ trợ        |
+| **Agency User**         | Execution        | Xử lý Permit                    | Permit Tracker                           | Xử lý thủ tục               |
+| Agency User             | Execution        | Cập nhật Issue                  | Issue Management                         | Giải quyết vấn đề           |
+| Agency User             | Execution        | Update Milestone                | Milestone Tracking                       | Theo dõi tiến độ            |
+| Government Operator     | Execution        | Monitor toàn bộ                 | Execution Dashboard                      | Điều phối                   |
+| **Investor**            | B2G Service      | Nộp hồ sơ dịch vụ               | Service Catalog → Apply                  | Làm thủ tục chính thức      |
+| Investor                | B2G Service      | Upload tài liệu                 | Service Application                      | Hoàn thiện hồ sơ            |
+| Investor                | B2G Service      | Theo dõi trạng thái             | Service Request List                     | Minh bạch tiến trình        |
+| **Agency User**         | B2G Service      | Xử lý hồ sơ                     | Service Request Detail                   | Giải quyết thủ tục          |
+| Agency User             | B2G Service      | Update status                   | Service Workflow                         | Cập nhật tiến trình         |
+| **System**              | SLA              | Track SLA                       | Auto                                     | Đảm bảo đúng hạn            |
+| System                  | Notification     | Gửi thông báo                   | Notification Engine                      | Nhắc việc / cảnh báo        |
+| **Admin**               | RBAC             | Tạo role/permission             | Role Management                          | Kiểm soát truy cập          |
+| Admin                   | Organization     | Quản lý agency                  | Agency Management                        | Quản lý tổ chức             |
+| **Executive / Leader**  | Dashboard        | Xem KPI tổng                    | Executive Dashboard                      | Ra quyết định               |
+| Executive               | Analytics        | Xem funnel, conversion          | Executive Dashboard                      | Hiểu hiệu suất              |
+| Executive               | Monitoring       | Xem risk, delay                 | Execution Metrics                        | Phát hiện vấn đề            |

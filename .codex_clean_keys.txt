@@ -1,0 +1,731 @@
+complete
+Description
+incomplete
+Due date
+Reminder timing
+5 days before due date
+10 days before due date
+days before due date
+Required data owner alerts
+Overdue
+Due soon
+Due in
+Overdue items
+New Opportunity
+Nguyen Corp submitted an intake for Smart City project
+Permit Approved
+Construction permit for Da Nang Resort has been approved
+SLA Warning
+Service request SR-2024-018 is approaching deadline
+Milestone Completed
+Phase 1 of Renewable Energy Park is complete
+Investor
+Government Operator
+Agency User
+System Admin
+Executive / Leader
+Investor Portal
+Government Portal
+Agency Portal
+Admin Console
+Executive View
+Project Explorer
+My Watchlist
+My Opportunities
+Execution Workspace
+B2G Services
+Service Requests
+Support
+Project Management
+Data Quality
+Opportunity Pipeline
+Execution Monitor
+Permit Tracker
+Issue Management
+Milestone Tracking
+Service Workflow
+User & Roles
+Agency Management
+Executive Dashboard
+Analytics
+Risk Monitor
+Vietnam Investment
+Vietnam Investment Agency
+B2G Investment Platform
+Welcome to the Investment
+Management Platform
+Select your portal
+Choose the role-based workspace that matches the way you work with Vietnam\'s B2G investment pipeline.
+Operational at a glance
+HCMC Investment Explorer
+Discover investment-ready projects with verified public-sector data
+Evaluate projects through a structured public-investment lens: readiness, scale, location, incentives, and verified operating context.
+Showing
+projects
+Watch
+Watching
+Follow
+View detail
+Social proof
+followers
+View project
+No projects found
+Try adjusting your filters to explore other projects.
+Project not found
+Return to explorer
+Explorer
+Verified
+Investment scale with
+Investment scale
+and structured incentives.
+Express Interest
+Request Meeting
+Ask Question
+Investment Profile
+Minimum ticket
+Expected IRR
+Land area
+CompletionMeter
+Data completeness
+Data Completeness
+Primary Details
+Location & access
+Investment readiness
+Project summary
+Secondary Details
+Project Documents
+Uploaded
+Download PDF
+Overview
+Name
+Minimum Investment
+Project Stage
+Required Data Ownership
+Required data
+Attachment
+Attachment file name
+Last upload date
+Owner note
+Project Jobs
+Project job
+Job Title
+Job Description
+Project Processing
+required jobs completed
+required data items completed
+data items
+jobs
+Single project record
+Standard project record
+Investment-ready record
+Manage one standardized project record with overview data, required data ownership, and delivery jobs.
+Define the required project data, assign the PIC, track due dates, and keep the latest supporting attachment visible.
+Track the delivery process with accountable jobs, due dates, notes, and the latest uploaded work product.
+Define at least one required data item and assign an owner.
+Complete all required data items before final publication review.
+Define at least one project job to establish the delivery process.
+Close outstanding project jobs to reach full processing readiness.
+Update the overview data and save when you are ready to publish the new baseline.
+Project overview, required data, and processing jobs now stay aligned across government and investor views during this local session.
+No project jobs have been defined for this project yet.
+Add project job
+Supporting Documents
+Trust Signals
+Verified listing with structured investment data.
+investors are following this project.
+public questions are available for due diligence.
+Public Q&A
+Official answer
+Awaiting response from the data owner.
+Ask a question
+Ask about legal status, incentives, planning controls, or delivery readiness...
+Submit question
+Milestones
+Due
+Project list
+Edit project
+Budget
+Min Investment
+Followers
+Execution Readiness
+Publish-ready
+Needs attention
+Project Highlights
+signals
+Milestone Schedule
+milestones
+No milestones have been defined yet.
+Documents
+No supporting documents uploaded yet.
+Project Overview
+Reference
+Location
+Land Area
+Projected Jobs
+Published Date
+Not published yet
+Investor Q&A
+Asked by
+on
+No investor questions have been submitted yet.
+Awaiting official response from the project team.
+Home
+Notifications
+unread
+Switch Role
+Switch Role / Logout
+Welcome to the Investment Management Platform
+Platform v2.4 — 2024
+Explore & Invest
+Manage & Govern
+Process & Execute
+Configure & Control
+Analyze & Decide
+Discover investment opportunities, submit intake forms, and manage your portfolio.
+Create and publish projects, manage investment pipeline, and oversee execution.
+Handle permits, resolve issues, track milestones, and process service requests.
+Manage user roles, permissions, and agency configurations for the platform.
+View high-level KPIs, investment funnel analytics, and risk monitoring dashboards.
+Select your role to access the appropriate portal for managing Vietnam\'s B2G investment pipeline.
+Enter Portal
+Active Projects
+Investment Pipeline
+Approved Deals
+In Execution
+Ministry of Planning & Investment, Vietnam. All rights reserved.
+Open for Investment
+Under Review
+Draft
+Pending
+In Review
+Approved
+Rejected
+Info Required
+high
+medium
+low
+critical
+active
+inactive
+National
+Provincial
+Institutional
+VC/PE
+Infrastructure Fund
+Strategic
+South Korea
+Singapore
+Norway
+Japan
+USA
+Infrastructure
+Energy
+Manufacturing
+Tourism
+Technology
+Agriculture
+Ho Chi Minh City
+Hanoi
+Da Nang
+Binh Thuan
+Dong Nai
+Can Tho
+Ho Chi Minh City Smart Infrastructure Hub
+Binh Thuan Renewable Energy Park
+Dong Nai Industrial Zone Expansion
+Da Nang Tourism & Resort Complex
+Hanoi Technology Innovation Hub
+Can Tho Agri-Processing Complex
+A landmark smart city development transforming Thu Duc into a world-class urban innovation center with integrated digital infrastructure, smart mobility solutions, and sustainable urban management systems.
+Integrated solar and wind energy park leveraging Binh Thuan\'s exceptional natural resources to deliver clean energy to the national grid with guaranteed off-take agreements.
+Strategic industrial zone expansion adjacent to Long Thanh International Airport, designed for high-tech manufacturing, logistics, and export-oriented industries with full infrastructure support.
+Premium integrated tourism development on Da Nang\'s most coveted beachfront, combining 5-star hospitality, convention facilities, and entertainment within a UNESCO cultural heritage corridor.
+Vietnam\'s flagship technology innovation cluster at Hoa Lac Hi-Tech Park, designed to attract R&D centers, semiconductor manufacturing, and deep-tech startups with world-class facilities.
+Integrated agricultural processing and cold chain logistics complex in the heart of the Mekong Delta, serving Vietnam\'s largest rice, seafood, and tropical fruit export region.
+PPP Structure Available
+Tax Incentives 15 Years
+35-year Land Lease
+Fast-track Licensing
+FIT Price Guaranteed
+20-year PPA Available
+Grid Connection Ready
+EPC Partners Available
+Airport Adjacency
+Corporate Tax Holiday 4Y
+One-Stop Service Center
+Skilled Labor Pool
+Prime Beachfront Land
+Tourism Incentives 10Y
+Proven Tourism Market
+Heritage Site Access
+Hi-Tech Zone Benefits
+University Cluster Access
+Talent Pipeline
+R&D Tax Credits
+Delta Location
+Agri Export Hub
+Cold Chain Infrastructure
+EVFTA Benefits
+Investment Prospectus.pdf
+Environmental Impact Assessment.pdf
+Land Use Plan.pdf
+Energy Yield Assessment.pdf
+Grid Connection Study.pdf
+Industrial Zone Master Plan.pdf
+Infrastructure Specification.pdf
+Tourism Feasibility Study.pdf
+Innovation Hub Concept.pdf
+What is the minimum equity contribution required for the PPP model?
+Minimum equity contribution is 30% of total project value for the PPP structure.
+Are there restrictions on profit repatriation?
+What is the current FIT tariff rate?
+Current solar FIT is 7.09 UScents/kWh and wind is 8.5 UScents/kWh.
+What is the maximum building height restriction near the heritage site?
+Phase 1
+Phase 2
+Phase 3
+Site Preparation & Foundation
+Core Infrastructure Build
+Smart Systems Integration
+Land Clearance & Site Setup
+Equipment Procurement & Installation
+Grid Connection & Commissioning
+Infrastructure Development Zone A
+Zone B & C Development
+Hotel & Resort Core
+Convention & Entertainment
+R&D Campus Construction
+Intake form submitted
+Due diligence package sent to investor
+Site visit completed with investor team
+Term sheet draft shared
+Technical assessment initiated
+Under initial screening
+Qualified
+Due diligence completed
+Term sheet agreed
+Opportunity approved by Director
+Construction Permit
+Environmental Permit
+Investment Registration
+Land Use Rights Certificate
+Fire Safety Certificate
+Grid Connection Permit
+Reviewing structural plans.
+Approved with conditions.
+IRC issued successfully.
+Missing fire suppression system drawings.
+Technical review with EVN underway.
+Site Boundary Dispute with Adjacent Landowner
+Landowner claims 2ha overlap with project boundary in Zone B. Legal review initiated.
+Grid Capacity Constraint - Delayed EVN Upgrade
+EVN transmission upgrade delayed by 3 months, affecting Phase 2 commissioning schedule.
+Environmental Compliance: Water Treatment Specification
+Investor requested wastewater treatment capacity increase. Engineering review needed.
+Traffic Impact Assessment - Revised Routing
+City transport authority requested revised traffic study for Zone A access roads.
+Heritage Zone Height Restriction Clarification
+Conflicting regulations between local plan and national heritage protection act. Seeking MoC ruling.
+Land
+Environment
+Transport
+Regulatory
+Investment Registration Certificate
+Official IRC issued by the Department of Planning and Investment for foreign-invested enterprises.
+Enterprise Registration Certificate
+ERC for establishing a legal entity in Vietnam.
+Environmental Impact Assessment Approval
+EIA approval from the Ministry of Natural Resources and Environment for industrial/energy projects.
+Building permit for construction of industrial, commercial or residential structures.
+"Red Book" certification confirming land use rights allocation for the project site.
+Import/Export License for Equipment
+License for importing capital equipment exempt from import duties.
+Fire Prevention & Fighting Certificate
+Fire safety design approval and operational certificate for buildings.
+Work Permit for Foreign Employees
+Work permits for foreign nationals employed in Vietnam-based projects.
+15 working days
+3 working days
+30 working days
+20 working days
+5 working days
+10 working days
+7 working days
+No fee
+Based on project scale
+Land-use fee based on area
+Application form
+Investment project proposal
+Investor charter docs
+Financial capacity proof
+Charter
+Owner ID/Passport
+Legal address proof
+EIA Report
+Project technical documentation
+Site map & boundary
+Stakeholder consultation records
+Construction design drawings
+Land use rights docs
+Fire safety pre-assessment
+Structural calculation
+LURC application
+Approved site plan
+Land survey report
+Tax clearance certificate
+IRC copy
+Equipment list & specs
+Customs declaration form
+Supplier invoice
+Fire safety design docs
+Construction permit copy
+Equipment list
+Fire drill plan
+Criminal record
+Health certificate
+Diplomas & CVs
+Passport copy
+submitted
+processing
+approved
+rejected
+on_track
+at_risk
+breached
+Executive
+Admin
+Ministry of Planning & Investment
+Department of Planning and Investment
+Korea Infrastructure Partners
+Dept. Planning & Investment, Da Nang
+Department of Planning and Investment, Ho Chi Minh City
+Department of Natural Resources and Environment, Ho Chi Minh City
+Department of Construction, Ho Chi Minh City
+Department of Labor, Invalids and Social Affairs, Ho Chi Minh City
+Fire Prevention and Fighting Police, Ho Chi Minh City
+Ho Chi Minh City Renewable Energy Integration Park
+Ho Chi Minh City Advanced Manufacturing Zone
+Ho Chi Minh City Riverside Tourism & Convention Complex
+Ho Chi Minh City Technology Innovation Hub
+Ho Chi Minh City Agri-Logistics & Processing Complex
+HCMC Renewable Integration Park
+HCMC Advanced Manufacturing Zone
+HCMC Riverside Tourism Complex
+HCMC RE Integration Park
+HCMC Manufacturing Zone
+HCMC Riverside Tourism
+Project
+Just now
+Project Draft Created
+Project Published
+Service Request Submitted
+Service Workflow Updated
+Support / Issue Logged
+Issue Updated
+Permit Workflow Updated
+Milestone Updated
+User Created
+User Access Updated
+Agency Created
+Agency Status Updated
+Manage users, role assignments, and agency entities across the operating model.
+Add User
+Add Agency
+Total Users
+Active Users
+Agencies
+Inactive Accounts
+Search users...
+Search agencies...
+Last login
+active requests
+Edit User
+Full Name
+Email
+Role
+Organization
+Status
+Cancel
+Save User
+Edit Agency
+Agency Name
+Short Name
+Contact Person
+Phone
+Type
+Jurisdiction
+Save Agency
+Leadership view across pipeline conversion, portfolio execution, operational risk, and agency responsiveness.
+Leadership Attention
+alerts
+Critical issue
+No executive escalation items are currently open.
+Investment Analytics
+Funnel
+By Sector
+Trend
+Portfolio Health
+tracked projects
+Ready
+Low quality
+Execution Metrics
+Portfolio-wide
+Risk Queue
+Critical
+Leadership summary
+The platform is strongest where project quality, opportunity conversion, and execution responsiveness are visible together in one operating view.
+Agency work queue for investor services, SLA risk handling, and request resolution notes.
+Escalation Queue
+action items
+No service requests currently need escalation.
+Search service, applicant, or project
+All statuses
+Request Processing Queue
+visible
+Assigned
+Process request
+Workflow status
+Processing note
+Add next-step notes, requested documents, or approval context
+Save workflow update
+No service requests match the current filters.
+Assigned permit workload with deadline urgency and fast status updates.
+Search by project or permit type...
+priority
+Deadline
+Update
+Comments / Notes
+Add processing notes...
+Save Update
+Prioritize, assign, and resolve execution issues with visible severity and ownership.
+Search issues...
+All Priorities
+High
+Medium
+Low
+Open
+Resolved
+Closed
+Reported
+Updated
+Resolution Notes
+Describe actions taken...
+Save
+Action-first monitoring for new leads, aging opportunities, and coordination handoffs.
+items
+No overdue or unassigned opportunities require immediate action.
+Active Opportunities
+This Month New
+Conversion Rate
+Avg Days to Close
+Search investor or project...
+All Stages
+List
+Kanban
+View
+Total pipeline value
+No active execution workspaces yet
+Once your opportunity is approved or moved into the final coordination phase, this workspace will show progress, risks, and support actions.
+Explore projects
+Investor-facing delivery cockpit for project progress, support requests, and execution risk visibility.
+Portfolio Selection
+active items
+Average Progress
+Open Issues
+Investment
+Execution Milestones
+tracked
+days overdue
+days left
+Coordination History
+updates
+Support Request
+Direct to operations
+Support request submitted
+The operations team will respond within 24 hours.
+Submit another request
+Describe the support need, permit blocker, documentation issue, or coordination request
+Submit support request
+Current Risks
+No open execution risks are currently logged for this project.
+Quick Actions
+Investor tools
+Open project dossier
+Browse B2G services
+Review service requests
+B2G Service Catalog
+Browse licensing, registration, and compliance services needed to move investor projects through execution.
+Service Categories
+available
+Available Services
+Investor workflow
+required documents
+Processing Time
+Fee
+Service Description
+Required Documents
+Apply for service
+Service Application
+Attach the project and supporting documents before routing the request to the responsible agency.
+Associated Project
+Select project
+Document Upload
+Upload required files or simulate the intake package.
+Simulate upload
+Additional Notes
+Add context for the processing agency, missing items, or delivery constraints
+Uploaded Files
+Back
+Submit application
+Application Submitted
+The request has been routed into the service workflow and can now be tracked from your request list.
+Expected processing time
+Done
+Standardize project onboarding, monitor publish readiness, and enforce minimum dataset quality.
+Create Project
+low-quality projects
+Total Projects
+Project List
+Data Quality Dashboard
+Search projects...
+Not published
+Data Governance
+Projects must achieve at least 80% completeness and have accountable ownership before publishing.
+Below threshold
+Project Name *
+Official project name
+Sector *
+Infrastructure, Energy...
+Province *
+Location *
+Specific area / district
+Total Budget (USD M)
+Min Investment (USD M)
+Project description...
+Save as Draft
+TBD
+New draft project pending full setup.
+Integrated renewable energy and storage park in Can Gio, designed to strengthen Ho Chi Minh City\'s clean-energy supply chain with resilient grid integration and urban decarbonization infrastructure.
+Strategic advanced manufacturing and logistics zone in Cu Chi, designed for high-tech industry, urban supply chains, and export-oriented production with fully integrated infrastructure support.
+Premium integrated tourism, hospitality, and convention development along the Saigon River, combining 5-star accommodation, business events, and entertainment in a flagship Ho Chi Minh City destination.
+Ho Chi Minh City\'s flagship technology innovation cluster at Saigon Hi-Tech Park, designed to attract R&D centers, semiconductor manufacturing, and deep-tech startups with world-class facilities.
+Integrated agricultural processing and cold-chain logistics complex in Cu Chi, supporting Ho Chi Minh City\'s regional food distribution, export connectivity, and value-added agro-industry ecosystem.
+Initial screening completed - qualified
+Qualified - forwarded to tech committee
+Conflicting regulations between the local riverfront plan and aviation safety envelope. Seeking city-level planning guidance.
+\'Red Book\' certification confirming land use rights allocation for the project site.
+Upload at least one supporting document.
+Define at least one milestone and delivery phase.
+Add an investor Q&A entry or readiness note.
+Complete publish-readiness fields to reach the 80% threshold.
+Move the project from draft to review once the draft fields are validated.
+Back to project
+Edit Project
+Update commercial details, readiness fields, and publication quality in one working draft.
+Save changes
+Data Quality Fix Mode
+issues
+Project Name
+Budget (USD M)
+Minimum Investment (USD M)
+Project Stage
+Current Snapshot
+Completeness
+Missing Data Checklist
+No missing-data blockers are currently detected.
+Save Status
+Saved
+Changes saved to shared app state
+The updated project now stays in sync across project management, project view, and investor-facing pages during this local session.
+Update the draft fields and save when you are ready to validate the changes.
+Operational dashboard for active projects, overdue signals, and cross-agency coordination.
+Overdue by
+days
+No critical execution blockers at this time.
+Pending Permits
+In Progress Milestones
+Project Health Overview
+open issues
+permit actions
+Milestone Tracker
+Execution summary
+Track project delivery, permit workload, and critical blockers in one operational view.
+Opportunity not found
+Back to pipeline
+leading a proposed
+commitment into
+Last Updated
+Activities
+Advance stage
+Approve opportunity
+Approved and routed to execution
+The operator flow keeps approval intent, investor profile, and execution handoff in one place so the team does not lose context between stages.
+Decision Pipeline
+Unknown stage
+Stage
+Completed
+Current focus
+Investor Intake Profile
+Decision-ready
+Representative
+Country
+Investor Type
+Investment Structure
+Fund Source
+Experience
+Project Match
+Active review
+Province not available
+Open project
+Operator Note
+Activity log update
+Record meeting outcomes, due diligence findings, or escalation notes
+Add activity note
+Decision Support
+Pending sign-off
+Validate investor capacity and fund source.
+Confirm project alignment with execution readiness.
+Capture all negotiation changes before approval.
+Activity Timeline
+events
+Approve this opportunity?
+Execution workspace will be created for
+Confirm approval
+Stage advanced to Initial Review.
+Stage advanced to Due Diligence.
+Stage advanced to Negotiation.
+Stage advanced to Approved.
+Opportunity approved. Execution workspace created automatically.
+Define at least one required data item and assign an owner.
+Each required data item must have a responsible user.
+Complete or close all required data assignments before publication review.
+Required Data Ownership
+completed
+Required data item
+Responsible agency
+Responsible user
+Assignment status
+missing
+assigned
+in progress
+Remove
+Owner note
+Describe what must be submitted or validated for this item
+Agency
+Owner
+No required data assignments have been defined for this project yet.
+Add required data item
+Example: traffic impact study, utility confirmation, legal boundary memo
+Required data items
+Owned items
+Completed items
+No ownership matrix
+Required Data Assignment Created
+Required Data Assignment Updated
+required data items completed
+Required Data Status
+No required data items have been published for this project yet.
+Open Projects
+Total Value
+Sectors
+Average IRR
