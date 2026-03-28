@@ -986,6 +986,7 @@ const NON_TRANSLATABLE_KEYS = new Set([
   'serviceId',
   'agencyId',
   'userId',
+  'category',
   'status',
   'stage',
   'role',
