@@ -15,6 +15,15 @@ const __dirname = path.dirname(__filename);
 const distDir = path.join(__dirname, "dist");
 const distIndexPath = path.join(distDir, "index.html");
 const widgetUri = "ui://widget/hcminvhub.html";
+const assetDir = path.join(distDir, "assets");
+const faviconPath = path.join(distDir, "favicon.svg");
+
+const MIME_TYPES = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+};
 
 function readUtf8(filePath) {
   return readFileSync(filePath, "utf8");
@@ -30,39 +39,49 @@ function normalizeAssetPath(assetPath) {
   return assetPath.replace(/^\.?\//, "");
 }
 
-function inlineBuildOutput() {
-  requireBuildArtifact();
-
-  const indexHtml = readUtf8(distIndexPath);
-  const cssMatch = indexHtml.match(/<link rel="stylesheet"[^>]*href="([^"]+)"/i);
-  const jsMatch = indexHtml.match(/<script type="module"[^>]*src="([^"]+)"/i);
-
-  if (!cssMatch || !jsMatch) {
-    throw new Error("Unable to locate built CSS/JS assets in dist/index.html.");
-  }
-
-  const cssPath = path.join(distDir, normalizeAssetPath(cssMatch[1]));
-  const jsPath = path.join(distDir, normalizeAssetPath(jsMatch[1]));
-  const css = readUtf8(cssPath);
-  const js = readUtf8(jsPath);
-
-  const withoutExternalAssets = indexHtml
-    .replace(/<link rel="icon"[^>]*>\s*/i, "")
-    .replace(/<link rel="stylesheet"[^>]*>\s*/i, "")
-    .replace(/<script type="module"[^>]*><\/script>\s*/i, "");
-
-  const withInlineCss = withoutExternalAssets.replace(
-    "</head>",
-    `  <style>\n${css}\n  </style>\n</head>`,
-  );
-
-  return withInlineCss.replace(
-    "</body>",
-    `  <script type="module">\n${js}\n  </script>\n</body>`,
-  );
+function getMimeType(filePath) {
+  return MIME_TYPES[path.extname(filePath).toLowerCase()] ?? "application/octet-stream";
 }
 
-function createInvestmentHubServer() {
+function loadBuiltIndexHtml() {
+  requireBuildArtifact();
+  return readUtf8(distIndexPath);
+}
+
+function buildHostedHtml(baseUrl) {
+  const indexHtml = loadBuiltIndexHtml();
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+
+  return indexHtml
+    .replace(/href="\.\/*favicon\.svg"/i, `href="${normalizedBaseUrl}/favicon.svg"`)
+    .replace(/href="\.\/*assets\/([^"]+)"/i, `href="${normalizedBaseUrl}/assets/$1"`)
+    .replace(/src="\.\/*assets\/([^"]+)"/i, `src="${normalizedBaseUrl}/assets/$1"`);
+}
+
+function readStaticAsset(filePath) {
+  if (!existsSync(filePath)) {
+    return null;
+  }
+
+  return {
+    body: readFileSync(filePath),
+    contentType: getMimeType(filePath),
+  };
+}
+
+function resolveAssetFile(urlPathname) {
+  if (urlPathname === "/favicon.svg") {
+    return faviconPath;
+  }
+
+  if (urlPathname.startsWith("/assets/")) {
+    return path.join(assetDir, urlPathname.slice("/assets/".length));
+  }
+
+  return null;
+}
+
+function createInvestmentHubServer(baseUrl) {
   const server = new McpServer({ name: "hcminvhub-chatgpt", version: "0.1.0" });
 
   registerAppResource(
@@ -75,7 +94,7 @@ function createInvestmentHubServer() {
         {
           uri: widgetUri,
           mimeType: RESOURCE_MIME_TYPE,
-          text: inlineBuildOutput(),
+          text: buildHostedHtml(baseUrl),
         },
       ],
     }),
@@ -120,6 +139,7 @@ const httpServer = createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
   const isMcpPath = url.pathname === MCP_PATH || url.pathname.startsWith(`${MCP_PATH}/`);
+  const baseUrl = `${url.protocol}//${url.host}`;
 
   if (req.method === "OPTIONS" && isMcpPath) {
     res.writeHead(204, {
@@ -150,7 +170,7 @@ const httpServer = createServer(async (req, res) => {
     try {
       res
         .writeHead(200, { "content-type": "text/html; charset=utf-8" })
-        .end(inlineBuildOutput());
+        .end(loadBuiltIndexHtml());
     } catch (error) {
       res
         .writeHead(500, { "content-type": "text/plain; charset=utf-8" })
@@ -159,12 +179,26 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET") {
+    const filePath = resolveAssetFile(url.pathname);
+    if (filePath) {
+      const asset = readStaticAsset(filePath);
+      if (!asset) {
+        res.writeHead(404).end("Not Found");
+        return;
+      }
+
+      res.writeHead(200, { "content-type": asset.contentType }).end(asset.body);
+      return;
+    }
+  }
+
   const mcpMethods = new Set(["POST", "GET", "DELETE"]);
   if (isMcpPath && req.method && mcpMethods.has(req.method)) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
 
-    const server = createInvestmentHubServer();
+    const server = createInvestmentHubServer(baseUrl);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
