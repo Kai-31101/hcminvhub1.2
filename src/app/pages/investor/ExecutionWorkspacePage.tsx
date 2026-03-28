@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { AlertTriangle, Calendar, CheckCircle2, MessageSquare, Send } from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, MessageSquare, Send, Upload, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
@@ -30,6 +30,47 @@ function getRequestTone(status: string) {
   return 'info' as const;
 }
 
+type ExecutionAction = 'question' | 'b2g' | 'issue' | 'meeting';
+type MeetingType = 'Online' | 'Onsite';
+
+const B2G_REQUEST_TYPES = [
+  'Execution Coordination Request',
+  'Permit Acceleration Request',
+  'Documentation Alignment Request',
+];
+
+const ISSUE_CATEGORIES = ['Permitting', 'Utilities', 'Site access', 'Legal', 'Stakeholder coordination'];
+const ISSUE_PRIORITIES: Array<'low' | 'medium' | 'high' | 'critical'> = ['medium', 'high', 'critical'];
+
+const initialQuestionForm = {
+  question: '',
+};
+
+const initialB2gForm = {
+  requestType: B2G_REQUEST_TYPES[0],
+  assignedAgency: 'Department of Planning & Investment',
+  documents: [] as string[],
+  notes: '',
+};
+
+const initialIssueForm = {
+  title: '',
+  category: ISSUE_CATEGORIES[0],
+  priority: 'high' as 'low' | 'medium' | 'high' | 'critical',
+  description: '',
+  assignedTo: 'Investor Operations Team',
+};
+
+const initialMeetingForm = {
+  preferredDate: '',
+  preferredTime: '',
+  meetingType: 'Online' as MeetingType,
+  participants: '',
+  agenda: '',
+  notes: '',
+  assignedAgency: 'Department of Planning & Investment',
+};
+
 export default function ExecutionWorkspacePage() {
   const {
     opportunities,
@@ -41,6 +82,8 @@ export default function ExecutionWorkspacePage() {
     users,
     getProjectProcessingSummary,
     activeInvestorCompany,
+    updateProject,
+    createServiceRequest,
     createIssue,
     language,
   } = useApp();
@@ -60,6 +103,13 @@ export default function ExecutionWorkspacePage() {
   const [activeProject, setActiveProject] = useState(activeExecutionOptions[0]?.projectId ?? '');
   const [supportNote, setSupportNote] = useState('');
   const [supportSubmitted, setSupportSubmitted] = useState(false);
+  const [activeAction, setActiveAction] = useState<ExecutionAction | null>(null);
+  const [actionStep, setActionStep] = useState<'form' | 'success'>('form');
+  const [submittedReference, setSubmittedReference] = useState('');
+  const [questionForm, setQuestionForm] = useState(initialQuestionForm);
+  const [b2gForm, setB2gForm] = useState(initialB2gForm);
+  const [issueForm, setIssueForm] = useState(initialIssueForm);
+  const [meetingForm, setMeetingForm] = useState(initialMeetingForm);
 
   useEffect(() => {
     if (!activeExecutionOptions.length) {
@@ -79,8 +129,33 @@ export default function ExecutionWorkspacePage() {
   const projectIssues = issues.filter((issue) => issue.projectId === activeProject && issue.status !== 'resolved' && issue.status !== 'closed');
   const projectB2gRequests = serviceRequests.filter((request) => request.projectId === activeProject);
   const processingSummary = getProjectProcessingSummary(activeProject);
+  const agencyOptions = useMemo(
+    () => Array.from(new Set(['Department of Planning & Investment', 'Investor Operations Team', ...agencies.map((agency) => agency.name)])),
+    [agencies],
+  );
 
   const averageProgress = useMemo(() => processingSummary.percentage, [processingSummary.percentage]);
+
+  function resetActionForms() {
+    setQuestionForm(initialQuestionForm);
+    setB2gForm(initialB2gForm);
+    setIssueForm(initialIssueForm);
+    setMeetingForm(initialMeetingForm);
+  }
+
+  function openActionModal(action: ExecutionAction) {
+    setActiveAction(action);
+    setActionStep('form');
+    setSubmittedReference('');
+    resetActionForms();
+  }
+
+  function closeActionModal() {
+    setActiveAction(null);
+    setActionStep('form');
+    setSubmittedReference('');
+    resetActionForms();
+  }
 
   function handleSupportSubmit() {
     if (!supportNote.trim() || !project) return;
@@ -97,6 +172,138 @@ export default function ExecutionWorkspacePage() {
     setSupportSubmitted(true);
     setSupportNote('');
   }
+
+  function handleQuestionSubmit() {
+    if (!project || !questionForm.question.trim()) return;
+
+    const questionText = questionForm.question.trim();
+    const issueId = createIssue({
+      projectId: project.id,
+      projectName: project.name,
+      title: `Investor Q&A thread: ${project.name}`,
+      description: questionText,
+      priority: 'high',
+      status: 'open',
+      assignedTo: 'Government Operator Desk',
+      reportedBy: activeInvestorCompany,
+      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      category: 'Q&A',
+    });
+
+    updateProject(project.id, {
+      qa: [
+        ...(project.qa ?? []),
+        {
+          id: `qa${Date.now()}`,
+          question: questionText,
+          askedBy: activeInvestorCompany,
+          askedAt: new Date().toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US'),
+        },
+      ],
+    });
+
+    setSubmittedReference(issueId);
+    setActionStep('success');
+  }
+
+  function handleB2gSubmit() {
+    if (!project) return;
+
+    const requestId = createServiceRequest({
+      serviceId: 'execution-b2g-request',
+      serviceName: b2gForm.requestType,
+      applicant: activeInvestorCompany,
+      projectId: project.id,
+      projectName: project.name,
+      assignedAgency: b2gForm.assignedAgency,
+      documents: b2gForm.documents,
+      notes: b2gForm.notes.trim(),
+    });
+
+    setSubmittedReference(requestId);
+    setActionStep('success');
+  }
+
+  function handleIssueSubmit() {
+    if (!project || !issueForm.title.trim() || !issueForm.description.trim()) return;
+
+    const dueDays =
+      issueForm.priority === 'critical' ? 2
+      : issueForm.priority === 'high' ? 3
+      : issueForm.priority === 'medium' ? 5
+      : 7;
+
+    const issueId = createIssue({
+      projectId: project.id,
+      projectName: project.name,
+      title: issueForm.title.trim(),
+      description: issueForm.description.trim(),
+      priority: issueForm.priority,
+      status: 'open',
+      assignedTo: issueForm.assignedTo,
+      reportedBy: activeInvestorCompany,
+      dueDate: new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      category: issueForm.category,
+    });
+
+    setSubmittedReference(issueId);
+    setActionStep('success');
+  }
+
+  function handleMeetingSubmit() {
+    if (!project || !meetingForm.preferredDate || !meetingForm.preferredTime || !meetingForm.agenda.trim()) return;
+
+    const requestId = createServiceRequest({
+      serviceId: 'meeting-request',
+      serviceName: 'Meeting Request',
+      applicant: activeInvestorCompany,
+      projectId: project.id,
+      projectName: project.name,
+      assignedAgency: meetingForm.assignedAgency,
+      documents: [],
+      notes: [
+        `Preferred date: ${meetingForm.preferredDate}`,
+        `Preferred time: ${meetingForm.preferredTime}`,
+        `Meeting type: ${meetingForm.meetingType}`,
+        `Participants: ${meetingForm.participants || '-'}`,
+        `Agenda: ${meetingForm.agenda.trim()}`,
+        meetingForm.notes.trim() ? `Additional notes: ${meetingForm.notes.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    });
+
+    setSubmittedReference(requestId);
+    setActionStep('success');
+  }
+
+  const actionTitle =
+    activeAction === 'question' ? t('Ask Question')
+    : activeAction === 'b2g' ? t('Send B2G Request')
+    : activeAction === 'issue' ? t('Report Issue')
+    : activeAction === 'meeting' ? t('Request Meeting')
+    : '';
+
+  const actionDescription =
+    activeAction === 'question' ? t('Open a structured investor question and route it to the project response queue.')
+    : activeAction === 'b2g' ? t('Route a B2G workflow request for the selected project.')
+    : activeAction === 'issue' ? t('Log an execution blocker or coordination risk for the selected project.')
+    : activeAction === 'meeting' ? t('Schedule a coordination request with the responsible public-sector team.')
+    : '';
+
+  const actionSuccessTitle =
+    activeAction === 'question' ? t('Question submitted')
+    : activeAction === 'b2g' ? t('B2G request submitted')
+    : activeAction === 'issue' ? t('Issue reported')
+    : activeAction === 'meeting' ? t('Meeting request submitted')
+    : '';
+
+  const actionSuccessDescription =
+    activeAction === 'question' ? t('This question is now visible in the public Q&A stream and routed for response.')
+    : activeAction === 'b2g' ? t('This request has been routed into the B2G workflow queue.')
+    : activeAction === 'issue' ? t('This issue is now tracked in the execution risk log.')
+    : activeAction === 'meeting' ? t('This meeting request has been routed for coordination.')
+    : '';
 
   if (activeExecutionOptions.length === 0) {
     return (
@@ -149,6 +356,26 @@ export default function ExecutionWorkspacePage() {
               <div className="mt-3 text-2xl font-bold text-slate-900" style={{ fontFamily: 'var(--font-heading)' }}>${item.amount}M</div>
             </button>
           ))}
+        </div>
+        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <div className="flex flex-wrap gap-3">
+            {[
+              { key: 'question' as const, label: t('Ask Question'), icon: <MessageSquare size={14} /> },
+              { key: 'b2g' as const, label: t('Send B2G Request'), icon: <Send size={14} /> },
+              { key: 'issue' as const, label: t('Report Issue'), icon: <AlertTriangle size={14} /> },
+              { key: 'meeting' as const, label: t('Request Meeting'), icon: <Calendar size={14} /> },
+            ].map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                onClick={() => openActionModal(action.key)}
+                className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800"
+              >
+                {action.icon}
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -375,6 +602,322 @@ export default function ExecutionWorkspacePage() {
           </div>
         )}
       </section>
+
+      {activeAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-border p-6">
+              <div>
+                <div className="text-base font-semibold text-slate-900">{actionTitle}</div>
+                <div className="mt-1 text-sm text-slate-500">{actionDescription}</div>
+              </div>
+              <button type="button" onClick={closeActionModal} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-6 p-6">
+              {actionStep === 'form' && activeAction === 'question' && (
+                <>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Associated Project')}</div>
+                    <div className="mt-2 text-sm font-semibold text-slate-900">{project ? t(project.name) : '-'}</div>
+                  </div>
+                  <label className="block space-y-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Investor question')}</span>
+                    <textarea
+                      value={questionForm.question}
+                      onChange={(event) => setQuestionForm({ question: event.target.value })}
+                      rows={5}
+                      className="app-input min-h-32"
+                      placeholder={t('Enter a free-text investor question for due diligence or clarification.')}
+                    />
+                  </label>
+                  <div className="flex flex-wrap justify-between gap-3">
+                    <button type="button" onClick={closeActionModal} className="app-button-secondary">
+                      {t('Cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuestionSubmit}
+                      disabled={!questionForm.question.trim()}
+                      className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      <Send size={14} />
+                      {t('Submit question')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {actionStep === 'form' && activeAction === 'b2g' && (
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Request type')}</span>
+                      <select
+                        value={b2gForm.requestType}
+                        onChange={(event) => setB2gForm((current) => ({ ...current, requestType: event.target.value }))}
+                        className="app-input"
+                      >
+                        {B2G_REQUEST_TYPES.map((option) => (
+                          <option key={option} value={option}>{t(option)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Assigned agency')}</span>
+                      <select
+                        value={b2gForm.assignedAgency}
+                        onChange={(event) => setB2gForm((current) => ({ ...current, assignedAgency: event.target.value }))}
+                        className="app-input"
+                      >
+                        {agencyOptions.map((agencyName) => (
+                          <option key={agencyName} value={agencyName}>{t(agencyName)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Document Upload')}</span>
+                      <div className="rounded-xl border-2 border-dashed border-border bg-slate-50 px-4 py-6 text-center">
+                        <Upload size={20} className="mx-auto text-slate-400" />
+                        <div className="mt-2 text-sm text-slate-600">{t('Upload required files or simulate the intake package.')}</div>
+                        <button
+                          type="button"
+                          onClick={() => setB2gForm((current) => ({ ...current, documents: ['Execution_Request_Packet.pdf', 'Project_Context_Note.pdf'] }))}
+                          className="mt-3 app-button-secondary"
+                        >
+                          {t('Simulate upload')}
+                        </button>
+                      </div>
+                    </div>
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Additional Notes')}</span>
+                      <textarea
+                        value={b2gForm.notes}
+                        onChange={(event) => setB2gForm((current) => ({ ...current, notes: event.target.value }))}
+                        rows={4}
+                        className="app-input min-h-28"
+                        placeholder={t('Add context for the processing agency, missing items, or delivery constraints')}
+                      />
+                    </label>
+                  </div>
+                  {b2gForm.documents.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Uploaded Files')}</div>
+                      {b2gForm.documents.map((documentName) => (
+                        <DataRow key={documentName}>
+                          <CheckCircle2 size={14} className="text-emerald-700" />
+                          <div className="flex-1 text-sm text-slate-700">{t(documentName)}</div>
+                        </DataRow>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap justify-between gap-3">
+                    <button type="button" onClick={closeActionModal} className="app-button-secondary">
+                      {t('Cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleB2gSubmit}
+                      className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800"
+                    >
+                      <Send size={14} />
+                      {t('Submit request')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {actionStep === 'form' && activeAction === 'issue' && (
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Issue summary')}</span>
+                      <input
+                        value={issueForm.title}
+                        onChange={(event) => setIssueForm((current) => ({ ...current, title: event.target.value }))}
+                        className="app-input"
+                        placeholder={t('Summarize the blocker or execution risk')}
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Request category')}</span>
+                      <select
+                        value={issueForm.category}
+                        onChange={(event) => setIssueForm((current) => ({ ...current, category: event.target.value }))}
+                        className="app-input"
+                      >
+                        {ISSUE_CATEGORIES.map((option) => (
+                          <option key={option} value={option}>{t(option)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Priority')}</span>
+                      <select
+                        value={issueForm.priority}
+                        onChange={(event) => setIssueForm((current) => ({ ...current, priority: event.target.value as typeof current.priority }))}
+                        className="app-input"
+                      >
+                        {ISSUE_PRIORITIES.map((option) => (
+                          <option key={option} value={option}>{t(option)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Assigned agency')}</span>
+                      <select
+                        value={issueForm.assignedTo}
+                        onChange={(event) => setIssueForm((current) => ({ ...current, assignedTo: event.target.value }))}
+                        className="app-input"
+                      >
+                        {agencyOptions.map((agencyName) => (
+                          <option key={agencyName} value={agencyName}>{t(agencyName)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Issue detail')}</span>
+                      <textarea
+                        value={issueForm.description}
+                        onChange={(event) => setIssueForm((current) => ({ ...current, description: event.target.value }))}
+                        rows={5}
+                        className="app-input min-h-32"
+                        placeholder={t('Describe the blocker, impact, and what needs to be resolved.')}
+                      />
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-3">
+                    <button type="button" onClick={closeActionModal} className="app-button-secondary">
+                      {t('Cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleIssueSubmit}
+                      disabled={!issueForm.title.trim() || !issueForm.description.trim()}
+                      className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      <AlertTriangle size={14} />
+                      {t('Report Issue')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {actionStep === 'form' && activeAction === 'meeting' && (
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Preferred date')}</span>
+                      <input
+                        type="date"
+                        value={meetingForm.preferredDate}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, preferredDate: event.target.value }))}
+                        className="app-input"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Preferred time')}</span>
+                      <input
+                        type="time"
+                        value={meetingForm.preferredTime}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, preferredTime: event.target.value }))}
+                        className="app-input"
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Meeting type')}</span>
+                      <select
+                        value={meetingForm.meetingType}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, meetingType: event.target.value as MeetingType }))}
+                        className="app-input"
+                      >
+                        <option value="Online">{t('Online')}</option>
+                        <option value="Onsite">{t('Onsite')}</option>
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Assigned agency')}</span>
+                      <select
+                        value={meetingForm.assignedAgency}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, assignedAgency: event.target.value }))}
+                        className="app-input"
+                      >
+                        {agencyOptions.map((agencyName) => (
+                          <option key={agencyName} value={agencyName}>{t(agencyName)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Participants')}</span>
+                      <input
+                        value={meetingForm.participants}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, participants: event.target.value }))}
+                        className="app-input"
+                        placeholder={t('Example: CIO, project counsel, technical advisor')}
+                      />
+                    </label>
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Agenda')}</span>
+                      <textarea
+                        value={meetingForm.agenda}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, agenda: event.target.value }))}
+                        rows={4}
+                        className="app-input min-h-28"
+                        placeholder={t('Outline the meeting agenda and the decisions needed from the session.')}
+                      />
+                    </label>
+                    <label className="space-y-2 md:col-span-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Additional Notes')}</span>
+                      <textarea
+                        value={meetingForm.notes}
+                        onChange={(event) => setMeetingForm((current) => ({ ...current, notes: event.target.value }))}
+                        rows={3}
+                        className="app-input min-h-24"
+                        placeholder={t('Add context for the processing agency, missing items, or delivery constraints')}
+                      />
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-3">
+                    <button type="button" onClick={closeActionModal} className="app-button-secondary">
+                      {t('Cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMeetingSubmit}
+                      disabled={!meetingForm.preferredDate || !meetingForm.preferredTime || !meetingForm.agenda.trim()}
+                      className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      <Calendar size={14} />
+                      {t('Submit request')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {actionStep === 'success' && (
+                <div className="py-4 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <CheckCircle2 size={28} />
+                  </div>
+                  <h2 className="section-heading mb-2">{actionSuccessTitle}</h2>
+                  <p className="section-subheading">{actionSuccessDescription}</p>
+                  <div className="mx-auto mt-5 max-w-md rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-left">
+                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">{t('Reference')}</div>
+                    <div className="mt-1 font-mono text-sm font-semibold text-sky-900">{submittedReference}</div>
+                  </div>
+                  <div className="mt-6">
+                    <button type="button" onClick={closeActionModal} className="app-button">
+                      {t('Done')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

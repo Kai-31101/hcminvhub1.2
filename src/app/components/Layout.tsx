@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Search, Briefcase, FileText, ClipboardList, CheckSquare,
   Settings, Users, Building2, Bell, ChevronDown, LogOut, Menu, X,
   FolderOpen, BarChart3, Wrench, Shield, TrendingUp, MapPin, Package,
-  HardHat, AlertTriangle, Star, Milestone, Globe, ChevronRight,
+  HardHat, AlertTriangle, Milestone, Globe, ChevronRight,
   Home, Activity,
 } from 'lucide-react';
 
@@ -22,7 +22,6 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
     label: 'Investor Portal',
     items: [
       { label: 'Project Explorer', path: '/investor/explorer', icon: <Search size={18} /> },
-      { label: 'My Watchlist', path: '/investor/watchlist', icon: <Star size={18} /> },
       { label: 'My Opportunities', path: '/investor/opportunities', icon: <Briefcase size={18} /> },
       { label: 'Execution Workspace', path: '/investor/execution', icon: <Activity size={18} /> },
       { label: 'B2G Services', path: '/investor/services', icon: <Globe size={18} /> },

@@ -1,12 +1,29 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { MapPin, Star, ArrowRight, TrendingUp } from 'lucide-react';
+import { MapPin, Star, ArrowRight, TrendingUp, Newspaper } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
 import { StatusPill } from '../../components/ui/status-pill';
 import { DataRow } from '../../components/ui/data-row';
 
 const ALL_SECTORS = '__all__';
+const HOT_NEWS_ITEMS = [
+  {
+    category: 'Hot News',
+    title: 'Thu Duc innovation corridor draws fresh interest from technology and advanced manufacturing investors',
+    summary: 'New planning momentum is reinforcing demand for mixed-use campuses, R&D facilities, and export-oriented production space.',
+  },
+  {
+    category: 'Infrastructure',
+    title: 'Metro-linked development zones are strengthening the case for transit-oriented commercial and residential projects',
+    summary: 'Improved connectivity is reshaping site attractiveness across gateway districts and key growth corridors.',
+  },
+  {
+    category: 'Green Growth',
+    title: 'Clean energy and circular-economy projects continue to stand out in Ho Chi Minh City investment conversations',
+    summary: 'Investors are prioritizing platforms that combine industrial scale, sustainability targets, and public-sector alignment.',
+  },
+];
 
 export default function ExplorerPage() {
   const location = useLocation();
@@ -14,6 +31,14 @@ export default function ExplorerPage() {
   const [selectedSector, setSelectedSector] = useState(ALL_SECTORS);
   const t = (value: string) => translateText(value, language);
   const watchlistOnly = location.pathname === '/investor/watchlist';
+  const hotNewsItems = useMemo(
+    () =>
+      HOT_NEWS_ITEMS.map((item, index) => ({
+        ...item,
+        image: projects[index % Math.max(projects.length, 1)]?.image ?? '',
+      })),
+    [projects],
+  );
 
   const sectorOptions = useMemo(
     () => [
@@ -77,6 +102,42 @@ export default function ExplorerPage() {
           </div>
         </div>
       </section>
+
+      {!watchlistOnly && (
+        <section className="section-panel border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+          <div className="px-5 py-5 lg:px-6 lg:py-6">
+            <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-slate-700">
+              <Newspaper size={15} />
+              {t('Ho Chi Minh City Hot News')}
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              {hotNewsItems.map((item) => (
+                <article key={item.title} className="group overflow-hidden rounded-[1.25rem] bg-white">
+                  <div className="overflow-hidden rounded-[1.1rem]">
+                    <img
+                      src={item.image}
+                      alt={t(item.title)}
+                      className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <div className="pt-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      {t(item.category)}
+                    </div>
+                    <h2
+                      className="mt-2 text-sm leading-7 text-slate-900"
+                      style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+                    >
+                      {t(item.title)}
+                    </h2>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-slate-600">

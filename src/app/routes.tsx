@@ -80,7 +80,7 @@ export const router = createHashRouter([
   },
   {
     path: '/investor/watchlist',
-    element: <ProtectedLayout defaultRole="investor"><ExplorerPage /></ProtectedLayout>,
+    element: <Navigate to="/investor/explorer" replace />,
   },
   {
     path: '/investor/opportunities',
