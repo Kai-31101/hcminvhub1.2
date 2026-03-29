@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowRight, Building2, CheckCircle, Globe, Shield, TrendingUp, Users } from 'lucide-react';
 import { useApp, UserRole } from '../context/AppContext';
+import { clearPendingHomeAction, readPendingHomeAction } from '../utils/homeLeadFlow';
 import { translateText } from '../utils/localization';
 
 const roles: {
@@ -85,14 +86,129 @@ const stats = [
   { label: 'In Execution', value: '2' },
 ];
 
+function amountFromInvestmentSize(investmentSize: string) {
+  switch (investmentSize) {
+    case '< $10M':
+      return 8;
+    case '$10M - $50M':
+      return 30;
+    case '$50M - $200M':
+      return 120;
+    case '>$200M':
+      return 250;
+    default:
+      return 25;
+  }
+}
+
+function dueDate(daysFromNow: number) {
+  const next = new Date();
+  next.setDate(next.getDate() + daysFromNow);
+  return next.toISOString().split('T')[0];
+}
+
 export default function LoginPage() {
-  const { language, setLanguage, setRole } = useApp();
+  const {
+    language,
+    setLanguage,
+    setRole,
+    projects,
+    setActiveInvestorCompany,
+    createOpportunity,
+    createIssue,
+    addNotification,
+  } = useApp();
   const navigate = useNavigate();
   const t = (value: string) => translateText(value, language);
 
   function handleSelectRole(roleId: UserRole, homeRoute: string) {
+    const pendingAction = readPendingHomeAction();
     setRole(roleId);
-    navigate(homeRoute);
+
+    if (!pendingAction) {
+      navigate(homeRoute);
+      return;
+    }
+
+    if (pendingAction.type === 'fast_track') {
+      const preferredSector = pendingAction.payload.sector.toLowerCase();
+      const preferredLocation = pendingAction.payload.locationNeed.toLowerCase();
+      const matchedProject =
+        projects.find(
+          (project) =>
+            project.sector.toLowerCase().includes(preferredSector.split(' & ')[0] ?? '') ||
+            project.location.toLowerCase().includes(preferredLocation),
+        ) ?? projects[0];
+
+      setActiveInvestorCompany(pendingAction.payload.companyName);
+      const opportunityId = createOpportunity({
+        projectId: matchedProject.id,
+        projectName: matchedProject.name,
+        investorName: pendingAction.payload.contactName,
+        investorCompany: pendingAction.payload.companyName,
+        investorCountry: pendingAction.payload.country,
+        investorType: 'Strategic',
+        amount: amountFromInvestmentSize(pendingAction.payload.investmentSize),
+        stage: 'new',
+        notes: `Homepage fast-track request. Preferred sector: ${pendingAction.payload.sector}. Preferred location: ${pendingAction.payload.locationNeed}. Notes: ${pendingAction.payload.notes || 'No extra note.'}`,
+        intakeData: {
+          investmentStructure: pendingAction.payload.investmentType,
+          timeline: 'Submitted through homepage fast-track entry',
+          fundSource: 'To be confirmed after login',
+          experience: pendingAction.payload.notes || 'Captured from homepage fast-track form.',
+          contactEmail: pendingAction.payload.email,
+          contactPhone: pendingAction.payload.phone || 'To be confirmed',
+        },
+      });
+
+      createIssue({
+        projectId: matchedProject.id,
+        projectName: matchedProject.name,
+        title: `Fast-track matching request - ${pendingAction.payload.companyName}`,
+        description: `Investor needs support to identify a suitable project. Preferred sector: ${pendingAction.payload.sector}. Preferred location: ${pendingAction.payload.locationNeed}. Preferred size: ${pendingAction.payload.investmentSize}. Notes: ${pendingAction.payload.notes || 'No extra note.'}`,
+        priority: 'high',
+        status: 'open',
+        assignedTo: 'Investor Relations Desk',
+        dueDate: dueDate(2),
+        reportedBy: pendingAction.payload.contactName,
+        category: 'Support',
+      });
+
+      addNotification({
+        title: 'Fast-track lead captured',
+        message: 'Fast-track request routed to the investor matching queue.',
+        type: 'success',
+        path: `/gov/opportunities/${opportunityId}`,
+      });
+    }
+
+    if (pendingAction.type === 'support') {
+      const selectedProject = projects.find((project) => project.id === pendingAction.payload.projectId) ?? projects[0];
+      setActiveInvestorCompany(pendingAction.payload.companyName);
+
+      createIssue({
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        title: `Arobid support request - ${pendingAction.payload.topic}`,
+        description: pendingAction.payload.message,
+        priority: pendingAction.payload.urgent ? 'high' : 'medium',
+        status: 'open',
+        assignedTo: 'Arobid Investor Support Desk',
+        dueDate: dueDate(pendingAction.payload.urgent ? 1 : 3),
+        reportedBy: pendingAction.payload.contactName,
+        category: 'Support',
+      });
+
+      addNotification({
+        title: 'Support request submitted',
+        message: 'Arobid support request routed to the responsible desk.',
+        type: pendingAction.payload.urgent ? 'warning' : 'info',
+        path: '/agency/issues',
+      });
+    }
+
+    clearPendingHomeAction();
+    navigate(`/home?submitted=${pendingAction.type === 'fast_track' ? 'fast-track' : 'support'}`);
   }
 
   return (

@@ -163,9 +163,13 @@ export default function ExplorerPage() {
       <div className="space-y-3">
         {filtered.map((project) => (
           <Link key={project.id} to={`/investor/project/${project.id}`} className="block">
-            <DataRow className="group items-start gap-5 overflow-hidden p-0">
-              <div className="h-full w-full max-w-64 self-stretch overflow-hidden border-r border-border bg-slate-100">
-                <img src={project.image} alt={t(project.name)} className="h-full min-h-52 w-full object-cover" />
+            <DataRow className="group items-stretch gap-5 overflow-hidden p-0">
+              <div className="relative h-full w-full max-w-64 self-stretch overflow-hidden border-r border-border bg-slate-100">
+                <img
+                  src={project.image}
+                  alt={t(project.name)}
+                  className="absolute inset-0 h-full w-full scale-[1.08] object-cover"
+                />
               </div>
 
               <div className="flex-1 px-5 py-5">

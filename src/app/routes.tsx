@@ -3,6 +3,7 @@ import { createHashRouter, Navigate } from 'react-router';
 import { Layout } from './components/Layout';
 import { useApp, UserRole } from './context/AppContext';
 import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';
 
 // Investor
 import ExplorerPage from './pages/investor/ExplorerPage';
@@ -50,7 +51,11 @@ function ProtectedLayout({ children, defaultRole }: { children: React.ReactNode;
 export const router = createHashRouter([
   {
     path: '/',
-    element: <Navigate to="/investor/explorer" replace />,
+    element: <Navigate to="/home" replace />,
+  },
+  {
+    path: '/home',
+    element: <HomePage />,
   },
   {
     path: '/login',
@@ -174,6 +179,6 @@ export const router = createHashRouter([
   // Fallback
   {
     path: '*',
-    element: <Navigate to="/investor/explorer" replace />,
+    element: <Navigate to="/home" replace />,
   },
 ]);

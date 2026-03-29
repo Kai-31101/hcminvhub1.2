@@ -3,6 +3,7 @@ dist/
 .codex-tunnel/
 .chrome-codex-clean/
 .chrome-codex-profile/
+.codex-local/
 vite.out.log
 vite.err.log
 ui-capture.log
