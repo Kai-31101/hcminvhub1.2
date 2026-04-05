@@ -44,4 +44,10 @@
   After Railway generates a public domain, use `<your-railway-url>/mcp` in ChatGPT.
 
   Railway gives you a persistent `*.up.railway.app` URL once you generate a public domain for the service.
+
+  ## Figma In Codex
+
+  This workspace now includes an `AGENTS.md` file that tells Codex to use the Figma plugin for Figma URLs, node inspection, screenshots, Code Connect, and design-to-code work.
+
+  In Codex Desktop, the Figma plugin is enabled separately from the repo. Once authenticated, you can ask Codex to implement a screen or component directly from a Figma URL.
   

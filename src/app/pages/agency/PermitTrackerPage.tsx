@@ -3,11 +3,13 @@ import { HardHat, Search, Edit, Save, MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { StatusPill } from '../../components/ui/status-pill';
 import { DataRow } from '../../components/ui/data-row';
 import { UrgencyBadge } from '../../components/ui/urgency-badge';
 
 const mockToday = new Date('2024-03-20');
+const DEFAULT_LIST_COUNT = 6;
 
 const statusTone: Record<string, 'default' | 'info' | 'success' | 'danger' | 'warning'> = {
   pending: 'default',
@@ -38,6 +40,7 @@ export default function PermitTrackerPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editStatus, setEditStatus] = useState('');
   const [editComment, setEditComment] = useState('');
+  const [showAllPermits, setShowAllPermits] = useState(false);
   const highlightedId = searchParams.get('highlight');
   const t = (value: string) => translateText(value, language);
 
@@ -48,6 +51,7 @@ export default function PermitTrackerPage() {
     const matchStatus = statusFilter === 'all' || permit.status === statusFilter;
     return matchSearch && matchStatus;
   }), [permits, search, statusFilter]);
+  const visiblePermits = showAllPermits ? filtered : filtered.slice(0, DEFAULT_LIST_COUNT);
 
   const handleEdit = (permit: typeof permits[0]) => {
     setEditId(permit.id);
@@ -106,7 +110,7 @@ export default function PermitTrackerPage() {
       </section>
 
       <div className="space-y-3">
-        {filtered.map((permit) => {
+        {visiblePermits.map((permit) => {
           const isEditing = editId === permit.id;
           const remaining = daysUntil(permit.deadline);
 
@@ -190,6 +194,9 @@ export default function PermitTrackerPage() {
             </div>
           );
         })}
+        {!showAllPermits && filtered.length > DEFAULT_LIST_COUNT && (
+          <SeeAllButton label={t('See All')} onClick={() => setShowAllPermits(true)} />
+        )}
       </div>
     </div>
   );

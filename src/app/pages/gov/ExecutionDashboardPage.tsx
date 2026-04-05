@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { Activity, AlertTriangle, Calendar, Clock, MapPin } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { getDemoUserIdForRole, useApp } from '../../context/AppContext';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { UrgencyBadge } from '../../components/ui/urgency-badge';
@@ -27,12 +27,17 @@ function getProjectHealth(projectId: string, issues: Array<{ projectId: string; 
 }
 
 export default function ExecutionDashboardPage() {
-  const { projects, milestones, issues, permits, language } = useApp();
+  const { projects, milestones, issues, permits, language, role } = useApp();
   const t = (value: string) => translateText(value, language);
-  const activeProjects = projects.filter((project) => project.status === 'published' || project.status === 'execution');
-  const openIssues = issues.filter((issue) => issue.status === 'open' || issue.status === 'in_progress');
-  const pendingPermits = permits.filter((permit) => permit.status === 'pending' || permit.status === 'in_review' || permit.status === 'info_required');
-  const activeMilestones = milestones.filter((milestone) => milestone.status === 'in_progress');
+  const workspaceBasePath = role === 'agency' ? '/agency' : '/gov';
+  const visibleProjects = role === 'gov_operator'
+    ? projects.filter((project) => project.createdByUserId === getDemoUserIdForRole(role))
+    : projects;
+  const visibleProjectIds = new Set(visibleProjects.map((project) => project.id));
+  const activeProjects = visibleProjects.filter((project) => project.status === 'published' || project.status === 'processing');
+  const openIssues = issues.filter((issue) => visibleProjectIds.has(issue.projectId) && (issue.status === 'open' || issue.status === 'in_progress'));
+  const pendingPermits = permits.filter((permit) => visibleProjectIds.has(permit.projectId) && (permit.status === 'pending' || permit.status === 'in_review' || permit.status === 'info_required'));
+  const activeMilestones = milestones.filter((milestone) => visibleProjectIds.has(milestone.projectId) && milestone.status === 'in_progress');
 
   const overduePermits = pendingPermits.filter((permit) => daysUntil(permit.deadline) < 0);
   const criticalIssues = openIssues.filter((issue) => issue.priority === 'critical');
@@ -111,7 +116,7 @@ export default function ExecutionDashboardPage() {
                 const pendingProjectPermits = permits.filter((permit) => permit.projectId === project.id && permit.status !== 'approved');
 
                 return (
-                  <Link key={project.id} to={`/gov/projects/${project.id}`} className="block">
+                  <Link key={project.id} to={`${workspaceBasePath}/projects/${project.id}`} className="block">
                     <DataRow className="items-start">
                       <div className="flex items-start gap-3">
                         <img src={project.image} alt={project.name} className="h-16 w-20 rounded-md object-cover" />

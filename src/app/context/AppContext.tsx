@@ -18,8 +18,46 @@ import {
   users as baseUsers,
 } from '../data/mockData';
 import { getLocalizedData, getLocalizedNotifications, Language } from '../utils/localization';
+import { getProjectStageLabel, normalizeProjectStatus } from '../utils/projectStatus';
 
 export type UserRole = 'investor' | 'gov_operator' | 'agency' | 'admin' | 'executive';
+
+export function getDemoUserIdForRole(role: UserRole | null): string {
+  switch (role) {
+    case 'gov_operator':
+      return 'u1';
+    case 'agency':
+      return 'u3';
+    case 'investor':
+      return 'u6';
+    case 'admin':
+      return 'u7';
+    case 'executive':
+      return 'u5';
+    default:
+      return 'u1';
+  }
+}
+
+function getDefaultActiveUserId(role: UserRole | null, activeAgency?: Agency | null): string {
+  if (role === 'gov_operator') {
+    const firstJob = cloneProjectJobs()[0];
+    return firstJob ? `${firstJob.agencyId}:${firstJob.userId}` : getDemoUserIdForRole(role);
+  }
+  if (role === 'agency') {
+    const firstOfficerId = activeAgency?.peopleInCharge?.[0]?.id;
+    return activeAgency?.id && firstOfficerId ? `${activeAgency.id}:${firstOfficerId}` : getDemoUserIdForRole(role);
+  }
+  return getDemoUserIdForRole(role);
+}
+
+function getProjectWorkspaceBasePath(role: UserRole | null) {
+  return role === 'agency' ? '/agency/projects' : '/gov/projects';
+}
+
+function getOpportunityWorkspaceBasePath(role: UserRole | null) {
+  return role === 'agency' ? '/agency/opportunities' : '/gov/opportunities';
+}
 
 export interface Notification {
   id: string;
@@ -81,6 +119,11 @@ interface AppContextType {
   setRole: (role: UserRole | null) => void;
   language: Language;
   setLanguage: (language: Language) => void;
+  activeUserId: string;
+  setActiveUserId: (userId: string) => void;
+  activeAgencyId: string;
+  setActiveAgencyId: (agencyId: string) => void;
+  activeAgency: Agency | null;
   projects: Project[];
   opportunities: Opportunity[];
   activeInvestorCompany: string;
@@ -142,6 +185,8 @@ const USER_ADDITIONS_KEY = 'hcminvhub-user-additions';
 const USER_OVERRIDES_KEY = 'hcminvhub-user-overrides';
 const AGENCY_ADDITIONS_KEY = 'hcminvhub-agency-additions';
 const AGENCY_OVERRIDES_KEY = 'hcminvhub-agency-overrides';
+const ACTIVE_USER_KEY = 'hcminvhub-active-user-id';
+const ACTIVE_AGENCY_KEY = 'hcminvhub-active-agency-id';
 const REQUIRED_DATA_ASSIGNMENTS_KEY = 'hcminvhub-required-data-assignments';
 const PROJECT_JOBS_KEY = 'hcminvhub-project-jobs';
 const DEMO_DATA_KEYS = [
@@ -162,6 +207,8 @@ const DEMO_DATA_KEYS = [
   USER_OVERRIDES_KEY,
   AGENCY_ADDITIONS_KEY,
   AGENCY_OVERRIDES_KEY,
+  ACTIVE_USER_KEY,
+  ACTIVE_AGENCY_KEY,
   REQUIRED_DATA_ASSIGNMENTS_KEY,
   PROJECT_JOBS_KEY,
 ];
@@ -185,11 +232,20 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function getNormalizedAgencyOwnership(agencyId: string, userId: string) {
+  const migratedAgencyId = agencyId === 'ag1' && userId === 'u3' ? 'ag6' : agencyId;
+  const migratedUserId = /^u[34]$/.test(userId) && /^ag\d+$/.test(migratedAgencyId) ? `${migratedAgencyId}-pic-1` : userId;
+  return { agencyId: migratedAgencyId, userId: migratedUserId };
+}
+
 function normalizeRequiredDataAssignment(raw: RequiredDataAssignment | (Partial<RequiredDataAssignment> & { id: string; projectId: string; fieldName: string; agencyId: string; userId: string; status?: string })) {
+  const { agencyId: migratedAgencyId, userId: migratedUserId } = getNormalizedAgencyOwnership(raw.agencyId, raw.userId);
   const normalizedStatus = raw.status === 'complete' || raw.status === 'completed' ? 'complete' : 'incomplete';
   const legacyAttachment = (raw as RequiredDataAssignment & { attachment?: AttachmentItem }).attachment;
   return {
     ...raw,
+    agencyId: migratedAgencyId,
+    userId: migratedUserId,
     status: normalizedStatus,
     dueDate: raw.dueDate ?? toIsoDate(addDays(new Date(), 10)),
     reminderDaysBefore: raw.reminderDaysBefore === 5 ? 5 : 10,
@@ -204,10 +260,13 @@ function normalizeRequiredDataAssignment(raw: RequiredDataAssignment | (Partial<
 }
 
 function normalizeProjectJob(raw: ProjectJob | (Partial<ProjectJob> & { id: string; projectId: string; title: string; description: string; agencyId: string; userId: string; status?: string })) {
+  const { agencyId: migratedAgencyId, userId: migratedUserId } = getNormalizedAgencyOwnership(raw.agencyId, raw.userId);
   const normalizedStatus = raw.status === 'complete' || raw.status === 'completed' ? 'complete' : 'incomplete';
   const legacyAttachment = (raw as ProjectJob & { attachment?: AttachmentItem }).attachment;
   return {
     ...raw,
+    agencyId: migratedAgencyId,
+    userId: migratedUserId,
     status: normalizedStatus,
     dueDate: raw.dueDate ?? toIsoDate(addDays(new Date(), 10)),
     reminderDaysBefore: raw.reminderDaysBefore === 5 ? 5 : 10,
@@ -251,8 +310,8 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       id: 'r1',
       projectId: 'p1',
       fieldName: 'Traffic impact assessment',
-      agencyId: 'ag1',
-      userId: 'u3',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 10)),
       reminderDaysBefore: 10,
@@ -283,8 +342,8 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       id: 'r3',
       projectId: 'p2',
       fieldName: 'Grid connection confirmation',
-      agencyId: 'ag1',
-      userId: 'u3',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -3)),
       reminderDaysBefore: 5,
@@ -322,8 +381,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p1',
       title: 'Confirm traffic management interface',
       description: 'Validate final intersection phasing and construction detour routing before investor circulation.',
-      agencyId: 'ag1',
-      userId: 'u3',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 10)),
       reminderDaysBefore: 10,
@@ -356,8 +415,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p2',
       title: 'Finalize interconnection work package',
       description: 'Close the agency review on interconnection works, energization dependencies, and handover sequencing.',
-      agencyId: 'ag1',
-      userId: 'u3',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -4)),
       reminderDaysBefore: 10,
@@ -383,6 +442,261 @@ function cloneProjectJobs(): ProjectJob[] {
         fileName: 'fire-safety-readiness-handoff.pdf',
         fileUrl: '',
         lastUploadDate: toIsoDate(addDays(today, -2)),
+      }],
+    },
+    {
+      id: 'pj5',
+      projectId: 'p1',
+      title: 'Approve digital twin data exchange scope',
+      description: 'Align final API boundaries and asset-data ownership for the city digital twin integration package.',
+      agencyId: 'ag5',
+      userId: 'u3',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 18)),
+      reminderDaysBefore: 10,
+      note: 'Technical alignment is still in processing with the transport systems working group.',
+      attachments: [{
+        fileName: 'digital-twin-api-scope.docx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -4)),
+      }],
+    },
+    {
+      id: 'pj6',
+      projectId: 'p2',
+      title: 'Secure temporary marine logistics corridor',
+      description: 'Coordinate vessel access, temporary berthing, and oversized equipment routing for offshore delivery packages.',
+      agencyId: 'ag5',
+      userId: 'u3',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 5)),
+      reminderDaysBefore: 5,
+      note: 'Upcoming coordination window is locked for next week pending final traffic notice.',
+      attachments: [{
+        fileName: 'marine-logistics-corridor-plan.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -5)),
+      }],
+    },
+    {
+      id: 'pj7',
+      projectId: 'p2',
+      title: 'Close environmental baseline addendum',
+      description: 'Finalize the baseline addendum covering updated mangrove and coastal biodiversity observations.',
+      agencyId: 'ag2',
+      userId: 'u4',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 16)),
+      reminderDaysBefore: 10,
+      note: 'Processing with the environmental reviewer before sign-off.',
+      attachments: [{
+        fileName: 'environmental-baseline-addendum.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -6)),
+      }],
+    },
+    {
+      id: 'pj8',
+      projectId: 'p3',
+      title: 'Issue customs machinery import checklist',
+      description: 'Provide the investor-facing checklist for priority production equipment and HS-code verification.',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 10)),
+      reminderDaysBefore: 10,
+      note: 'Upcoming issue window is synchronized with the first investor procurement batch.',
+      attachments: [{
+        fileName: 'machinery-import-checklist.xlsx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -3)),
+      }],
+    },
+    {
+      id: 'pj9',
+      projectId: 'p3',
+      title: 'Complete internal road alignment review',
+      description: 'Review truck circulation, loading-bay access, and emergency turnaround geometry for the internal road package.',
+      agencyId: 'ag5',
+      userId: 'u3',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, -6)),
+      reminderDaysBefore: 5,
+      note: 'Delayed due to a revised logistics turning-radius requirement from anchor tenants.',
+      attachments: [{
+        fileName: 'internal-road-alignment-review.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -14)),
+      }],
+    },
+    {
+      id: 'pj10',
+      projectId: 'p3',
+      title: 'Publish utilities handover matrix',
+      description: 'Finalize the handover matrix for power, water, telecom, and wastewater connections by sub-zone.',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
+      status: 'complete',
+      dueDate: toIsoDate(addDays(today, 12)),
+      reminderDaysBefore: 10,
+      note: 'Utilities handover matrix has been published in the shared project room.',
+      attachments: [{
+        fileName: 'utilities-handover-matrix.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -1)),
+      }],
+    },
+    {
+      id: 'pj11',
+      projectId: 'p4',
+      title: 'Confirm waterfront setback decision note',
+      description: 'Close the internal decision note on waterfront setbacks, landscape buffer, and public promenade interface.',
+      agencyId: 'ag3',
+      userId: 'u4',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 5)),
+      reminderDaysBefore: 5,
+      note: 'Upcoming decision note is queued for the next inter-agency review meeting.',
+      attachments: [{
+        fileName: 'waterfront-setback-decision-note.docx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -2)),
+      }],
+    },
+    {
+      id: 'pj12',
+      projectId: 'p4',
+      title: 'Resolve convention center access lane revision',
+      description: 'Resolve the revised vehicular access plan for peak event turnover and hotel guest separation.',
+      agencyId: 'ag5',
+      userId: 'u3',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, -2)),
+      reminderDaysBefore: 10,
+      note: 'Delayed while the access-lane alternative is being recalculated.',
+      attachments: [{
+        fileName: 'convention-access-lane-revision.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -9)),
+      }],
+    },
+    {
+      id: 'pj13',
+      projectId: 'p4',
+      title: 'Prepare hospitality operator briefing pack',
+      description: 'Prepare the investor and operator briefing pack covering visitor flow, room mix, and convention phasing.',
+      agencyId: 'ag3',
+      userId: 'u4',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 21)),
+      reminderDaysBefore: 10,
+      note: 'Pack is in processing with the destination marketing team.',
+      attachments: [{
+        fileName: 'hospitality-operator-briefing-pack.pptx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -4)),
+      }],
+    },
+    {
+      id: 'pj14',
+      projectId: 'p5',
+      title: 'Validate clean-room utility assumptions',
+      description: 'Review clean-room utility assumptions, backup power capacity, and early tenant fit-out dependencies.',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 10)),
+      reminderDaysBefore: 10,
+      note: 'Upcoming validation checkpoint is needed before publication readiness review.',
+      attachments: [{
+        fileName: 'clean-room-utility-assumptions.xlsx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -1)),
+      }],
+    },
+    {
+      id: 'pj15',
+      projectId: 'p5',
+      title: 'Compile university partnership note',
+      description: 'Compile the draft partnership note with nearby universities on talent pipeline and joint lab programming.',
+      agencyId: 'ag4',
+      userId: 'u4',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 24)),
+      reminderDaysBefore: 10,
+      note: 'Still processing internally before the project can move beyond draft.',
+      attachments: [{
+        fileName: 'university-partnership-note.docx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -7)),
+      }],
+    },
+    {
+      id: 'pj16',
+      projectId: 'p5',
+      title: 'Finalize startup incubation zoning note',
+      description: 'Define the permitted incubation uses, maker-space allocation, and shared-services zoning note.',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
+      status: 'complete',
+      dueDate: toIsoDate(addDays(today, 14)),
+      reminderDaysBefore: 10,
+      note: 'Zoning note completed to support the next publication package.',
+      attachments: [{
+        fileName: 'startup-incubation-zoning-note.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -2)),
+      }],
+    },
+    {
+      id: 'pj17',
+      projectId: 'p6',
+      title: 'Update cold-chain operating model',
+      description: 'Refresh the operating model for cold storage, inspection points, and same-day regional dispatch.',
+      agencyId: 'ag2',
+      userId: 'u4',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, -8)),
+      reminderDaysBefore: 5,
+      note: 'Delayed after the commodity-volume assumptions changed in the latest draft.',
+      attachments: [{
+        fileName: 'cold-chain-operating-model.xlsx',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -15)),
+      }],
+    },
+    {
+      id: 'pj18',
+      projectId: 'p6',
+      title: 'Prepare agri-export traceability checklist',
+      description: 'Prepare the initial traceability checklist for export readiness, quality control, and packing standards.',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 5)),
+      reminderDaysBefore: 5,
+      note: 'Upcoming checklist release is tied to the next draft intake review.',
+      attachments: [{
+        fileName: 'agri-export-traceability-checklist.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -3)),
+      }],
+    },
+    {
+      id: 'pj19',
+      projectId: 'p6',
+      title: 'Review wastewater pre-treatment concept',
+      description: 'Review the pre-treatment concept for agro-processing discharge before external consultation.',
+      agencyId: 'ag2',
+      userId: 'u4',
+      status: 'incomplete',
+      dueDate: toIsoDate(addDays(today, 17)),
+      reminderDaysBefore: 10,
+      note: 'Concept package is still processing with the technical consultant.',
+      attachments: [{
+        fileName: 'wastewater-pre-treatment-concept.pdf',
+        fileUrl: '',
+        lastUploadDate: toIsoDate(addDays(today, -6)),
       }],
     },
   ];
@@ -430,7 +744,19 @@ function cloneUsers() {
 }
 
 function cloneAgencies() {
-  return baseAgencies.map((agency) => ({ ...agency }));
+  return baseAgencies.map((agency) => ({
+    ...agency,
+    peopleInCharge: agency.peopleInCharge?.map((person) => ({ ...person })),
+  }));
+}
+
+function normalizeProjectRecord<T extends Pick<Project, 'status' | 'stage'> & Partial<Project>>(project: T): T {
+  const normalizedStatus = normalizeProjectStatus(project.status, project.stage);
+  return {
+    ...project,
+    status: normalizedStatus,
+    stage: getProjectStageLabel(normalizedStatus, project.stage),
+  };
 }
 
 const AppContext = createContext<AppContextType>({
@@ -438,6 +764,11 @@ const AppContext = createContext<AppContextType>({
   setRole: () => {},
   language: 'vi',
   setLanguage: () => {},
+  activeUserId: getDefaultActiveUserId(null),
+  setActiveUserId: () => {},
+  activeAgencyId: cloneAgencies()[0]?.id ?? '',
+  setActiveAgencyId: () => {},
+  activeAgency: cloneAgencies()[0] ?? null,
   projects: cloneProjects(),
   opportunities: cloneOpportunities(),
   activeInvestorCompany: 'Korea Infrastructure Partners',
@@ -490,6 +821,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
     const savedLanguage = window.localStorage.getItem('hcminvhub-language');
     return savedLanguage === 'en' || savedLanguage === 'vi' ? savedLanguage : 'vi';
+  });
+  const [activeUserId, setActiveUserId] = useState<string>(() => {
+    return window.localStorage.getItem(ACTIVE_USER_KEY) ?? getDefaultActiveUserId(role);
   });
   const [watchlist, setWatchlist] = useState<string[]>(() => {
     const saved = window.localStorage.getItem(WATCHLIST_KEY);
@@ -558,13 +892,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saved = window.localStorage.getItem(AGENCY_OVERRIDES_KEY);
     return saved ? JSON.parse(saved) : {};
   });
+  const [activeAgencyId, setActiveAgencyId] = useState<string>(() => {
+    return window.localStorage.getItem(ACTIVE_AGENCY_KEY) ?? baseAgencies[0]?.id ?? '';
+  });
   const [requiredDataAssignments, setRequiredDataAssignments] = useState<RequiredDataAssignment[]>(() => {
     const saved = window.localStorage.getItem(REQUIRED_DATA_ASSIGNMENTS_KEY);
-    return saved ? JSON.parse(saved).map(normalizeRequiredDataAssignment) : cloneRequiredDataAssignments();
+    return saved ? JSON.parse(saved).map(normalizeRequiredDataAssignment) : cloneRequiredDataAssignments().map(normalizeRequiredDataAssignment);
   });
   const [projectJobs, setProjectJobs] = useState<ProjectJob[]>(() => {
     const saved = window.localStorage.getItem(PROJECT_JOBS_KEY);
-    return saved ? JSON.parse(saved).map(normalizeProjectJob) : cloneProjectJobs();
+    if (!saved) return cloneProjectJobs().map(normalizeProjectJob);
+    const parsedJobs = JSON.parse(saved).map(normalizeProjectJob);
+    const seedJobs = cloneProjectJobs().map(normalizeProjectJob);
+    const existingIds = new Set(parsedJobs.map((item) => item.id));
+    return [...parsedJobs, ...seedJobs.filter((item) => !existingIds.has(item.id))];
   });
   const [notifications, setNotifications] = useState<Notification[]>(getLocalizedNotifications('vi'));
 
@@ -589,18 +930,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const projects = useMemo(() => {
     return [
       ...localizedData.projects.map((project) => ({
-        ...project,
+        ...normalizeProjectRecord(project),
         highlights: [...project.highlights],
         documents: project.documents.map((document) => ({ ...document })),
         qa: project.qa.map((item) => ({ ...item })),
         milestones: project.milestones.map((milestone) => ({ ...milestone })),
       })),
-      ...projectAdditions,
+      ...projectAdditions.map((project) => normalizeProjectRecord(project)),
     ].map((project) => {
-      const mergedProject = {
+      const mergedProject = normalizeProjectRecord({
         ...project,
         ...(projectOverrides[project.id] ?? {}),
-      };
+      });
       return {
         ...mergedProject,
         dataCompleteness: getProjectDataCompletenessSummary(mergedProject.id).percentage,
@@ -658,11 +999,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [localizedData.users, userAdditions, userOverrides]);
 
   const agencies = useMemo(() => {
-    return [...localizedData.agencies.map((agency) => ({ ...agency })), ...agencyAdditions].map((agency) => ({
+    return [...localizedData.agencies.map((agency) => ({
+      ...agency,
+      peopleInCharge: agency.peopleInCharge?.map((person) => ({ ...person })),
+    })), ...agencyAdditions].map((agency) => ({
       ...agency,
       ...(agencyOverrides[agency.id] ?? {}),
+      peopleInCharge: (agencyOverrides[agency.id]?.peopleInCharge as typeof agency.peopleInCharge | undefined)
+        ?? agency.peopleInCharge?.map((person) => ({ ...person })),
     }));
   }, [localizedData.agencies, agencyAdditions, agencyOverrides]);
+
+  const activeAgency = useMemo(() => {
+    return agencies.find((agency) => agency.id === activeAgencyId) ?? agencies[0] ?? null;
+  }, [activeAgencyId, agencies]);
+
+  const availableRoleUserIds = useMemo(() => {
+    if (role === 'gov_operator') {
+      return Array.from(new Set(projectJobs.map((job) => `${job.agencyId}:${job.userId}`)));
+    }
+    if (role === 'agency') {
+      return activeAgency?.peopleInCharge?.map((person) => `${activeAgency.id}:${person.id}`) ?? [];
+    }
+    return [getDemoUserIdForRole(role)];
+  }, [activeAgency, projectJobs, role]);
 
   const generatedRequiredDataNotifications = useMemo(() => {
     return requiredDataAssignments.flatMap((assignment) => {
@@ -673,7 +1033,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const owner = users.find((item) => item.id === assignment.userId);
       const agency = agencies.find((item) => item.id === assignment.agencyId);
       const project = projects.find((item) => item.id === assignment.projectId);
-      const path = `/gov/projects/${assignment.projectId}/edit?focus=data-quality`;
+      const path = `${getProjectWorkspaceBasePath(role)}/${assignment.projectId}/edit?focus=data-quality`;
 
       if (alert.type === 'overdue') {
         return [{
@@ -734,6 +1094,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     window.localStorage.setItem(ACTIVE_INVESTOR_KEY, activeInvestorCompany);
   }, [activeInvestorCompany]);
+
+  useEffect(() => {
+    if (!activeAgencyId || !agencies.some((agency) => agency.id === activeAgencyId)) {
+      const fallbackAgencyId = agencies[0]?.id ?? '';
+      if (fallbackAgencyId && fallbackAgencyId !== activeAgencyId) {
+        setActiveAgencyId(fallbackAgencyId);
+      }
+    }
+  }, [activeAgencyId, agencies]);
+
+  useEffect(() => {
+    if (activeAgencyId) {
+      window.localStorage.setItem(ACTIVE_AGENCY_KEY, activeAgencyId);
+      return;
+    }
+    window.localStorage.removeItem(ACTIVE_AGENCY_KEY);
+  }, [activeAgencyId]);
+
+  useEffect(() => {
+    const fallbackUserId = getDefaultActiveUserId(role, activeAgency);
+    if (!activeUserId || !availableRoleUserIds.includes(activeUserId)) {
+      const migratedUserId = availableRoleUserIds.find((item) => item.endsWith(`:${activeUserId}`));
+      const nextUserId = migratedUserId ?? availableRoleUserIds[0] ?? fallbackUserId;
+      if (nextUserId && nextUserId !== activeUserId) {
+        setActiveUserId(nextUserId);
+      }
+    }
+  }, [activeAgency, activeUserId, availableRoleUserIds, role]);
+
+  useEffect(() => {
+    if (activeUserId) {
+      window.localStorage.setItem(ACTIVE_USER_KEY, activeUserId);
+      return;
+    }
+    window.localStorage.removeItem(ACTIVE_USER_KEY);
+  }, [activeUserId]);
 
   useEffect(() => {
     window.localStorage.setItem(PROJECT_ADDITIONS_KEY, JSON.stringify(projectAdditions));
@@ -829,34 +1225,49 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const createProject: AppContextType['createProject'] = (project) => {
     const projectId = `p${Date.now()}`;
-      const createdProject: Project = {
-        id: projectId,
-        followers: 0,
-        dataCompleteness: 0,
-        highlights: project.highlights ?? [],
-        documents: [],
-        qa: [],
-        milestones: [],
+    const createdProject: Project = normalizeProjectRecord({
+      id: projectId,
+      createdByUserId: getDemoUserIdForRole(role),
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+      followers: 0,
+      dataCompleteness: 0,
+      highlights: project.highlights ?? [],
+      documents: [],
+      qa: [],
+      milestones: [],
       image: project.image ?? 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
       sector_tag_color: project.sector_tag_color ?? 'bg-sky-100 text-sky-700',
       ...project,
-    };
+    });
     setProjectAdditions((current) => [...current, createdProject]);
     addNotification({
       title: 'Project Draft Created',
       message: `${createdProject.name} has been added as a draft project.`,
       type: 'info',
-      path: `/gov/projects/${createdProject.id}/edit`,
+      path: `${getProjectWorkspaceBasePath(role)}/${createdProject.id}/edit`,
     });
     return projectId;
   };
 
   const updateProject: AppContextType['updateProject'] = (projectId, changes) => {
+    const normalizedChanges =
+      'status' in changes || 'stage' in changes
+        ? normalizeProjectRecord({
+            status: String(changes.status ?? ''),
+            stage: String(changes.stage ?? ''),
+            updatedAt: new Date().toISOString().split('T')[0],
+            ...changes,
+          })
+        : {
+            ...changes,
+            updatedAt: new Date().toISOString().split('T')[0],
+          };
     setProjectOverrides((current) => ({
       ...current,
       [projectId]: {
         ...(current[projectId] ?? {}),
-        ...changes,
+        ...normalizedChanges,
       },
     }));
   };
@@ -865,7 +1276,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const project = projects.find((item) => item.id === projectId);
     updateProject(projectId, {
       status: 'published',
-      stage: 'Open for Investment',
+      stage: 'Published',
       publishedAt: new Date().toISOString().split('T')[0],
     });
     if (project) {
@@ -873,7 +1284,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'Project Published',
         message: `${project.name} is now visible in the explorer.`,
         type: 'success',
-        path: `/gov/projects/${project.id}`,
+        path: `${getProjectWorkspaceBasePath(role)}/${project.id}`,
       });
     }
   };
@@ -901,7 +1312,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       title: 'New Opportunity',
       message: `${createdOpportunity.investorCompany} submitted an intake for ${createdOpportunity.projectName}.`,
       type: 'info',
-      path: `/gov/opportunities/${createdOpportunity.id}`,
+      path: `${getOpportunityWorkspaceBasePath(role)}/${createdOpportunity.id}`,
     });
     return opportunityId;
   };
@@ -1125,7 +1536,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       title: 'Required Data Assignment Created',
       message: `${assignment.fieldName} was assigned to ${user?.name ?? 'owner'} in ${agency?.shortName ?? 'agency'}.`,
       type: 'info',
-      path: `/gov/projects/${assignment.projectId}/edit?focus=data-quality`,
+      path: `${getProjectWorkspaceBasePath(role)}/${assignment.projectId}/edit?focus=data-quality`,
     });
     return id;
   };
@@ -1140,7 +1551,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'Required Data Assignment Updated',
         message: `${existingAssignment.fieldName} moved to ${String(changes.status).replace('_', ' ')}.`,
         type: changes.status === 'complete' ? 'success' : 'info',
-        path: `/gov/projects/${existingAssignment.projectId}/edit?focus=data-quality`,
+        path: `${getProjectWorkspaceBasePath(role)}/${existingAssignment.projectId}/edit?focus=data-quality`,
       });
     }
   };
@@ -1162,7 +1573,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       title: 'Project Job Created',
       message: `${job.title} was assigned to ${user?.name ?? 'owner'} in ${agency?.shortName ?? 'agency'}.`,
       type: 'info',
-      path: `/gov/projects/${job.projectId}/edit`,
+      path: `${getProjectWorkspaceBasePath(role)}/${job.projectId}/edit`,
     });
     return id;
   };
@@ -1177,7 +1588,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'Project Job Updated',
         message: `${existingJob.title} moved to ${String(changes.status).replace('_', ' ')}.`,
         type: changes.status === 'complete' ? 'success' : 'info',
-        path: `/gov/projects/${existingJob.projectId}/edit`,
+        path: `${getProjectWorkspaceBasePath(role)}/${existingJob.projectId}/edit`,
       });
     }
   };
@@ -1200,6 +1611,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setRole,
         language,
         setLanguage,
+        activeUserId,
+        setActiveUserId,
+        activeAgencyId,
+        setActiveAgencyId,
+        activeAgency,
         projects,
         opportunities,
         activeInvestorCompany,

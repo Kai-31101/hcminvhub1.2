@@ -3,10 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useApp, UserRole } from '../context/AppContext';
 import { translateText } from '../utils/localization';
 import {
-  LayoutDashboard, Search, Briefcase, FileText, ClipboardList, CheckSquare,
+  LayoutDashboard, Search, FileText, ClipboardList,
   Settings, Users, Building2, Bell, ChevronDown, LogOut, Menu, X,
-  FolderOpen, BarChart3, Wrench, Shield, TrendingUp, MapPin, Package,
-  HardHat, AlertTriangle, Milestone, Globe, ChevronRight,
+  FolderOpen, BarChart3, Wrench, Shield, MapPin, Package,
+  HardHat, Milestone, Globe, ChevronRight,
   Home, Activity,
 } from 'lucide-react';
 
@@ -22,28 +22,19 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
     label: 'Investor Portal',
     items: [
       { label: 'Project Explorer', path: '/investor/explorer', icon: <Search size={18} /> },
-      { label: 'My Opportunities', path: '/investor/opportunities', icon: <Briefcase size={18} /> },
       { label: 'Execution Workspace', path: '/investor/execution', icon: <Activity size={18} /> },
-      { label: 'B2G Services', path: '/investor/services', icon: <Globe size={18} /> },
-      { label: 'Support', path: '/investor/support', icon: <AlertTriangle size={18} /> },
     ],
   },
   gov_operator: {
-    label: 'Government Portal',
+    label: 'Project Management Authority',
     items: [
       { label: 'Project Management', path: '/gov/projects', icon: <FolderOpen size={18} /> },
-      { label: 'Data Quality', path: '/gov/data-quality', icon: <CheckSquare size={18} /> },
-      { label: 'Opportunity Pipeline', path: '/gov/opportunities', icon: <TrendingUp size={18} /> },
-      { label: 'Execution Monitor', path: '/gov/execution', icon: <BarChart3 size={18} /> },
     ],
   },
   agency: {
-    label: 'Agency Portal',
+    label: 'ITPC Portal',
     items: [
-      { label: 'Permit Tracker', path: '/agency/permits', icon: <HardHat size={18} /> },
-      { label: 'Issue Management', path: '/agency/issues', icon: <AlertTriangle size={18} /> },
-      { label: 'Milestone Tracking', path: '/agency/milestones', icon: <Milestone size={18} /> },
-      { label: 'Service Workflow', path: '/agency/service-workflow', icon: <Package size={18} /> },
+      { label: 'Project Management', path: '/agency/projects', icon: <FolderOpen size={18} /> },
     ],
   },
   admin: {
@@ -66,15 +57,15 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
 const roleInfo: Record<UserRole, { name: string; org: string; avatar: string; color: string }> = {
   investor: { name: 'Kim Jae-won', org: 'Korea Infrastructure Partners', avatar: 'KJ', color: 'bg-amber-500' },
   gov_operator: { name: 'Nguyen Van Anh', org: 'Ministry of Planning & Investment', avatar: 'NA', color: 'bg-blue-600' },
-  agency: { name: 'Le Van Cuong', org: 'Department of Planning and Investment, Ho Chi Minh City', avatar: 'LC', color: 'bg-green-600' },
+  agency: { name: 'Pham Gia Huy', org: 'Department of Planning and Investment', avatar: 'PG', color: 'bg-green-600' },
   admin: { name: 'System Admin', org: 'Ministry of Planning & Investment', avatar: 'SA', color: 'bg-purple-600' },
   executive: { name: 'Hoang Minh Duc', org: 'Ministry of Planning & Investment', avatar: 'HD', color: 'bg-red-600' },
 };
 
 const brandSubtitle: Record<UserRole, string> = {
   investor: 'Investor Portal',
-  gov_operator: 'Government Portal',
-  agency: 'Agency Portal',
+  gov_operator: 'Project Management Authority',
+  agency: 'ITPC Portal',
   admin: 'Admin Console',
   executive: 'Executive View',
 };
@@ -82,13 +73,13 @@ const brandSubtitle: Record<UserRole, string> = {
 const roleHomeRoute: Record<UserRole, string> = {
   investor: '/investor/explorer',
   gov_operator: '/gov/projects',
-  agency: '/agency/permits',
+  agency: '/agency/projects',
   admin: '/admin/roles',
   executive: '/executive/dashboard',
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { role, setRole, language, setLanguage, notifications, unreadCount, markNotificationRead, resetDemoData } = useApp();
+  const { role, setRole, language, setLanguage, notifications, unreadCount, markNotificationRead, resetDemoData, projects, agencies, activeAgency, activeUserId, setActiveUserId, setActiveAgencyId, projectJobs, users } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -99,8 +90,58 @@ export function Layout({ children }: { children: React.ReactNode }) {
   if (!role) return null;
 
   const nav = navConfig[role];
-  const user = roleInfo[role];
   const t = (value: string) => translateText(value, language);
+  const primaryProjectAssignmentKeys = Array.from(
+    new Set(
+      projects
+        .map((project) => {
+          const projectJobItems = projectJobs.filter((job) => job.projectId === project.id);
+          const primaryJob = projectJobItems.find((job) => job.status !== 'complete') ?? projectJobItems[0];
+          return primaryJob ? `${primaryJob.agencyId}:${primaryJob.userId}` : null;
+        })
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+  const availableUserOptions = role === 'gov_operator'
+    ? primaryProjectAssignmentKeys
+        .map((assignmentKey) => {
+          const [agencyId, userId] = assignmentKey.split(':');
+          const agency = agencies.find((item) => item.id === agencyId || item.peopleInCharge?.some((person) => person.id === userId));
+          const person = agency?.peopleInCharge?.find((item) => item.id === userId);
+          const fallbackUser = users.find((item) => item.id === userId);
+          const displayName = person?.name ?? fallbackUser?.name ?? userId;
+          const organization = agency?.name ?? fallbackUser?.organization ?? '';
+
+          return {
+            id: assignmentKey,
+            name: displayName,
+            org: organization,
+            avatar: displayName
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0]?.toUpperCase() ?? '')
+              .join(''),
+            color: 'bg-blue-600',
+          };
+        })
+        .filter((option) => option.org || option.name)
+    : role === 'agency' && activeAgency
+      ? (activeAgency.peopleInCharge ?? []).map((person) => ({
+          id: `${activeAgency.id}:${person.id}`,
+          name: person.name,
+          org: activeAgency.name,
+          avatar: person.name
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase() ?? '')
+            .join(''),
+          color: 'bg-green-600',
+        }))
+      : [];
+  const selectedRoleUser = availableUserOptions.find((item) => item.id === activeUserId);
+  const user = selectedRoleUser ?? roleInfo[role];
 
   const handleLogout = () => {
     setRole(null);
@@ -132,6 +173,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleSwitchAgency = (agencyId: string) => {
+    setActiveAgencyId(agencyId);
+    setShowUserMenu(false);
+  };
+
+  const handleSwitchUser = (userId: string) => {
+    setActiveUserId(userId);
+    setShowUserMenu(false);
+  };
+
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
     <div className={`flex flex-col h-full ${mobile ? 'w-full' : ''}`}>
       {/* Logo */}
@@ -145,15 +196,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Globe size={16} className="text-[#0B2447]" />
           </div>
           <div>
-            <div className="text-white text-sm font-semibold leading-tight">{t('Vietnam Investment Agency')}</div>
-            <div className="text-blue-300 text-xs">{t(brandSubtitle[role])}</div>
+            <div className="text-white text-sm font-semibold leading-tight">{t(nav.label)}</div>
+            <div className="text-blue-300 text-xs">{t(user.org)}</div>
           </div>
         </button>
-      </div>
-
-      {/* Role label */}
-      <div className="px-6 py-3">
-        <div className="text-blue-300 text-xs uppercase tracking-wider font-medium">{t(nav.label)}</div>
       </div>
 
       {/* Nav items */}
@@ -240,15 +286,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Menu size={22} />
           </button>
 
-          {/* Breadcrumb */}
+          {/* Header title */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Home size={14} />
-              <ChevronRight size={12} />
-              <span className="text-gray-800 font-medium truncate">
-                {t(nav.items.find(i => location.pathname.startsWith(i.path))?.label || nav.label)}
-              </span>
-            </div>
+            <h1 className="truncate text-base font-semibold text-gray-900">{t(nav.label)}</h1>
+            <h2 className="truncate text-sm font-medium text-gray-500">{t(user.org)}</h2>
           </div>
 
           {/* Right actions */}
@@ -369,25 +410,84 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* User menu */}
             <div className="relative">
               <button
-                onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); }}
+                onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); setShowEnvironmentMenu(false); }}
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className={`w-7 h-7 ${user.color} rounded-full flex items-center justify-center text-white text-xs font-semibold`}>
                   {user.avatar}
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">{user.name}</span>
+                <div className="hidden sm:block max-w-[180px] text-left">
+                  <div className="truncate text-sm font-medium text-gray-700">{user.name}</div>
+                  <div className="truncate text-xs text-gray-500">{t(user.org)}</div>
+                </div>
                 <ChevronDown size={14} className="text-gray-400" />
               </button>
 
               {showUserMenu && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200 z-[70] py-1"
+                  className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-[70] py-1"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="px-4 py-2 border-b border-gray-100">
                     <div className="text-sm font-medium text-gray-800">{user.name}</div>
                     <div className="text-xs text-gray-500">{t(user.org)}</div>
                   </div>
+                  {availableUserOptions.length > 0 && (
+                    <div className="border-b border-gray-100 py-1">
+                      <div className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
+                        {t('Switch User')}
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {availableUserOptions.map((option) => {
+                          const isCurrentUser = option.id === activeUserId;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => handleSwitchUser(option.id)}
+                              className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                                isCurrentUser ? 'bg-blue-50 text-[#0B2447]' : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="truncate font-medium">{option.name}</div>
+                                <div className="truncate text-xs text-gray-500">{option.org}</div>
+                              </div>
+                              {isCurrentUser && <span className="shrink-0 text-xs font-semibold text-blue-700">{t('Current')}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {role === 'agency' && (
+                    <div className="border-b border-gray-100 py-1">
+                      <div className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
+                        {t('Switch Agency')}
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {agencies.filter((agency) => agency.status === 'active').map((agency) => {
+                          const isCurrentAgency = agency.id === activeAgency?.id;
+                          return (
+                            <button
+                              key={agency.id}
+                              type="button"
+                              onClick={() => handleSwitchAgency(agency.id)}
+                              className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                                isCurrentAgency ? 'bg-blue-50 text-[#0B2447]' : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="truncate font-medium">{agency.name}</div>
+                                <div className="truncate text-xs text-gray-500">{agency.contactPerson}</div>
+                              </div>
+                              {isCurrentAgency && <span className="shrink-0 text-xs font-semibold text-blue-700">{t('Current')}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <button
                     onClick={() => {
                       setShowUserMenu(false);

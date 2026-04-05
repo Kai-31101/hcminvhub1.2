@@ -3,11 +3,13 @@ import { FileText, Search, Send } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { UrgencyBadge } from '../../components/ui/urgency-badge';
 
 const mockToday = new Date('2024-03-20');
+const DEFAULT_LIST_COUNT = 6;
 
 function daysUntil(deadline: string) {
   const dueDate = new Date(deadline);
@@ -36,6 +38,8 @@ export default function ServiceWorkflowPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editStatus, setEditStatus] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [showAllEscalations, setShowAllEscalations] = useState(false);
+  const [showAllRequests, setShowAllRequests] = useState(false);
   const highlightedId = searchParams.get('highlight');
   const requests = serviceRequests;
   const t = (value: string) => translateText(value, language);
@@ -57,6 +61,8 @@ export default function ServiceWorkflowPage() {
   const escalations = filteredRequests
     .filter((request) => request.slaStatus === 'at_risk' || request.slaStatus === 'breached' || request.status === 'info_required')
     .sort((left, right) => daysUntil(left.deadline) - daysUntil(right.deadline));
+  const visibleEscalations = showAllEscalations ? escalations : escalations.slice(0, 4);
+  const visibleRequests = showAllRequests ? filteredRequests : filteredRequests.slice(0, DEFAULT_LIST_COUNT);
 
   function handleSave(id: string) {
     updateServiceRequest(id, {
@@ -86,7 +92,7 @@ export default function ServiceWorkflowPage() {
           <StatusPill tone="danger">{escalations.length} {t('action items')}</StatusPill>
         </div>
         <div className="space-y-3">
-          {escalations.slice(0, 4).map((request) => (
+          {visibleEscalations.map((request) => (
             <DataRow key={request.id} className="border-red-200 bg-white">
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-slate-900">{request.serviceName}</div>
@@ -103,6 +109,9 @@ export default function ServiceWorkflowPage() {
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               {t('No service requests currently need escalation.')}
             </div>
+          )}
+          {!showAllEscalations && escalations.length > 4 && (
+            <SeeAllButton label={t('See All')} onClick={() => setShowAllEscalations(true)} />
           )}
         </div>
       </section>
@@ -150,7 +159,7 @@ export default function ServiceWorkflowPage() {
           <StatusPill tone="info">{filteredRequests.length} {t('visible')}</StatusPill>
         </div>
         <div className="space-y-3">
-          {filteredRequests.map((request) => {
+          {visibleRequests.map((request) => {
             const isEditing = editId === request.id;
 
             return (
@@ -237,6 +246,9 @@ export default function ServiceWorkflowPage() {
             <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
               {t('No service requests match the current filters.')}
             </div>
+          )}
+          {!showAllRequests && filteredRequests.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label={t('See All')} onClick={() => setShowAllRequests(true)} />
           )}
         </div>
       </section>

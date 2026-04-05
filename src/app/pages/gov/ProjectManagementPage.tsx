@@ -1,66 +1,185 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Plus, Search, Edit, Eye, Globe } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { ProjectCard } from '../../components/ProjectCard';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { StatusPill } from '../../components/ui/status-pill';
-import { CompletionMeter } from '../../components/ui/completion-meter';
-import { DataRow } from '../../components/ui/data-row';
 import { translateText } from '../../utils/localization';
+import { PROJECT_STAGE_OPTIONS } from '../../utils/projectStatus';
 
-const statusTone: Record<string, 'success' | 'warning' | 'default' | 'info'> = {
-  published: 'success',
-  review: 'warning',
-  draft: 'default',
-  execution: 'info',
-};
-
-const statusLabel: Record<string, string> = {
-  published: 'Published',
-  review: 'Under Review',
-  draft: 'Draft',
-  execution: 'In Execution',
-};
+type ProjectJobFilter = 'all' | 'pending' | 'delayed' | 'upcoming';
+const DEFAULT_LIST_COUNT = 6;
 
 export default function ProjectManagementPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projects, createProject, publishProject, requiredDataAssignments, getProjectDataCompletenessSummary, projectJobs, getProjectProcessingSummary, language } = useApp();
+  const { projects, agencies, users, createProject, publishProject, requiredDataAssignments, getProjectDataCompletenessSummary, projectJobs, getProjectProcessingSummary, language, role, activeUserId } = useApp();
   const t = (value: string) => translateText(value, language);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const isDataQualityRoute = location.pathname === '/gov/data-quality';
+  const [projectJobFilter, setProjectJobFilter] = useState<ProjectJobFilter>('all');
+  const [selectedAgencyIds, setSelectedAgencyIds] = useState<string[]>([]);
+  const [showAllProjects, setShowAllProjects] = useState(false);
+  const workspaceBasePath = role === 'agency' ? '/agency' : '/gov';
+  const canManageProjects = role !== 'agency';
+  const visibleProjects = useMemo(() => {
+    if (role === 'gov_operator') {
+      return projects.filter((project) => {
+        const projectJobItems = projectJobs.filter((job) => job.projectId === project.id);
+        const primaryJob = projectJobItems.find((job) => job.status !== 'complete') ?? projectJobItems[0];
+        return primaryJob ? `${primaryJob.agencyId}:${primaryJob.userId}` === activeUserId : false;
+      });
+    }
+    return projects;
+  }, [activeUserId, projectJobs, projects, role]);
 
-  const filtered = useMemo(() => projects.filter((project) => {
-    const matchSearch = !search || project.name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || project.status === statusFilter;
-    return matchSearch && matchStatus;
-  }), [projects, search, statusFilter]);
-
-  const lowQualityProjects = projects.filter((project) => {
-    const projectAssignments = requiredDataAssignments.filter((item) => item.projectId === project.id);
-    const hasOwnershipGap = projectAssignments.length === 0 || projectAssignments.some((item) => !item.agencyId || !item.userId || item.status !== 'complete');
-    const processingGap = projectJobs.filter((item) => item.projectId === project.id).some((item) => item.status !== 'complete');
-    return project.dataCompleteness < 80 || hasOwnershipGap || processingGap;
-  });
-
-  function getAssignmentDeadlineSummary(projectId: string) {
+  function getProjectJobAlertSummary(projectId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const assignments = requiredDataAssignments.filter((item) => item.projectId === projectId);
-    let overdue = 0;
-    let dueSoon = 0;
+    const jobs = projectJobs.filter((item) => item.projectId === projectId);
+    let pending = 0;
+    let delayed = 0;
+    let upcoming = 0;
 
-    assignments.forEach((assignment) => {
-      if (assignment.status === 'complete') return;
-      const dueDate = new Date(assignment.dueDate);
+    jobs.forEach((job) => {
+      if (job.status === 'complete') return;
+      pending += 1;
+      const dueDate = new Date(job.dueDate);
       dueDate.setHours(0, 0, 0, 0);
       const daysUntilDue = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysUntilDue < 0) overdue += 1;
-      if (daysUntilDue === 5 || daysUntilDue === 10) dueSoon += 1;
+      if (daysUntilDue < 0) delayed += 1;
+      if (daysUntilDue === 5 || daysUntilDue === 10) upcoming += 1;
     });
 
-    return { overdue, dueSoon };
+    return { pending, delayed, upcoming, total: jobs.length };
   }
+
+  const projectJobAlertMap = useMemo(
+    () =>
+      Object.fromEntries(
+        visibleProjects.map((project) => [project.id, getProjectJobAlertSummary(project.id)]),
+      ),
+    [projectJobs, visibleProjects],
+  );
+
+  const projectAssignmentMap = useMemo(
+    () =>
+      Object.fromEntries(
+        visibleProjects.map((project) => {
+          const projectJobItems = projectJobs.filter((item) => item.projectId === project.id);
+          const primaryJob = projectJobItems.find((item) => item.status !== 'complete') ?? projectJobItems[0];
+
+          if (!primaryJob) {
+            return [project.id, undefined];
+          }
+
+          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
+          const personInCharge = agency?.peopleInCharge?.find((person) => person.id === primaryJob.userId);
+          const user = users.find((item) => item.id === primaryJob.userId);
+
+          return [
+            project.id,
+            {
+              agencyId: agency?.id ?? '',
+              agency: agency?.shortName ?? agency?.name ?? '-',
+              agencyFullName: agency?.name ?? agency?.shortName ?? '-',
+              person: personInCharge?.name ?? user?.name ?? '-',
+            },
+          ];
+        }),
+      ),
+    [agencies, projectJobs, users, visibleProjects],
+  );
+
+  const projectAuditMap = useMemo(
+    () =>
+      Object.fromEntries(
+        visibleProjects.map((project) => {
+          const createdByUser = users.find((item) => item.id === project.createdByUserId);
+          return [
+            project.id,
+            {
+              createdBy: createdByUser?.name ?? '-',
+              createdAt: project.createdAt ?? project.publishedAt ?? '-',
+              updatedAt: project.updatedAt ?? project.createdAt ?? project.publishedAt ?? '-',
+            },
+          ];
+        }),
+      ),
+    [users, visibleProjects],
+  );
+
+  const assignmentAgencyOptions = useMemo(
+    () =>
+      visibleProjects
+        .map((project) => projectAssignmentMap[project.id])
+        .filter((item): item is NonNullable<typeof item> => Boolean(item?.agencyId))
+        .reduce<Array<{ id: string; label: string; fullName: string }>>((accumulator, item) => {
+          if (accumulator.some((option) => option.id === item.agencyId)) {
+            return accumulator;
+          }
+          return [
+            ...accumulator,
+            {
+              id: item.agencyId,
+              label: item.agency,
+              fullName: item.agencyFullName ?? item.agency,
+            },
+          ];
+        }, [])
+        .sort((left, right) => left.label.localeCompare(right.label)),
+    [projectAssignmentMap, visibleProjects],
+  );
+
+  const filtered = useMemo(() => visibleProjects.filter((project) => {
+    const matchSearch = !search || project.name.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'all' || project.status === statusFilter;
+    const assignmentSummary = projectAssignmentMap[project.id];
+    const matchAgency =
+      selectedAgencyIds.length === 0
+        ? true
+        : Boolean(assignmentSummary?.agencyId && selectedAgencyIds.includes(assignmentSummary.agencyId));
+    const jobAlertSummary = projectJobAlertMap[project.id] ?? { pending: 0, delayed: 0, upcoming: 0 };
+    const matchProjectJobFilter =
+      projectJobFilter === 'all'
+        ? true
+        : projectJobFilter === 'pending'
+          ? jobAlertSummary.pending > 0
+          : projectJobFilter === 'delayed'
+            ? jobAlertSummary.delayed > 0
+            : jobAlertSummary.upcoming > 0;
+    return matchSearch && matchStatus && matchAgency && matchProjectJobFilter;
+  }), [projectAssignmentMap, projectJobAlertMap, projectJobFilter, selectedAgencyIds, visibleProjects, search, statusFilter]);
+
+  const toggleAgencyFilter = (agencyId: string) => {
+    setSelectedAgencyIds((current) =>
+      current.includes(agencyId) ? current.filter((item) => item !== agencyId) : [...current, agencyId],
+    );
+  };
+
+  const projectJobFilterCards = [
+    { id: 'all' as const, label: t('All Projects'), value: visibleProjects.length, tone: 'text-slate-900' },
+    {
+      id: 'pending' as const,
+      label: t('Processing Jobs'),
+      value: visibleProjects.filter((project) => (projectJobAlertMap[project.id]?.pending ?? 0) > 0).length,
+      tone: 'text-slate-700',
+    },
+    {
+      id: 'delayed' as const,
+      label: t('Delayed Jobs'),
+      value: visibleProjects.filter((project) => (projectJobAlertMap[project.id]?.delayed ?? 0) > 0).length,
+      tone: 'text-red-700',
+    },
+    {
+      id: 'upcoming' as const,
+      label: t('Upcoming Alerts'),
+      value: visibleProjects.filter((project) => (projectJobAlertMap[project.id]?.upcoming ?? 0) > 0).length,
+      tone: 'text-amber-700',
+    },
+  ];
+  const visibleFilteredProjects = showAllProjects ? filtered : filtered.slice(0, DEFAULT_LIST_COUNT);
 
   const handleCreateProject = () => {
     const projectId = createProject({
@@ -78,7 +197,7 @@ export default function ProjectManagementPage() {
       returnRate: 'TBD',
       jobs: 0,
     });
-    navigate(`/gov/projects/${projectId}/edit`);
+    navigate(`${workspaceBasePath}/projects/${projectId}/edit`);
   };
 
   return (
@@ -88,21 +207,25 @@ export default function ProjectManagementPage() {
           <h1 className="section-heading">{t('Project Management')}</h1>
           <p className="section-subheading">{t('Standardize project onboarding, monitor publish readiness, and enforce minimum dataset quality.')}</p>
         </div>
-        <button
-          onClick={handleCreateProject}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]"
-        >
-          <Plus size={16} />
-          {t('Create Project')}
-        </button>
+        {canManageProjects && (
+          <button
+            onClick={handleCreateProject}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]"
+          >
+            <Plus size={16} />
+            {t('Create Project')}
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
         {[
-          { label: t('Total Projects'), value: projects.length, tone: 'text-sky-700' },
-          { label: t('Published'), value: projects.filter((project) => project.status === 'published').length, tone: 'text-emerald-700' },
-          { label: t('Under Review'), value: projects.filter((project) => project.status === 'review').length, tone: 'text-amber-700' },
-          { label: t('Draft'), value: projects.filter((project) => project.status === 'draft').length, tone: 'text-slate-700' },
+          { label: t('All'), value: visibleProjects.length, tone: 'text-slate-900' },
+          { label: t('Draft'), value: visibleProjects.filter((project) => project.status === 'draft').length, tone: 'text-slate-700' },
+          { label: t('Published'), value: visibleProjects.filter((project) => project.status === 'published').length, tone: 'text-amber-700' },
+          { label: t('Processing'), value: visibleProjects.filter((project) => project.status === 'processing').length, tone: 'text-sky-700' },
+          { label: t('Completed'), value: visibleProjects.filter((project) => project.status === 'completed').length, tone: 'text-emerald-700' },
+          { label: t('Cancelled'), value: visibleProjects.filter((project) => project.status === 'cancelled').length, tone: 'text-red-700' },
         ].map((metric) => (
           <div key={metric.label} className="kpi-tile">
             <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>{metric.value}</div>
@@ -111,57 +234,30 @@ export default function ProjectManagementPage() {
         ))}
       </div>
 
-      {isDataQualityRoute ? (
-        <div className="space-y-3">
-          <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-            <strong>{t('Data Governance')}:</strong> {t('Projects must achieve at least 80% completeness and have accountable ownership before publishing.')}
-          </div>
-          {projects.map((project) => (
-            <Link key={project.id} to={`/gov/projects/${project.id}/edit?focus=data-quality`} className="block">
-              <DataRow className={project.dataCompleteness < 80 ? 'border-amber-200' : ''}>
-                {(() => {
-                  const projectAssignments = requiredDataAssignments.filter((item) => item.projectId === project.id);
-                  const completedAssignments = getProjectDataCompletenessSummary(project.id).completed;
-                  const processingSummary = getProjectProcessingSummary(project.id);
-                  const projectJobCount = projectJobs.filter((item) => item.projectId === project.id).length;
-                  const ownerCoverage = projectAssignments.filter((item) => item.agencyId && item.userId).length;
-                  const deadlineSummary = getAssignmentDeadlineSummary(project.id);
-                  return (
-                    <>
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <div className="text-sm font-semibold text-slate-900">{project.name}</div>
-                          <StatusPill tone={statusTone[project.status]}>{t(statusLabel[project.status])}</StatusPill>
-                          {project.dataCompleteness < 80 && <StatusPill tone="warning">{t('Below threshold')}</StatusPill>}
-                          {projectAssignments.length === 0 && <StatusPill tone="warning">{t('No ownership matrix')}</StatusPill>}
-                          {deadlineSummary.dueSoon > 0 && <StatusPill tone="warning">{deadlineSummary.dueSoon} {t('Due soon')}</StatusPill>}
-                          {deadlineSummary.overdue > 0 && <StatusPill tone="danger">{deadlineSummary.overdue} {t('Overdue')}</StatusPill>}
-                        </div>
-                        <div className="text-xs text-slate-500">{project.province}</div>
-                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
-                          <span>{t('Required data items')}: {projectAssignments.length}</span>
-                          <span>{t('Owned items')}: {ownerCoverage}</span>
-                          <span>{t('Completed items')}: {completedAssignments}/{projectAssignments.length}</span>
-                          <span>{t('Project jobs')}: {processingSummary.completed}/{projectJobCount}</span>
-                          <span>{t('Overdue items')}: {deadlineSummary.overdue}</span>
-                        </div>
-                      </div>
-                      <div className="w-full max-w-44">
-                        <CompletionMeter value={project.dataCompleteness} />
-                      </div>
-                      <div className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                        <Edit size={12} />
-                        {t('Fix Missing Data')}
-                      </div>
-                    </>
-                  );
-                })()}
-              </DataRow>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <>
+      <>
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Job Alerts')}</h2>
+              <div className="text-xs text-slate-500">{t('Click a KPI card to filter the project list')}</div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {projectJobFilterCards.map((metric) => {
+                const isActive = projectJobFilter === metric.id;
+                return (
+                  <button
+                    key={metric.id}
+                    type="button"
+                    onClick={() => setProjectJobFilter(metric.id)}
+                    className={`kpi-tile text-left transition-all ${isActive ? 'ring-2 ring-primary shadow-md' : 'hover:border-slate-300 hover:shadow-sm'}`}
+                  >
+                    <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>{metric.value}</div>
+                    <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{metric.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="filter-bar flex flex-col gap-3 lg:flex-row">
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -174,87 +270,82 @@ export default function ProjectManagementPage() {
             </div>
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="app-input w-auto min-w-44">
               <option value="all">{t('All Statuses')}</option>
-              <option value="published">{t('Published')}</option>
-              <option value="review">{t('Under Review')}</option>
-              <option value="draft">{t('Draft')}</option>
-              <option value="execution">{t('In Execution')}</option>
+              {PROJECT_STAGE_OPTIONS.map((stage) => (
+                <option key={stage} value={stage.toLowerCase()}>
+                  {t(stage)}
+                </option>
+              ))}
             </select>
-          </section>
-
-          <div className="space-y-3">
-            {filtered.map((project) => (
-              <DataRow
-                key={project.id}
-                className="items-start gap-4 cursor-pointer"
-                role="link"
-                tabIndex={0}
-                onClick={() => navigate(`/gov/projects/${project.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    navigate(`/gov/projects/${project.id}`);
-                  }
-                }}
-              >
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <img src={project.image} alt={project.name} className="h-14 w-16 rounded-md object-cover" />
-                  <div className="min-w-0">
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-slate-900">{t(project.name)}</div>
-                      <StatusPill tone={statusTone[project.status]}>{t(statusLabel[project.status])}</StatusPill>
-                      <StatusPill tone="info">{t(project.sector)}</StatusPill>
-                    </div>
-                    <div className="text-xs text-slate-500">{t(project.province)}</div>
-                    <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
-                      <span>{t('Budget')} ${project.budget}M</span>
-                      <span>{getProjectDataCompletenessSummary(project.id).completed}/{getProjectDataCompletenessSummary(project.id).total} {t('data items')}</span>
-                      <span>{getProjectProcessingSummary(project.id).completed}/{getProjectProcessingSummary(project.id).total} {t('jobs')}</span>
-                      <span>{project.publishedAt || t('Not published')}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="ml-auto flex min-h-[4.5rem] flex-col items-end justify-between gap-2 self-stretch">
-                  <div className="flex items-start gap-2">
-                    <div className="w-full min-w-36 max-w-36">
-                      <CompletionMeter value={project.dataCompleteness} />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Link
-                        to={`/gov/projects/${project.id}`}
-                        className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-primary"
-                        title={t('View')}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <Eye size={15} />
-                      </Link>
-                      <Link
-                        to={`/gov/projects/${project.id}/edit`}
-                        className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-amber-700"
-                        title={t('Edit')}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <Edit size={15} />
-                      </Link>
-                    </div>
-                  </div>
-                  {project.status !== 'published' && project.status !== 'execution' && (
+            <details className="relative min-w-56">
+              <summary className="app-input flex cursor-pointer list-none items-center justify-between gap-3">
+                <span>
+                  {selectedAgencyIds.length === 0
+                    ? t('All agencies in charge')
+                    : `${selectedAgencyIds.length} ${t('agencies selected')}`}
+                </span>
+                <span className="text-slate-400">▾</span>
+              </summary>
+              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Agency in charge')}</div>
+                  {selectedAgencyIds.length > 0 && (
                     <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        publishProject(project.id);
-                      }}
-                      className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)]"
+                      type="button"
+                      onClick={() => setSelectedAgencyIds([])}
+                      className="text-xs font-semibold text-primary hover:text-[var(--color-primary-700)]"
                     >
-                      <Globe size={12} />
-                      {t('Publish')}
+                      {t('Clear')}
                     </button>
                   )}
                 </div>
-              </DataRow>
+                <div className="max-h-64 space-y-2 overflow-auto">
+                  {assignmentAgencyOptions.map((agency) => (
+                    <label key={agency.id} className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        checked={selectedAgencyIds.includes(agency.id)}
+                        onChange={() => toggleAgencyFilter(agency.id)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-900">{agency.label}</span>
+                        <span className="block text-xs text-slate-500">{agency.fullName}</span>
+                      </span>
+                    </label>
+                  ))}
+                  {assignmentAgencyOptions.length === 0 && (
+                    <div className="px-2 py-2 text-sm text-slate-500">{t('No agencies available')}</div>
+                  )}
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <div className="space-y-3">
+            {visibleFilteredProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                workspaceBasePath={workspaceBasePath}
+                canManageProjects={canManageProjects}
+                translate={t}
+                assignmentSummary={projectAssignmentMap[project.id]}
+                auditSummary={projectAuditMap[project.id]}
+                processingSummary={getProjectProcessingSummary(project.id)}
+                jobAlertSummary={projectJobAlertMap[project.id] ?? { pending: 0, delayed: 0, upcoming: 0 }}
+                onPublish={publishProject}
+              />
             ))}
+            {filtered.length === 0 && (
+              <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
+                {t('No projects match the current filters.')}
+              </div>
+            )}
+            {!showAllProjects && filtered.length > DEFAULT_LIST_COUNT && (
+              <SeeAllButton label={t('See All')} onClick={() => setShowAllProjects(true)} />
+            )}
           </div>
-        </>
-      )}
+      </>
 
     </div>
   );

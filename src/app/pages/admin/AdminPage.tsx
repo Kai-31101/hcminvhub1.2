@@ -4,7 +4,9 @@ import { useLocation, useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
 import { DataRow } from '../../components/ui/data-row';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { StatusPill } from '../../components/ui/status-pill';
+const DEFAULT_LIST_COUNT = 6;
 
 const roleTone: Record<string, 'info' | 'success' | 'warning' | 'default' | 'danger'> = {
   'Government Operator': 'info',
@@ -34,11 +36,13 @@ export default function AdminPage() {
   const [showAgencyModal, setShowAgencyModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingAgencyId, setEditingAgencyId] = useState<string | null>(null);
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [showAllAgencies, setShowAllAgencies] = useState(false);
   const [userForm, setUserForm] = useState({
     name: '',
     email: '',
     role: 'Agency User',
-    organization: 'Department of Planning and Investment, Ho Chi Minh City',
+    organization: 'Department of Planning and Investment',
     status: 'active' as 'active' | 'inactive',
   });
   const [agencyForm, setAgencyForm] = useState({
@@ -59,13 +63,15 @@ export default function AdminPage() {
   const filteredAgencies = useMemo(() => agencies.filter((agency) => (
     !search || agency.name.toLowerCase().includes(search.toLowerCase()) || agency.shortName.toLowerCase().includes(search.toLowerCase())
   )), [agencies, search]);
+  const visibleUsers = showAllUsers ? filteredUsers : filteredUsers.slice(0, DEFAULT_LIST_COUNT);
+  const visibleAgencies = showAllAgencies ? filteredAgencies : filteredAgencies.slice(0, DEFAULT_LIST_COUNT);
 
   function resetUserForm() {
     setUserForm({
       name: '',
       email: '',
       role: 'Agency User',
-      organization: 'Department of Planning and Investment, Ho Chi Minh City',
+      organization: 'Department of Planning and Investment',
       status: 'active',
     });
     setEditingUserId(null);
@@ -201,7 +207,7 @@ export default function AdminPage() {
 
       {activeTab === 'roles' ? (
         <div className="space-y-3">
-          {filteredUsers.map((user) => (
+          {visibleUsers.map((user) => (
             <DataRow key={user.id} className={user.id === highlightedId ? 'border-sky-300 ring-2 ring-sky-100' : ''}>
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -229,10 +235,13 @@ export default function AdminPage() {
               </div>
             </DataRow>
           ))}
+          {!showAllUsers && filteredUsers.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label={t('See All')} onClick={() => setShowAllUsers(true)} />
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredAgencies.map((agency) => (
+          {visibleAgencies.map((agency) => (
             <DataRow key={agency.id} className={`items-start ${agency.id === highlightedId ? 'border-sky-300 ring-2 ring-sky-100' : ''}`}>
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -264,6 +273,9 @@ export default function AdminPage() {
               </div>
             </DataRow>
           ))}
+          {!showAllAgencies && filteredAgencies.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label={t('See All')} onClick={() => setShowAllAgencies(true)} />
+          )}
         </div>
       )}
 

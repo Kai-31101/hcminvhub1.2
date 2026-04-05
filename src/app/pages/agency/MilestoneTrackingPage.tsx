@@ -2,12 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Calendar, CheckCircle2, Clock3, Save } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { CompletionMeter } from '../../components/ui/completion-meter';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { UrgencyBadge } from '../../components/ui/urgency-badge';
 
 const mockToday = new Date('2024-03-20');
+const DEFAULT_LIST_COUNT = 6;
 
 function daysUntil(deadline: string) {
   const dueDate = new Date(deadline);
@@ -27,6 +29,9 @@ export default function MilestoneTrackingPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editProgress, setEditProgress] = useState(0);
   const [editStatus, setEditStatus] = useState('');
+  const [showAllAttention, setShowAllAttention] = useState(false);
+  const [showAllQueue, setShowAllQueue] = useState(false);
+  const [showAllRollup, setShowAllRollup] = useState(false);
   const highlightedId = searchParams.get('highlight');
 
   const sortedMilestones = useMemo(
@@ -49,6 +54,10 @@ export default function MilestoneTrackingPage() {
     accumulator[key].push(milestone);
     return accumulator;
   }, {});
+  const visibleDueSoonMilestones = showAllAttention ? dueSoonMilestones : dueSoonMilestones.slice(0, 4);
+  const visibleSortedMilestones = showAllQueue ? sortedMilestones : sortedMilestones.slice(0, DEFAULT_LIST_COUNT);
+  const groupedProjectEntries = Object.entries(groupedByProject);
+  const visibleGroupedProjectEntries = showAllRollup ? groupedProjectEntries : groupedProjectEntries.slice(0, DEFAULT_LIST_COUNT);
 
   function startEdit(id: string, progress: number, status: string) {
     setEditId(id);
@@ -82,7 +91,7 @@ export default function MilestoneTrackingPage() {
           <StatusPill tone="warning">{dueSoonMilestones.length} due soon</StatusPill>
         </div>
         <div className="space-y-3">
-          {dueSoonMilestones.slice(0, 4).map((milestone) => (
+          {visibleDueSoonMilestones.map((milestone) => (
             <DataRow key={milestone.id} className="border-amber-200 bg-white">
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-slate-900">{milestone.phase}: {milestone.description}</div>
@@ -98,6 +107,9 @@ export default function MilestoneTrackingPage() {
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               No milestone deadlines need intervention right now.
             </div>
+          )}
+          {!showAllAttention && dueSoonMilestones.length > 4 && (
+            <SeeAllButton label="See All" onClick={() => setShowAllAttention(true)} />
           )}
         </div>
       </section>
@@ -122,7 +134,7 @@ export default function MilestoneTrackingPage() {
           <StatusPill tone="info">{sortedMilestones.length} items</StatusPill>
         </div>
         <div className="space-y-3">
-          {sortedMilestones.map((milestone) => {
+          {visibleSortedMilestones.map((milestone) => {
             const isEditing = editId === milestone.id;
 
             return (
@@ -213,6 +225,9 @@ export default function MilestoneTrackingPage() {
               </div>
             );
           })}
+          {!showAllQueue && sortedMilestones.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label="See All" onClick={() => setShowAllQueue(true)} />
+          )}
         </div>
       </section>
 
@@ -222,7 +237,7 @@ export default function MilestoneTrackingPage() {
           <StatusPill tone="default">{Object.keys(groupedByProject).length} projects</StatusPill>
         </div>
         <div className="space-y-3">
-          {Object.entries(groupedByProject).map(([projectName, projectMilestones]) => {
+          {visibleGroupedProjectEntries.map(([projectName, projectMilestones]) => {
             const averageProgress = Math.round(
               projectMilestones.reduce((sum, milestone) => sum + milestone.progress, 0) / projectMilestones.length,
             );
@@ -243,6 +258,9 @@ export default function MilestoneTrackingPage() {
               </DataRow>
             );
           })}
+          {!showAllRollup && groupedProjectEntries.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label="See All" onClick={() => setShowAllRollup(true)} />
+          )}
         </div>
       </section>
 

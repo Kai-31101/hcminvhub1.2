@@ -2,11 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, FileStack, Search, Upload } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { UrgencyBadge } from '../../components/ui/urgency-badge';
 
 const mockToday = new Date('2024-03-20');
+const DEFAULT_LIST_COUNT = 6;
 
 function daysUntil(deadline: string) {
   const dueDate = new Date(deadline);
@@ -27,6 +29,8 @@ export default function ServiceRequestListPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showAllActionNeeded, setShowAllActionNeeded] = useState(false);
+  const [showAllRequests, setShowAllRequests] = useState(false);
   const highlightedId = searchParams.get('highlight');
 
   const myRequests = serviceRequests.filter((request) => request.applicant === activeInvestorCompany);
@@ -45,6 +49,8 @@ export default function ServiceRequestListPage() {
   );
 
   const actionNeeded = filteredRequests.filter((request) => request.status === 'info_required');
+  const visibleActionNeeded = showAllActionNeeded ? actionNeeded : actionNeeded.slice(0, DEFAULT_LIST_COUNT);
+  const visibleRequests = showAllRequests ? filteredRequests : filteredRequests.slice(0, DEFAULT_LIST_COUNT);
 
   function handleUploadMissingDocuments(requestId: string, existingDocuments: string[]) {
     updateServiceRequest(requestId, {
@@ -74,7 +80,7 @@ export default function ServiceRequestListPage() {
           <StatusPill tone="warning">{actionNeeded.length} requests</StatusPill>
         </div>
         <div className="space-y-3">
-          {actionNeeded.map((request) => (
+          {visibleActionNeeded.map((request) => (
             <DataRow key={request.id} className="border-amber-200 bg-white">
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-slate-900">{request.serviceName}</div>
@@ -90,6 +96,9 @@ export default function ServiceRequestListPage() {
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               No service requests currently require additional action from you.
             </div>
+          )}
+          {!showAllActionNeeded && actionNeeded.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label="See All" onClick={() => setShowAllActionNeeded(true)} />
           )}
         </div>
       </section>
@@ -131,7 +140,7 @@ export default function ServiceRequestListPage() {
           <StatusPill tone="info">{filteredRequests.length} visible</StatusPill>
         </div>
         <div className="space-y-3">
-          {filteredRequests.map((request) => {
+          {visibleRequests.map((request) => {
             const isExpanded = expanded === request.id;
 
             return (
@@ -198,6 +207,9 @@ export default function ServiceRequestListPage() {
             <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
               No service requests match the current filters.
             </div>
+          )}
+          {!showAllRequests && filteredRequests.length > DEFAULT_LIST_COUNT && (
+            <SeeAllButton label="See All" onClick={() => setShowAllRequests(true)} />
           )}
         </div>
       </section>

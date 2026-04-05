@@ -3,8 +3,10 @@ import { AlertTriangle, Search, Edit, Save } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { StatusPill } from '../../components/ui/status-pill';
 import { DataRow } from '../../components/ui/data-row';
+const DEFAULT_LIST_COUNT = 6;
 
 const priorityTone: Record<string, 'danger' | 'warning' | 'default'> = {
   critical: 'danger',
@@ -29,6 +31,7 @@ export default function IssueManagementPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editStatus, setEditStatus] = useState('');
   const [editNote, setEditNote] = useState('');
+  const [showAllIssues, setShowAllIssues] = useState(false);
   const highlightedId = searchParams.get('highlight');
   const t = (value: string) => translateText(value, language);
 
@@ -40,6 +43,7 @@ export default function IssueManagementPage() {
     const matchStatus = statusFilter === 'all' || issue.status === statusFilter;
     return matchSearch && matchPriority && matchStatus;
   }), [issues, search, priorityFilter, statusFilter]);
+  const visibleIssues = showAllIssues ? filtered : filtered.slice(0, DEFAULT_LIST_COUNT);
 
   const handleSave = (id: string) => {
     updateIssue(id, {
@@ -97,7 +101,7 @@ export default function IssueManagementPage() {
       </section>
 
       <div className="space-y-3">
-        {filtered.map((issue) => {
+        {visibleIssues.map((issue) => {
           const isEditing = editId === issue.id;
 
           return (
@@ -168,6 +172,9 @@ export default function IssueManagementPage() {
             </div>
           );
         })}
+        {!showAllIssues && filtered.length > DEFAULT_LIST_COUNT && (
+          <SeeAllButton label={t('See All')} onClick={() => setShowAllIssues(true)} />
+        )}
       </div>
     </div>
   );

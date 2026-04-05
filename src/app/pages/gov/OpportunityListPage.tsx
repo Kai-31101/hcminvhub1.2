@@ -1,25 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { Search, ArrowRight, DollarSign, Globe, Calendar } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { Search, ArrowRight, DollarSign, Calendar } from 'lucide-react';
+import { getDemoUserIdForRole, useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
 import { StatusPill } from '../../components/ui/status-pill';
 import { UrgencyBadge } from '../../components/ui/urgency-badge';
 import { DataRow } from '../../components/ui/data-row';
-
-const stages = ['new', 'review', 'due_diligence', 'negotiation', 'approved', 'rejected'] as const;
-type Stage = typeof stages[number];
-
-const stageConfig: Record<Stage, { label: string; tone: 'info' | 'warning' | 'default' | 'success' | 'danger' }> = {
-  new: { label: 'New', tone: 'info' },
-  review: { label: 'Initial Review', tone: 'warning' },
-  due_diligence: { label: 'Due Diligence', tone: 'default' },
-  negotiation: { label: 'Negotiation', tone: 'default' },
-  approved: { label: 'Approved', tone: 'success' },
-  rejected: { label: 'Rejected', tone: 'danger' },
-};
+import { SeeAllButton } from '../../components/SeeAllButton';
 
 const mockToday = new Date('2024-03-20');
+const DEFAULT_LIST_COUNT = 6;
 
 function getDaysInStage(updatedAt: string) {
   const updated = new Date(updatedAt);
@@ -27,23 +17,40 @@ function getDaysInStage(updatedAt: string) {
 }
 
 export default function OpportunityListPage() {
-  const { opportunities, language } = useApp();
+  const { opportunities, projects, language, role } = useApp();
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'kanban' | 'list'>('list');
-  const [stageFilter, setStageFilter] = useState('all');
+  const [showAllAttention, setShowAllAttention] = useState(false);
+  const [showAllList, setShowAllList] = useState(false);
   const t = (value: string) => translateText(value, language);
+  const workspaceBasePath = role === 'agency' ? '/agency' : '/gov';
+  const visibleProjectIds = useMemo(() => {
+    if (role === 'gov_operator') {
+      const currentUserId = getDemoUserIdForRole(role);
+      return new Set(projects.filter((project) => project.createdByUserId === currentUserId).map((project) => project.id));
+    }
+    return new Set(projects.map((project) => project.id));
+  }, [projects, role]);
 
-  const filtered = useMemo(() => opportunities.filter((opportunity) => {
+  const visibleOpportunities = useMemo(
+    () => opportunities.filter((opportunity) => visibleProjectIds.has(opportunity.projectId)),
+    [opportunities, visibleProjectIds],
+  );
+
+  const filtered = useMemo(() => visibleOpportunities.filter((opportunity) => {
     const matchSearch = !search
       || opportunity.investorCompany.toLowerCase().includes(search.toLowerCase())
       || opportunity.projectName.toLowerCase().includes(search.toLowerCase());
-    const matchStage = stageFilter === 'all' || opportunity.stage === stageFilter;
-    return matchSearch && matchStage;
-  }), [search, stageFilter]);
+    return matchSearch;
+  }), [search, visibleOpportunities]);
 
   const overdue = filtered.filter((opportunity) => getDaysInStage(opportunity.updatedAt) > 14);
   const unassigned = filtered.filter((opportunity) => !opportunity.notes);
   const totalPipeline = filtered.reduce((sum, opportunity) => sum + opportunity.amount, 0);
+  const averageDaysSinceUpdate = filtered.length
+    ? Math.round(filtered.reduce((sum, opportunity) => sum + getDaysInStage(opportunity.updatedAt), 0) / filtered.length)
+    : 0;
+  const visibleAttentionItems = showAllAttention ? overdue : overdue.slice(0, Math.min(3, DEFAULT_LIST_COUNT));
+  const visibleListItems = showAllList ? filtered : filtered.slice(0, DEFAULT_LIST_COUNT);
 
   return (
     <div className="page-shell">
@@ -58,14 +65,14 @@ export default function OpportunityListPage() {
           <StatusPill tone="danger">{overdue.length + unassigned.length} {t('items')}</StatusPill>
         </div>
         <div className="space-y-3">
-          {overdue.slice(0, 3).map((item) => (
-            <Link key={item.id} to={`/gov/opportunities/${item.id}`} className="block">
+          {visibleAttentionItems.map((item) => (
+            <Link key={item.id} to={`${workspaceBasePath}/opportunities/${item.id}`} className="block">
               <DataRow className="border-red-200 bg-white">
                 <div>
                   <div className="text-sm font-semibold text-slate-900">{item.investorCompany}</div>
                   <div className="text-xs text-slate-500">{item.projectName}</div>
                 </div>
-                <UrgencyBadge days={getDaysInStage(item.updatedAt)} label={`${getDaysInStage(item.updatedAt)} days in stage`} />
+                <UrgencyBadge days={getDaysInStage(item.updatedAt)} label={`${getDaysInStage(item.updatedAt)} days since update`} />
               </DataRow>
             </Link>
           ))}
@@ -74,15 +81,18 @@ export default function OpportunityListPage() {
               {t('No overdue or unassigned opportunities require immediate action.')}
             </div>
           )}
+          {!showAllAttention && overdue.length > 3 && (
+            <SeeAllButton label={t('See All')} onClick={() => setShowAllAttention(true)} />
+          )}
         </div>
       </section>
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: 'Active Opportunities', value: filtered.filter((item) => !['approved', 'rejected'].includes(item.stage)).length, tone: 'text-sky-700' },
-          { label: 'This Month New', value: filtered.filter((item) => item.stage === 'new').length, tone: 'text-amber-700' },
-          { label: 'Conversion Rate', value: `${Math.round((opportunities.filter((item) => item.stage === 'approved').length / opportunities.length) * 100)}%`, tone: 'text-emerald-700' },
-          { label: 'Avg Days to Close', value: '12', tone: 'text-slate-800' },
+          { label: 'Total Opportunities', value: filtered.length, tone: 'text-sky-700' },
+          { label: 'Requires Attention', value: overdue.length + unassigned.length, tone: 'text-red-700' },
+          { label: 'Total Pipeline Value', value: `$${totalPipeline}M`, tone: 'text-emerald-700' },
+          { label: 'Avg Days Since Update', value: averageDaysSinceUpdate, tone: 'text-slate-800' },
         ].map((metric) => (
           <div key={metric.label} className="kpi-tile">
             <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>
@@ -103,89 +113,32 @@ export default function OpportunityListPage() {
             className="app-input pl-9"
           />
         </div>
-        <div className="flex gap-2">
-          <select
-            value={stageFilter}
-            onChange={(event) => setStageFilter(event.target.value)}
-            className="app-input w-auto min-w-44"
-          >
-            <option value="all">{t('All Stages')}</option>
-            {stages.map((stage) => (
-              <option key={stage} value={stage}>{t(stageConfig[stage].label)}</option>
-            ))}
-          </select>
-          <div className="overflow-hidden rounded-md border border-border bg-white">
-            {[
-              { id: 'list', label: 'List' },
-              { id: 'kanban', label: 'Kanban' },
-            ].map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setView(option.id as 'list' | 'kanban')}
-                className={`px-4 py-2.5 text-sm ${view === option.id ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-              >
-                {t(option.label)}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {view === 'kanban' ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {stages.filter((stage) => stage !== 'rejected').map((stage) => {
-            const items = filtered.filter((opportunity) => opportunity.stage === stage);
-            const config = stageConfig[stage];
-
-            return (
-              <div key={stage} className="w-72 flex-shrink-0">
-                <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2">
-                  <StatusPill tone={config.tone}>{t(config.label)}</StatusPill>
-                  <span className="text-xs font-semibold text-slate-500">{items.length}</span>
-                </div>
-                <div className="space-y-3">
-                  {items.map((opportunity) => (
-                    <Link key={opportunity.id} to={`/gov/opportunities/${opportunity.id}`} className="block rounded-lg border border-border bg-card p-4 hover:border-primary/30 hover:bg-slate-50">
-                      <div className="mb-2 text-sm font-semibold text-slate-900">{opportunity.investorCompany}</div>
-                      <div className="mb-3 text-xs text-slate-500">{opportunity.projectName}</div>
-                      <div className="mb-3 flex items-center justify-between text-xs text-slate-600">
-                        <span className="flex items-center gap-1"><DollarSign size={11} /> ${opportunity.amount}M</span>
-                        <span className="flex items-center gap-1"><Globe size={11} /> {opportunity.investorCountry}</span>
-                      </div>
-                      <UrgencyBadge days={getDaysInStage(opportunity.updatedAt)} label={`${getDaysInStage(opportunity.updatedAt)} days in stage`} />
-                    </Link>
-                  ))}
-                </div>
+      <div className="space-y-3">
+        {visibleListItems.map((opportunity) => (
+          <Link key={opportunity.id} to={`${workspaceBasePath}/opportunities/${opportunity.id}`} className="block">
+            <DataRow>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 text-sm font-semibold text-slate-900">{opportunity.investorCompany}</div>
+                <div className="text-xs text-slate-500">{opportunity.projectName}</div>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((opportunity) => (
-            <Link key={opportunity.id} to={`/gov/opportunities/${opportunity.id}`} className="block">
-              <DataRow>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <div className="text-sm font-semibold text-slate-900">{opportunity.investorCompany}</div>
-                    <StatusPill tone={stageConfig[opportunity.stage].tone}>{t(stageConfig[opportunity.stage].label)}</StatusPill>
-                  </div>
-                  <div className="text-xs text-slate-500">{opportunity.projectName}</div>
-                </div>
-                <div className="hidden items-center gap-4 text-xs text-slate-600 md:flex">
-                  <span className="flex items-center gap-1"><DollarSign size={11} /> ${opportunity.amount}M</span>
-                  <span className="flex items-center gap-1"><Calendar size={11} /> {opportunity.updatedAt}</span>
-                </div>
-                <UrgencyBadge days={getDaysInStage(opportunity.updatedAt)} label={`${getDaysInStage(opportunity.updatedAt)}d`} />
-                <div className="flex items-center gap-1 text-xs font-semibold text-primary">
-                  {t('View')}
-                  <ArrowRight size={12} />
-                </div>
-              </DataRow>
-            </Link>
-          ))}
-        </div>
-      )}
+              <div className="hidden items-center gap-4 text-xs text-slate-600 md:flex">
+                <span className="flex items-center gap-1"><DollarSign size={11} /> ${opportunity.amount}M</span>
+                <span className="flex items-center gap-1"><Calendar size={11} /> {opportunity.updatedAt}</span>
+              </div>
+              <UrgencyBadge days={getDaysInStage(opportunity.updatedAt)} label={`${getDaysInStage(opportunity.updatedAt)}d`} />
+              <div className="flex items-center gap-1 text-xs font-semibold text-primary">
+                {t('View')}
+                <ArrowRight size={12} />
+              </div>
+            </DataRow>
+          </Link>
+        ))}
+        {!showAllList && filtered.length > DEFAULT_LIST_COUNT && (
+          <SeeAllButton label={t('See All')} onClick={() => setShowAllList(true)} />
+        )}
+      </div>
 
       <div className="mt-6 rounded-lg border border-border bg-card px-4 py-3 text-sm text-slate-600">
         {t('Total pipeline value')}: <span className="font-semibold text-slate-900">${totalPipeline}M</span>

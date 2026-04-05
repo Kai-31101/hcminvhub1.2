@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Headset, MessageSquareWarning } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { translateText } from '../../utils/localization';
+import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
+const DEFAULT_LIST_COUNT = 6;
 
 function getStatusTone(status: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
   if (status === 'resolved' || status === 'closed') return 'success';
@@ -18,6 +20,7 @@ function getStatusLabel(status: string) {
 
 export default function InvestorSupportPage() {
   const { language, issues, projects, opportunities, activeInvestorCompany } = useApp();
+  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
   const t = (value: string) => translateText(value, language);
 
   const investorProjectIds = useMemo(
@@ -74,6 +77,11 @@ export default function InvestorSupportPage() {
             <span>{openCount} {t('open')}</span>
           </div>
         </div>
+        <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          {language === 'vi'
+            ? 'T\u00ednh n\u0103ng n\u00e0y s\u1ebd \u0111\u01b0\u1ee3c t\u00edch h\u1ee3p v\u1edbi C\u1ed5ng giao ti\u1ebfp ITBC hi\u1ec7n t\u1ea1i.'
+            : 'This feature will be integrated with current ITBC Communication Portal.'}
+        </div>
       </section>
 
       {groupedByProject.length === 0 ? (
@@ -97,7 +105,7 @@ export default function InvestorSupportPage() {
               <StatusPill tone="info">{group.requests.length}</StatusPill>
             </div>
             <div className="space-y-3">
-              {group.requests.map((request) => (
+              {(expandedProjects[group.projectId] ? group.requests : group.requests.slice(0, DEFAULT_LIST_COUNT)).map((request) => (
                 <DataRow key={request.id} className="items-start">
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="text-sm font-semibold text-slate-900">{t(request.title)}</div>
@@ -111,6 +119,17 @@ export default function InvestorSupportPage() {
                   <StatusPill tone={getStatusTone(request.status)}>{t(getStatusLabel(request.status))}</StatusPill>
                 </DataRow>
               ))}
+              {!(expandedProjects[group.projectId] ?? false) && group.requests.length > DEFAULT_LIST_COUNT && (
+                <SeeAllButton
+                  label={t('See All')}
+                  onClick={() =>
+                    setExpandedProjects((current) => ({
+                      ...current,
+                      [group.projectId]: true,
+                    }))
+                  }
+                />
+              )}
             </div>
           </section>
         ))

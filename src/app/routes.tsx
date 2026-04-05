@@ -9,24 +9,13 @@ import HomePage from './pages/HomePage';
 import ExplorerPage from './pages/investor/ExplorerPage';
 import ProjectDetailPage from './pages/investor/ProjectDetailPage';
 import IntakeFormPage from './pages/investor/IntakeFormPage';
+import InvestorExecutionListPage from './pages/investor/InvestorExecutionListPage';
 import ExecutionWorkspacePage from './pages/investor/ExecutionWorkspacePage';
-import InvestorSupportPage from './pages/investor/InvestorSupportPage';
-import InvestorOpportunityListPage from './pages/investor/OpportunityListPage';
-import ServiceCatalogPage from './pages/investor/ServiceCatalogPage';
 
 // Gov Operator
 import ProjectManagementPage from './pages/gov/ProjectManagementPage';
 import ProjectViewPage from './pages/gov/ProjectViewPage';
 import ProjectEditPage from './pages/gov/ProjectEditPage';
-import OpportunityListPage from './pages/gov/OpportunityListPage';
-import OpportunityDetailPage from './pages/gov/OpportunityDetailPage';
-import ExecutionDashboardPage from './pages/gov/ExecutionDashboardPage';
-
-// Agency
-import PermitTrackerPage from './pages/agency/PermitTrackerPage';
-import IssueManagementPage from './pages/agency/IssueManagementPage';
-import MilestoneTrackingPage from './pages/agency/MilestoneTrackingPage';
-import ServiceWorkflowPage from './pages/agency/ServiceWorkflowPage';
 
 // Admin
 import AdminPage from './pages/admin/AdminPage';
@@ -77,6 +66,10 @@ export const router = createHashRouter([
   },
   {
     path: '/investor/execution',
+    element: <ProtectedLayout defaultRole="investor"><InvestorExecutionListPage /></ProtectedLayout>,
+  },
+  {
+    path: '/investor/execution/:id',
     element: <ProtectedLayout defaultRole="investor"><ExecutionWorkspacePage /></ProtectedLayout>,
   },
   {
@@ -89,19 +82,15 @@ export const router = createHashRouter([
   },
   {
     path: '/investor/opportunities',
-    element: <ProtectedLayout defaultRole="investor"><InvestorOpportunityListPage /></ProtectedLayout>,
+    element: <Navigate to="/investor/execution" replace />,
   },
   {
     path: '/investor/services',
-    element: <ProtectedLayout defaultRole="investor"><ServiceCatalogPage /></ProtectedLayout>,
+    element: <Navigate to="/investor/execution" replace />,
   },
   {
     path: '/investor/service-requests',
-    element: <Navigate to="/investor/support" replace />,
-  },
-  {
-    path: '/investor/support',
-    element: <ProtectedLayout defaultRole="investor"><InvestorSupportPage /></ProtectedLayout>,
+    element: <Navigate to="/investor/execution" replace />,
   },
 
   // Gov Operator routes
@@ -119,37 +108,65 @@ export const router = createHashRouter([
   },
   {
     path: '/gov/data-quality',
-    element: <ProtectedLayout defaultRole="gov_operator"><ProjectManagementPage /></ProtectedLayout>,
+    element: <Navigate to="/gov/projects" replace />,
   },
   {
     path: '/gov/opportunities',
-    element: <ProtectedLayout defaultRole="gov_operator"><OpportunityListPage /></ProtectedLayout>,
+    element: <Navigate to="/gov/projects" replace />,
   },
   {
     path: '/gov/opportunities/:id',
-    element: <ProtectedLayout defaultRole="gov_operator"><OpportunityDetailPage /></ProtectedLayout>,
+    element: <Navigate to="/gov/projects" replace />,
   },
   {
     path: '/gov/execution',
-    element: <ProtectedLayout defaultRole="gov_operator"><ExecutionDashboardPage /></ProtectedLayout>,
+    element: <Navigate to="/gov/projects" replace />,
   },
 
   // Agency routes
   {
+    path: '/agency/projects',
+    element: <ProtectedLayout defaultRole="agency"><ProjectManagementPage /></ProtectedLayout>,
+  },
+  {
+    path: '/agency/projects/:id',
+    element: <ProtectedLayout defaultRole="agency"><ProjectViewPage /></ProtectedLayout>,
+  },
+  {
+    path: '/agency/projects/:id/edit',
+    element: <ProtectedLayout defaultRole="agency"><ProjectEditPage /></ProtectedLayout>,
+  },
+  {
+    path: '/agency/data-quality',
+    element: <Navigate to="/agency/projects" replace />,
+  },
+  {
+    path: '/agency/opportunities',
+    element: <Navigate to="/agency/projects" replace />,
+  },
+  {
+    path: '/agency/opportunities/:id',
+    element: <Navigate to="/agency/projects" replace />,
+  },
+  {
+    path: '/agency/execution',
+    element: <Navigate to="/agency/projects" replace />,
+  },
+  {
     path: '/agency/permits',
-    element: <ProtectedLayout defaultRole="agency"><PermitTrackerPage /></ProtectedLayout>,
+    element: <Navigate to="/agency/projects" replace />,
   },
   {
     path: '/agency/issues',
-    element: <ProtectedLayout defaultRole="agency"><IssueManagementPage /></ProtectedLayout>,
+    element: <Navigate to="/agency/projects" replace />,
   },
   {
     path: '/agency/milestones',
-    element: <ProtectedLayout defaultRole="agency"><MilestoneTrackingPage /></ProtectedLayout>,
+    element: <Navigate to="/agency/projects" replace />,
   },
   {
     path: '/agency/service-workflow',
-    element: <ProtectedLayout defaultRole="agency"><ServiceWorkflowPage /></ProtectedLayout>,
+    element: <Navigate to="/agency/projects" replace />,
   },
 
   // Admin routes
