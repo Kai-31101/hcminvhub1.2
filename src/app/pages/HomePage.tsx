@@ -9,7 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import hcmcMapArt from '../assets/hcmc-map-art.png';
 import { investmentNews } from '../data/investmentNews';
 import { useApp, UserRole } from '../context/AppContext';
-import { FastTrackDraft, SupportDraft, savePendingHomeAction } from '../utils/homeLeadFlow';
+import { FastTrackDraft, SupportDraft } from '../utils/homeLeadFlow';
 import { translateText } from '../utils/localization';
 
 const BRAND = {
@@ -142,11 +142,6 @@ export default function HomePage() {
     [Globe2, isVi ? '\u0110i\u1ec1u ph\u1ed1i h\u1ed7 tr\u1ee3 \u0111\u00fang \u0111\u1ea7u m\u1ed1i' : 'Coordinated investor support', isVi ? 'Y\u00eau c\u1ea7u \u0111\u01b0\u1ee3c chuy\u1ec3n \u0111\u1ebfn \u0111\u00fang \u0111\u01a1n v\u1ecb x\u1eed l\u00fd trong h\u1ea1 t\u1ea7ng c\u1ea5p th\u00e0nh ph\u1ed1.' : 'Requests are routed to the responsible city support desk.'],
     [Building2, isVi ? 'V\u1eadn h\u00e0nh c\u1ea5p th\u00e0nh ph\u1ed1' : 'City-operated platform', isVi ? 'Giao di\u1ec7n doanh nghi\u1ec7p, s\u00e1ng r\u00f5, kh\u00f4ng theo b\u1ed1 c\u1ee5c b\u00e1o \u0111i\u1ec7n t\u1eed.' : 'An enterprise interface designed as operating infrastructure, not a news portal.'],
   ];
-  function handOffToLogin(type: 'fast_track' | 'support', payload: FastTrackDraft | SupportDraft) {
-    savePendingHomeAction({ type, payload: payload as FastTrackDraft & SupportDraft, createdAt: new Date().toISOString() });
-    navigate('/login?source=home');
-  }
-
   function closeSubmissionDialog() {
     setSubmissionDialog(null);
     if (location.search) {
@@ -162,7 +157,6 @@ export default function HomePage() {
     }
     setFastTrackNotice(null);
     setActiveInvestorCompany(fastTrackForm.companyName);
-    if (!role) return handOffToLogin('fast_track', fastTrackForm);
     const project = homeProjects[0];
     if (!project) return;
     const opportunityId = createOpportunity({ projectId: project.id, projectName: project.name, investorName: fastTrackForm.contactName, investorCompany: fastTrackForm.companyName, investorCountry: fastTrackForm.country, investorType: 'Strategic', amount: amountFromInvestmentSize(fastTrackForm.investmentSize), stage: 'new', notes: `Homepage fast-track request. Preferred sector: ${fastTrackForm.sector}. Preferred location: ${fastTrackForm.locationNeed}.`, intakeData: { investmentStructure: fastTrackForm.investmentType, timeline: 'Requested via homepage fast-track entry', fundSource: 'To be confirmed', experience: fastTrackForm.notes || 'Homepage lead', contactEmail: fastTrackForm.email, contactPhone: fastTrackForm.phone || 'To be confirmed' } });
@@ -179,7 +173,6 @@ export default function HomePage() {
     }
     setSupportNotice(null);
     setActiveInvestorCompany(supportForm.companyName);
-    if (!role) return handOffToLogin('support', supportForm);
     const project = homeProjects.find((item) => item.id === supportForm.projectId) ?? homeProjects[0];
     if (!project) return;
     createIssue({ projectId: project.id, projectName: project.name, title: `Investor support desk request - ${supportForm.topic}`, description: supportForm.message, priority: supportForm.urgent ? 'high' : 'medium', status: 'open', assignedTo: 'Investor Support Desk', dueDate: dueDate(supportForm.urgent ? 1 : 3), reportedBy: supportForm.contactName, category: 'Support' });
