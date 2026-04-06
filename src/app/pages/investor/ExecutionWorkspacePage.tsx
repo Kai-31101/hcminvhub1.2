@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, MapPin, Send, X } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
+import { ExplorerActionModal } from '../../components/ExplorerActionModal';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { translateText } from '../../utils/localization';
@@ -318,7 +319,7 @@ export default function ExecutionWorkspacePage() {
                         </div>
                         <div className="mt-1 text-sm text-slate-600">{t(job.description)}</div>
                         <div className="mt-2 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
-                          <div>{t('Responsible agency')}: {agency?.name ?? '-'}</div>
+                          <div>{t('Coordinating Unit')}: {agency?.name ?? '-'}</div>
                           <div>{t('Responsible user')}: {responsibleUserName}</div>
                           <div>{t('Reminder timing')}: {job.reminderDaysBefore} {t('days before due date')}</div>
                         </div>
@@ -361,175 +362,169 @@ export default function ExecutionWorkspacePage() {
         </section>
       </div>
       {activeAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-border p-6">
-              <div>
-                <div className="text-base font-semibold text-slate-900">
-                  {activeAction === 'question' ? t('Ask Question') : t('Request Meeting')}
+        <ExplorerActionModal
+          onClose={closeActionModal}
+          panelTitle={activeAction === 'question' ? t('Investor Question') : t('Meeting Request')}
+          leftIcon={activeAction === 'question' ? <Send size={54} /> : <Calendar size={54} />}
+          leftTitle={
+            activeAction === 'question'
+              ? t('Need clarification before moving forward?')
+              : t('Need to coordinate the next decision step?')
+          }
+          leftDescription={
+            activeAction === 'question'
+              ? t('Send a structured question to the project response queue and keep the due-diligence conversation inside the investor workflow.')
+              : t('Schedule a coordination request with the responsible public-sector team and capture the agenda for the next working session.')
+          }
+        >
+          <div className="space-y-6">
+            {actionStep === 'form' && activeAction === 'question' && (
+              <>
+                <div className="rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 py-5">
+                  <div className="text-[14px] font-medium text-[#1a2755]">{t('Associated Project')}</div>
+                  <div className="mt-2 text-[18px] font-semibold text-[#191c1e]">{t(project.name)}</div>
                 </div>
-                <div className="mt-1 text-sm text-slate-500">
-                  {activeAction === 'question'
-                    ? t('Open a structured investor question and route it to the project response queue.')
-                    : t('Schedule a coordination request with the responsible public-sector team.')}
+                <label className="block space-y-2">
+                  <span className="text-[14px] font-medium text-[#1a2755]">{t('Investor Question')} <span className="text-[#f97316]">(*)</span></span>
+                  <textarea
+                    value={questionForm.question}
+                    onChange={(event) => setQuestionForm({ question: event.target.value })}
+                    rows={6}
+                    className="min-h-[190px] w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 py-4 text-[16px] text-[#1f2937] outline-none placeholder:text-[#8b97a8]"
+                    placeholder={t('Enter a free-text investor question for due diligence or clarification.')}
+                  />
+                </label>
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleQuestionSubmit}
+                    disabled={!questionForm.question.trim()}
+                    className="inline-flex min-w-[320px] items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-5 text-[20px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                  >
+                    <Send size={20} />
+                    {t('Submit question')}
+                  </button>
                 </div>
-              </div>
-              <button type="button" onClick={closeActionModal} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                <X size={18} />
-              </button>
-            </div>
+              </>
+            )}
 
-            <div className="space-y-6 p-6">
-              {actionStep === 'form' && activeAction === 'question' && (
-                <>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Associated Project')}</div>
-                    <div className="mt-2 text-sm font-semibold text-slate-900">{t(project.name)}</div>
-                  </div>
-                  <label className="block space-y-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Investor question')}</span>
-                    <textarea
-                      value={questionForm.question}
-                      onChange={(event) => setQuestionForm({ question: event.target.value })}
-                      rows={5}
-                      className="app-input min-h-32"
-                      placeholder={t('Enter a free-text investor question for due diligence or clarification.')}
+            {actionStep === 'form' && activeAction === 'meeting' && (
+              <>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="space-y-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Preferred date')} <span className="text-[#f97316]">(*)</span></span>
+                    <input
+                      type="date"
+                      value={meetingForm.preferredDate}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, preferredDate: event.target.value }))}
+                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
                     />
                   </label>
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <button type="button" onClick={closeActionModal} className="app-button-secondary">
-                      {t('Cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleQuestionSubmit}
-                      disabled={!questionForm.question.trim()}
-                      className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  <label className="space-y-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Preferred time')} <span className="text-[#f97316]">(*)</span></span>
+                    <input
+                      type="time"
+                      value={meetingForm.preferredTime}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, preferredTime: event.target.value }))}
+                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Meeting type')}</span>
+                    <select
+                      value={meetingForm.meetingType}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, meetingType: event.target.value as MeetingType }))}
+                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
                     >
-                      <Send size={14} />
-                      {t('Submit question')}
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {actionStep === 'form' && activeAction === 'meeting' && (
-                <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Preferred date')}</span>
-                      <input
-                        type="date"
-                        value={meetingForm.preferredDate}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, preferredDate: event.target.value }))}
-                        className="app-input"
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Preferred time')}</span>
-                      <input
-                        type="time"
-                        value={meetingForm.preferredTime}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, preferredTime: event.target.value }))}
-                        className="app-input"
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Meeting type')}</span>
-                      <select
-                        value={meetingForm.meetingType}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, meetingType: event.target.value as MeetingType }))}
-                        className="app-input"
-                      >
-                        <option value="Online">{t('Online')}</option>
-                        <option value="Onsite">{t('Onsite')}</option>
-                      </select>
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Assigned agency')}</span>
-                      <select
-                        value={meetingForm.assignedAgency}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, assignedAgency: event.target.value }))}
-                        className="app-input"
-                      >
-                        {agencyOptions.map((agencyName) => (
-                          <option key={agencyName} value={agencyName}>{t(agencyName)}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Participants')}</span>
-                      <input
-                        value={meetingForm.participants}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, participants: event.target.value }))}
-                        className="app-input"
-                        placeholder={t('Example: CIO, project counsel, technical advisor')}
-                      />
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Agenda')}</span>
-                      <textarea
-                        value={meetingForm.agenda}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, agenda: event.target.value }))}
-                        rows={4}
-                        className="app-input min-h-28"
-                        placeholder={t('Summarize the topics, questions, or approvals needed in the meeting.')}
-                      />
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Additional Notes')}</span>
-                      <textarea
-                        value={meetingForm.notes}
-                        onChange={(event) => setMeetingForm((current) => ({ ...current, notes: event.target.value }))}
-                        rows={3}
-                        className="app-input min-h-24"
-                        placeholder={t('Add context for the coordination team, logistics, or supporting context.')}
-                      />
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <button type="button" onClick={closeActionModal} className="app-button-secondary">
-                      {t('Cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMeetingSubmit}
-                      disabled={!meetingForm.preferredDate || !meetingForm.preferredTime || !meetingForm.agenda.trim()}
-                      className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      <option value="Online">{t('Online')}</option>
+                      <option value="Onsite">{t('Onsite')}</option>
+                    </select>
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Assigned agency')}</span>
+                    <select
+                      value={meetingForm.assignedAgency}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, assignedAgency: event.target.value }))}
+                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
                     >
-                      <Calendar size={14} />
-                      {t('Submit request')}
-                    </button>
-                  </div>
-                </>
-              )}
+                      {agencyOptions.map((agencyName) => (
+                        <option key={agencyName} value={agencyName}>{t(agencyName)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Participants')}</span>
+                    <input
+                      value={meetingForm.participants}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, participants: event.target.value }))}
+                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none placeholder:text-[#8b97a8]"
+                      placeholder={t('Example: CIO, project counsel, technical advisor')}
+                    />
+                  </label>
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Agenda')} <span className="text-[#f97316]">(*)</span></span>
+                    <textarea
+                      value={meetingForm.agenda}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, agenda: event.target.value }))}
+                      rows={5}
+                      className="min-h-[170px] w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 py-4 text-[16px] text-[#1f2937] outline-none placeholder:text-[#8b97a8]"
+                      placeholder={t('Summarize the topics, questions, or approvals needed in the meeting.')}
+                    />
+                  </label>
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[14px] font-medium text-[#1a2755]">{t('Additional Notes')}</span>
+                    <textarea
+                      value={meetingForm.notes}
+                      onChange={(event) => setMeetingForm((current) => ({ ...current, notes: event.target.value }))}
+                      rows={4}
+                      className="min-h-[140px] w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 py-4 text-[16px] text-[#1f2937] outline-none placeholder:text-[#8b97a8]"
+                      placeholder={t('Add context for the coordination team, logistics, or supporting context.')}
+                    />
+                  </label>
+                </div>
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleMeetingSubmit}
+                    disabled={!meetingForm.preferredDate || !meetingForm.preferredTime || !meetingForm.agenda.trim()}
+                    className="inline-flex min-w-[320px] items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-5 text-[20px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                  >
+                    <Calendar size={20} />
+                    {t('Submit request')}
+                  </button>
+                </div>
+              </>
+            )}
 
-              {actionStep === 'success' && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-center">
-                  <CheckCircle2 size={24} className="mx-auto text-emerald-700" />
-                  <div className="mt-2 text-sm font-semibold text-emerald-900">
+            {actionStep === 'success' && (
+              <div className="space-y-6">
+                <div className="rounded-[24px] border border-[#dfe5ec] bg-[#f7f9fb] px-6 py-6">
+                  <div className="text-[28px] font-semibold text-[#1a2755]">
                     {activeAction === 'question' ? t('Question submitted') : t('Meeting request submitted')}
                   </div>
-                  <div className="mt-1 text-xs text-emerald-700">
-                    {t('This information will be sent to ITPC Communication Portal')}
+                  <div className="mt-3 text-[16px] leading-7 text-[#617086]">
+                    {t('This information has been routed to ITPC Communication Portal for follow-up.')}
                   </div>
                   {submittedReference ? (
-                    <div className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-800">
-                      {t('Reference')}: {submittedReference}
+                    <div className="mt-6 rounded-[18px] bg-white px-5 py-5">
+                      <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Reference')}</div>
+                      <div className="mt-2 text-[22px] font-semibold text-[#191c1e]">{submittedReference}</div>
                     </div>
                   ) : null}
+                </div>
+                <div className="flex justify-center">
                   <button
                     type="button"
                     onClick={closeActionModal}
-                    className="mt-4 inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                    className="inline-flex min-w-[240px] items-center justify-center rounded-[18px] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-4 text-[18px] font-semibold text-white"
                   >
                     {t('Close')}
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </div>
+        </ExplorerActionModal>
       )}
     </div>
   );

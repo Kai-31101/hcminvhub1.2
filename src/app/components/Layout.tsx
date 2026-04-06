@@ -184,69 +184,64 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
-    <div className={`flex flex-col h-full ${mobile ? 'w-full' : ''}`}>
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-white/10">
-        <button
-          type="button"
-          onClick={handleGoHome}
-          className="flex items-center gap-3 text-left transition-opacity hover:opacity-90"
-        >
-          <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Globe size={16} className="text-[#0B2447]" />
-          </div>
-          <div>
-            <div className="text-white text-sm font-semibold leading-tight">{t(nav.label)}</div>
-            <div className="text-blue-300 text-xs">{t(user.org)}</div>
-          </div>
-        </button>
+    <div className={`flex h-full flex-col justify-between bg-[#ECEEF0] ${mobile ? 'w-full' : 'w-64'}`}>
+      <div className="flex flex-col gap-1 px-6 pb-0 pt-6">
+        <div className="pb-6">
+          <button
+            type="button"
+            onClick={handleGoHome}
+            className="flex w-full items-center gap-3 text-left transition-opacity hover:opacity-90"
+          >
+            <div className="flex h-10 w-10 items-center justify-center bg-[#E0E3E5] text-[#455F87]">
+              <Globe size={20} />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-[18px] font-bold leading-7 text-[#1E3A5F]">{t(nav.label)}</div>
+              <div className="truncate text-[10px] uppercase tracking-[0.05em] text-[#455F87]/70">
+                {t(brandSubtitle[role])}
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <nav className="flex flex-col gap-1">
+          {nav.items.map((item) => {
+            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex h-[45px] items-center gap-3 px-4 transition-colors ${
+                  isActive
+                    ? 'border-l-4 border-[#9D4300] bg-white font-bold text-[#9D4300] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
+                    : 'text-[#455F87] hover:bg-white/70'
+                }`}
+              >
+                <span className={isActive ? 'text-[#9D4300]' : 'text-[#455F87]'}>
+                  {item.icon}
+                </span>
+                <span className="truncate text-[14px] leading-[21px]">{t(item.label)}</span>
+                {item.badge && (
+                  <span className="ml-auto min-w-[18px] bg-[#9D4300] px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 px-3 pb-4 overflow-y-auto">
-        {nav.items.map((item) => {
-          const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all group ${
-                isActive
-                  ? 'bg-white/15 text-white border-l-2 border-amber-400 pl-2.5'
-                  : 'text-blue-200 hover:bg-white/8 hover:text-white'
-              }`}
-            >
-              <span className={isActive ? 'text-amber-400' : 'text-blue-300 group-hover:text-white'}>
-                {item.icon}
-              </span>
-              <span className="text-sm">{t(item.label)}</span>
-              {item.badge && (
-                <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="mt-8 flex-1" />
 
-      {/* User section */}
-      <div className="px-4 py-4 border-t border-white/10">
-        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/8 cursor-pointer">
-          <div className={`w-8 h-8 ${user.color} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
-            {user.avatar}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-white text-sm font-medium truncate">{user.name}</div>
-            <div className="text-blue-300 text-xs truncate">{t(user.org)}</div>
-          </div>
-        </div>
+      <div className="border-t border-[rgba(224,192,177,0.1)] px-6 py-6">
         <button
+          type="button"
           onClick={handleLogout}
-          className="mt-2 w-full flex items-center gap-2 px-3 py-2 text-blue-300 hover:text-white hover:bg-white/8 rounded-lg transition-colors text-sm"
+          className="flex h-11 w-full items-center justify-center gap-2 bg-[linear-gradient(39.81deg,#9D4300_0%,#F97316_100%)] px-4 text-[14px] font-bold text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
         >
-          <LogOut size={16} />
+          <LogOut size={12} />
           {t('Switch Role')}
         </button>
       </div>
@@ -256,16 +251,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-[#F1F5F9] overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-60 bg-[#0B2447] flex-shrink-0">
+      <aside className="hidden lg:flex w-64 flex-shrink-0 bg-[#ECEEF0]">
         <Sidebar />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-60 bg-[#0B2447] flex flex-col">
+          <div className="w-64 bg-[#ECEEF0] flex flex-col">
             <div className="flex justify-end p-4">
-              <button onClick={() => setSidebarOpen(false)} className="text-white">
+              <button onClick={() => setSidebarOpen(false)} className="text-[#455F87]">
                 <X size={20} />
               </button>
             </div>
@@ -278,45 +273,64 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="relative bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center gap-4 flex-shrink-0 z-[80]">
+        <header className="relative flex h-16 flex-shrink-0 items-center justify-between gap-6 border-b border-[rgba(224,192,177,0.12)] bg-[#F7F9FB] px-4 lg:px-8 z-[80]">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
+            className="text-[#455F87] transition-colors hover:text-[#1E3A5F] lg:hidden"
           >
             <Menu size={22} />
           </button>
 
-          {/* Header title */}
-          <div className="flex-1 min-w-0">
-            <h1 className="truncate text-base font-semibold text-gray-900">{t(nav.label)}</h1>
-            <h2 className="truncate text-sm font-medium text-gray-500">{t(user.org)}</h2>
+          <div className="flex min-w-0 flex-1 items-center gap-6 lg:gap-8">
+            <div className="min-w-0 shrink-0">
+              <h1 className="truncate text-[20px] font-bold uppercase tracking-[-0.5px] text-[#1E3A5F]">
+                {t(nav.label)}
+              </h1>
+            </div>
+
+            <nav className="hidden items-center gap-6 lg:flex">
+              {nav.items.map((item) => {
+                const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`text-[14px] font-medium leading-5 transition-colors ${
+                      isActive ? 'text-[#9D4300]' : 'text-[#455F87] hover:text-[#1E3A5F]'
+                    }`}
+                  >
+                    {t(item.label)}
+                  </Link>
+                );
+              })}
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className="text-[14px] font-medium leading-5 text-[#455F87] transition-colors hover:text-[#1E3A5F]"
+              >
+                {t('Home')}
+              </button>
+            </nav>
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex items-center gap-2 lg:gap-4">
+            <div className="hidden h-9 items-center border border-[rgba(69,95,135,0.16)] bg-white p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.04)] sm:inline-flex">
               {(['vi', 'en'] as const).map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setLanguage(option)}
-                  className={`px-3 py-2 text-xs font-semibold transition-colors ${
-                    language === option ? 'bg-[#0B2447] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                  className={`inline-flex h-7 min-w-[44px] items-center justify-center px-3 text-[13px] font-semibold leading-5 transition-colors ${
+                    language === option
+                      ? 'bg-[linear-gradient(22.81deg,#9D4300_0%,#F97316_100%)] text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
+                      : 'text-[#455F87] hover:bg-[#eef2f6]'
                   }`}
                 >
                   {option.toUpperCase()}
                 </button>
               ))}
             </div>
-
-            <button
-              type="button"
-              onClick={handleGoHome}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-[#0B2447] hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Home size={16} />
-              <span className="hidden sm:inline">{t('Home')}</span>
-            </button>
 
             <div className="relative">
               <button
@@ -326,16 +340,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   setShowNotifications(false);
                   setShowUserMenu(false);
                 }}
-                className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                className="flex h-9 items-center gap-2 rounded-[4px] bg-[linear-gradient(22.81deg,#9D4300_0%,#F97316_100%)] px-6 text-[14px] font-bold text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-opacity hover:opacity-95"
               >
-                <Wrench size={16} />
-                <span className="hidden md:inline">Module</span>
-                <ChevronDown size={14} className="text-gray-400" />
+                <Wrench size={14} />
+                <span className="hidden md:inline">{t('Module')}</span>
+                <ChevronDown size={14} className="text-white/80" />
               </button>
 
               {showEnvironmentMenu && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gray-200 bg-white py-2 shadow-xl z-[70]"
+                  className="absolute right-0 top-full z-[70] mt-2 w-64 border border-gray-200 bg-white py-2 shadow-xl"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
@@ -362,11 +376,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="relative">
               <button
                 onClick={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); }}
-                className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="relative p-2 text-[#455F87] transition-colors hover:text-[#1E3A5F]"
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
                     {unreadCount}
                   </span>
                 )}
@@ -374,7 +388,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {showNotifications && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-[70]"
+                  className="absolute right-0 top-full z-[70] mt-2 w-80 border border-gray-200 bg-white shadow-xl"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -411,21 +425,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="relative">
               <button
                 onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); setShowEnvironmentMenu(false); }}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-2 p-1.5 transition-colors hover:bg-white/70"
               >
-                <div className={`w-7 h-7 ${user.color} rounded-full flex items-center justify-center text-white text-xs font-semibold`}>
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full ${user.color} text-xs font-semibold text-white`}>
                   {user.avatar}
                 </div>
                 <div className="hidden sm:block max-w-[180px] text-left">
-                  <div className="truncate text-sm font-medium text-gray-700">{user.name}</div>
-                  <div className="truncate text-xs text-gray-500">{t(user.org)}</div>
+                  <div className="truncate text-sm font-medium text-[#1E3A5F]">{user.name}</div>
+                  <div className="truncate text-xs text-[#455F87]">{t(user.org)}</div>
                 </div>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-[#455F87]" />
               </button>
 
               {showUserMenu && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-[70] py-1"
+                  className="absolute right-0 top-full z-[70] mt-2 w-72 border border-gray-200 bg-white py-1 shadow-xl"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="px-4 py-2 border-b border-gray-100">

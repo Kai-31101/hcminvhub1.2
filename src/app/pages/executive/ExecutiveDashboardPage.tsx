@@ -227,7 +227,7 @@ export default function ExecutiveDashboardPage() {
         ? copy('Clear delayed execution blockers', 'Gỡ điểm nghẽn chậm tiến độ')
         : copy('Maintain on-time execution discipline', 'Duy trì kỷ luật đúng hạn'),
       body: delayedJobs.length
-        ? `${delayedJobs.length} ${copy('active jobs are overdue. Start with', 'đầu việc đang quá hạn. Ưu tiên')} ${delayedJobs[0]?.projectName ?? copy('the highest-risk project', 'dự án rủi ro nhất')} ${copy('and unblock', 'và tháo gỡ cho')} ${delayedJobs[0]?.agencyName ?? copy('the responsible agency', 'cơ quan phụ trách')}.`
+        ? `${delayedJobs.length} ${copy('active jobs are overdue. Start with', 'đầu việc đang quá hạn. Ưu tiên')} ${delayedJobs[0]?.projectName ?? copy('the highest-risk project', 'dự án rủi ro nhất')} ${copy('and unblock', 'và tháo gỡ cho')} ${delayedJobs[0]?.agencyName ?? copy('the coordinating unit', 'đơn vị điều phối')}.`
         : copy(
             'No delayed jobs are currently open in the filtered portfolio. Keep agency follow-up focused on the upcoming window.',
             'Không có đầu việc chậm tiến độ nào trong danh mục đã lọc. Hãy giữ nhịp theo dõi cơ quan phụ trách cho các đầu việc sắp đến hạn.',
@@ -541,7 +541,7 @@ export default function ExecutiveDashboardPage() {
 
               <div className="grid gap-3 md:grid-cols-2">
                 <DataRow>
-                  <div className="text-sm text-slate-500">{copy('Agency in charge', 'Cơ quan phụ trách')}</div>
+                  <div className="text-sm text-slate-500">{copy('Coordinating Unit', 'Đơn vị điều phối')}</div>
                   <div className="text-sm font-semibold text-slate-900">{t(selectedJob.agencyName)}</div>
                 </DataRow>
                 <DataRow>

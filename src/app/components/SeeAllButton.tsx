@@ -12,7 +12,7 @@ export function SeeAllButton({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+        className="inline-flex h-11 items-center justify-center rounded-[4px] bg-[linear-gradient(22.81deg,#9D4300_0%,#F97316_100%)] px-6 text-[14px] font-bold text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-opacity hover:opacity-95"
       >
         {label}
       </button>

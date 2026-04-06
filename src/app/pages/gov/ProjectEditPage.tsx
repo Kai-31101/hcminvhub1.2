@@ -525,7 +525,7 @@ export default function ProjectEditPage() {
                         <input value={job.description} onChange={(event) => updateProjectJob(job.id, { description: event.target.value })} className={projectJobFieldClass} />
                       </label>
                       <label className="space-y-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Responsible agency')}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Coordinating Unit')}</span>
                         <select
                           value={job.agencyId}
                           onChange={(event) => {
@@ -680,7 +680,7 @@ export default function ProjectEditPage() {
                 <input value={newJob.description} onChange={(event) => setNewJob((current) => ({ ...current, description: event.target.value }))} className={projectJobFieldClass} />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Responsible agency')}</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Coordinating Unit')}</span>
                 <select
                   value={newJob.agencyId}
                   onChange={(event) => {

@@ -112,7 +112,7 @@ export default function InvestorSupportPage() {
                     <div className="text-sm text-slate-600">{t(request.description)}</div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <span>{t('Reported Time')}: {request.reportedAt}</span>
-                      <span>{t('PIC/Agency in charge')}: {t(request.assignedTo)}</span>
+                      <span>{t('PIC/Coordinating Unit')}: {t(request.assignedTo)}</span>
                       <span>{t('Due Date')}: {request.dueDate ?? '-'}</span>
                     </div>
                   </div>

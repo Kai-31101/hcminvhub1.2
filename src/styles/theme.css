@@ -189,37 +189,75 @@
 
 @layer components {
   .page-shell {
-    @apply p-4 md:p-6;
+    @apply mx-auto max-w-[1280px] px-4 py-6 md:px-6 md:py-8;
+    font-family: Inter, var(--font-body), sans-serif;
   }
 
   .section-panel {
-    @apply rounded-xl border border-border bg-card;
+    @apply rounded-none border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.05)];
+    border-color: rgba(224, 192, 177, 0.18);
   }
 
   .section-heading {
-    @apply mb-1 text-lg font-semibold text-foreground;
-    font-family: var(--font-heading);
+    @apply mb-1 text-[24px] font-normal leading-8 text-[#191c1e] md:text-[28px];
+    font-family: Inter, var(--font-body), sans-serif;
+    letter-spacing: -0.02em;
   }
 
   .section-subheading {
-    @apply text-sm text-muted-foreground;
+    @apply text-[16px] leading-7 text-[#455f87];
+    font-family: Inter, var(--font-body), sans-serif;
   }
 
   .kpi-tile {
-    @apply rounded-xl border border-border bg-card p-4;
+    @apply rounded-none border bg-card px-5 py-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)];
+    border-color: rgba(224, 192, 177, 0.18);
+    font-family: Inter, var(--font-body), sans-serif;
   }
 
   .filter-bar {
-    @apply rounded-xl border border-border bg-card p-4;
+    @apply rounded-none border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)];
+    border-color: rgba(224, 192, 177, 0.18);
+    font-family: Inter, var(--font-body), sans-serif;
   }
 
   .app-input {
-    @apply w-full rounded-md border border-border bg-white px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2;
+    @apply w-full rounded-none border bg-[#f2f4f6] px-3 py-2.5 text-sm text-[#191c1e] focus:outline-none focus:ring-2;
     font-weight: var(--font-weight-normal);
     box-shadow: 0 0 0 0 transparent;
+    border-color: rgba(224, 192, 177, 0.18);
+    font-family: Inter, var(--font-body), sans-serif;
   }
 
   .app-input:focus {
     box-shadow: 0 0 0 3px var(--ring);
+  }
+
+  .app-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-none px-5 py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5;
+    background: linear-gradient(10deg, #9d4300 0%, #f97316 100%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    font-family: Inter, var(--font-body), sans-serif;
+  }
+
+  .app-button:hover {
+    filter: saturate(1.02) brightness(1.01);
+  }
+
+  .app-button:disabled {
+    @apply cursor-not-allowed bg-slate-300 text-white shadow-none;
+    transform: none;
+    filter: none;
+  }
+
+  .app-button-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-none border px-5 py-3 text-sm font-semibold text-[#3e5980] transition-colors;
+    background: #e6e8ea;
+    border-color: rgba(224, 192, 177, 0.18);
+    font-family: Inter, var(--font-body), sans-serif;
+  }
+
+  .app-button-secondary:hover {
+    background: #dfe3e6;
   }
 }

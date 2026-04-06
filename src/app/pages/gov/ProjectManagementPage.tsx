@@ -287,7 +287,7 @@ export default function ProjectManagementPage() {
               </summary>
               <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Agency in charge')}</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Coordinating Unit')}</div>
                   {selectedAgencyIds.length > 0 && (
                     <button
                       type="button"

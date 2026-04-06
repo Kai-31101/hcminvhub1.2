@@ -183,7 +183,7 @@ export default function ProjectViewPage() {
                           </div>
                           <div className="mt-1 text-sm text-slate-600">{t(job.description)}</div>
                           <div className="mt-2 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
-                            <div>{t('Responsible agency')}: {agency?.name ?? '-'}</div>
+                            <div>{t('Coordinating Unit')}: {agency?.name ?? '-'}</div>
                             <div>{t('Responsible user')}: {responsibleUserName}</div>
                             <div>{t('Reminder timing')}: {job.reminderDaysBefore} {t('days before due date')}</div>
                           </div>

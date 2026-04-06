@@ -48,93 +48,93 @@ export function ProjectCard({
 }: ProjectCardProps) {
   return (
     <DataRow
-      className="items-stretch gap-4 overflow-hidden"
+      className="items-stretch gap-5 overflow-hidden border-[rgba(224,192,177,0.18)] bg-white px-5 py-5"
     >
       <div className="flex min-w-0 flex-1 items-stretch gap-3">
-        <div className="relative min-h-0 w-72 shrink-0 self-stretch overflow-hidden rounded-md">
+        <div className="relative min-h-0 w-72 shrink-0 self-stretch overflow-hidden rounded-none">
           <img src={project.image} alt={project.name} className="absolute inset-0 h-full w-full scale-[1.06] object-cover object-center" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <div className="text-sm font-semibold text-slate-900">{translate(project.name)}</div>
-            <StatusPill className="border border-slate-200 bg-white text-slate-900">{translate(project.sector)}</StatusPill>
+            <div className="text-[18px] font-semibold text-[#191c1e]">{translate(project.name)}</div>
+            <StatusPill className="border-[rgba(224,192,177,0.18)] bg-[#fff1e7] text-[#9d4300]">{translate(project.sector)}</StatusPill>
           </div>
-          <div className="text-xs text-slate-500">{translate(project.province)}</div>
+          <div className="text-xs text-[#455f87]">{translate(project.province)}</div>
           <div className="mt-3 grid gap-4 lg:grid-cols-3">
-            <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-3">
+            <div className="min-w-0 rounded-none bg-[#f2f4f6] px-3 py-3">
               <div className="grid gap-2 text-xs">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Budget')}</span>
-                  <div className="text-sm text-slate-900">${project.budget}M</div>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Budget')}</span>
+                  <div className="text-sm text-[#191c1e]">${project.budget}M</div>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Project Jobs')}</span>
-                  <div className="text-sm text-slate-900">
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Project Jobs')}</span>
+                  <div className="text-sm text-[#191c1e]">
                     {processingSummary.completed}/{processingSummary.total}
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Published Date')}</span>
-                  <div className="text-sm text-slate-900">{project.publishedAt || translate('Not published')}</div>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Published Date')}</span>
+                  <div className="text-sm text-[#191c1e]">{project.publishedAt || translate('Not published')}</div>
                 </div>
                 {assignmentSummary ? (
                   <>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Agency in charge')}</span>
+                      <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Coordinating Unit')}</span>
                       <div
-                        className="text-sm text-slate-900"
+                        className="text-sm text-[#191c1e]"
                         title={assignmentSummary.agencyFullName ?? assignmentSummary.agency}
                       >
                         {assignmentSummary.agency}
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('People in charge')}</span>
-                      <div className="text-sm text-slate-900">{assignmentSummary.person}</div>
+                      <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('People in charge')}</span>
+                      <div className="text-sm text-[#191c1e]">{assignmentSummary.person}</div>
                     </div>
                   </>
                 ) : null}
               </div>
             </div>
-            <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-3">
+            <div className="min-w-0 rounded-none bg-[#f2f4f6] px-3 py-3">
               <div className="grid gap-2 text-xs">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Total Project Jobs')}</span>
-                  <span className="rounded-md bg-slate-200 px-2 py-0.5 text-sm font-semibold text-slate-800">{processingSummary.total}</span>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Total Project Jobs')}</span>
+                  <span className="rounded-none bg-[#dde2e6] px-2 py-0.5 text-sm font-semibold text-[#191c1e]">{processingSummary.total}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-sky-700">{translate('processing')}</span>
-                  <span className="rounded-md bg-sky-100 px-2 py-0.5 text-sm font-semibold text-sky-800">{jobAlertSummary.pending}</span>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#455f87]">{translate('processing')}</span>
+                  <span className="rounded-none bg-[#e7eef7] px-2 py-0.5 text-sm font-semibold text-[#455f87]">{jobAlertSummary.pending}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-emerald-700">{translate('Completed')}</span>
-                  <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-sm font-semibold text-emerald-800">{processingSummary.completed}</span>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#2f6f47]">{translate('Completed')}</span>
+                  <span className="rounded-none bg-[#edf7f1] px-2 py-0.5 text-sm font-semibold text-[#2f6f47]">{processingSummary.completed}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-amber-700">{translate('upcoming')}</span>
-                  <span className="rounded-md bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-800">{jobAlertSummary.upcoming}</span>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#9d4300]">{translate('upcoming')}</span>
+                  <span className="rounded-none bg-[#fff1e7] px-2 py-0.5 text-sm font-semibold text-[#9d4300]">{jobAlertSummary.upcoming}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold uppercase tracking-[0.12em] text-red-700">{translate('delayed')}</span>
-                  <span className="rounded-md bg-red-100 px-2 py-0.5 text-sm font-semibold text-red-800">{jobAlertSummary.delayed}</span>
+                  <span className="font-semibold uppercase tracking-[0.12em] text-[#b9381c]">{translate('delayed')}</span>
+                  <span className="rounded-none bg-[#fff0ec] px-2 py-0.5 text-sm font-semibold text-[#b9381c]">{jobAlertSummary.delayed}</span>
                 </div>
               </div>
             </div>
             {auditSummary ? (
-              <div className="min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-3">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Project Audit')}</div>
+              <div className="min-w-0 rounded-none border border-[rgba(224,192,177,0.18)] bg-white px-3 py-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Project Audit')}</div>
                 <div className="grid gap-2 text-xs">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Created By')}</span>
-                    <span className="text-sm text-slate-900">{auditSummary.createdBy}</span>
+                    <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Created By')}</span>
+                    <span className="text-sm text-[#191c1e]">{auditSummary.createdBy}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Created At')}</span>
-                    <span className="text-sm text-slate-900">{auditSummary.createdAt}</span>
+                    <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Created At')}</span>
+                    <span className="text-sm text-[#191c1e]">{auditSummary.createdAt}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold uppercase tracking-[0.12em] text-slate-500">{translate('Last Updated At')}</span>
-                    <span className="text-sm text-slate-900">{auditSummary.updatedAt}</span>
+                    <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Last Updated At')}</span>
+                    <span className="text-sm text-[#191c1e]">{auditSummary.updatedAt}</span>
                   </div>
                 </div>
               </div>
@@ -152,7 +152,7 @@ export function ProjectCard({
               onClick={() => {
                 onPublish(project.id);
               }}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)]"
+              className="inline-flex items-center gap-1 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
             >
               <Globe size={12} />
               {translate('Publish')}
@@ -162,7 +162,7 @@ export function ProjectCard({
         <div className="flex items-center gap-2">
           <Link
             to={viewHref ?? `${workspaceBasePath}/projects/${project.id}`}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-sky-700"
+            className="inline-flex items-center gap-1 rounded-none border border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] px-3 py-2 text-xs font-semibold text-[#455f87] transition-colors hover:bg-[#e7ebef] hover:text-[#1e3a5f]"
             title={translate('View')}
           >
             <Eye size={13} />
@@ -171,7 +171,7 @@ export function ProjectCard({
           {canManageProjects && (
             <Link
               to={`${workspaceBasePath}/projects/${project.id}/edit`}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-amber-700"
+              className="inline-flex items-center gap-1 rounded-none border border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] px-3 py-2 text-xs font-semibold text-[#455f87] transition-colors hover:bg-[#fff1e7] hover:text-[#9d4300]"
               title={translate('Edit')}
             >
               <Edit size={13} />

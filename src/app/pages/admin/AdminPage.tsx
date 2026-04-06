@@ -193,7 +193,7 @@ export default function AdminPage() {
 
   const recommendedMasterData = [
     {
-      title: copy('Agency in charge matrix', 'Ma trận cơ quan phụ trách'),
+      title: copy('Coordinating unit matrix', 'Ma trận đơn vị điều phối'),
       body: copy(
         'Maintain a master list of agencies, their officers, backup owners, and which object types they can own.',
         'Quản lý danh mục cơ quan, cán bộ phụ trách, người dự phòng và loại đối tượng mỗi cơ quan được phép phụ trách.',
@@ -237,7 +237,7 @@ export default function AdminPage() {
   ];
 
   const ownershipRules = [
-    copy('Every Project Job should require one agency in charge and one person in charge.', 'Mỗi đầu việc dự án nên bắt buộc có một cơ quan phụ trách và một người phụ trách.'),
+    copy('Every Project Job should require one coordinating unit and one person in charge.', 'Mỗi đầu việc dự án nên bắt buộc có một đơn vị điều phối và một người phụ trách.'),
     copy('Every Required Data assignment should map to the same agency and owner matrix.', 'Mỗi đầu việc dữ liệu được giao nên dùng cùng ma trận cơ quan và người phụ trách đó.'),
     copy('Agency deactivation should warn if it is still assigned to open jobs, permits, or service requests.', 'Khi ngừng kích hoạt cơ quan, hệ thống nên cảnh báo nếu cơ quan đó vẫn đang được gán cho đầu việc, giấy phép hoặc yêu cầu dịch vụ đang mở.'),
     copy('Status changes should optionally trigger notifications, SLA recalculation, and audit logs.', 'Thay đổi trạng thái nên có thể kích hoạt thông báo, tính lại SLA và ghi nhận lịch sử thao tác.'),
@@ -514,7 +514,7 @@ export default function AdminPage() {
               <h2 className="section-heading mb-4">{copy('Agency Ownership Model', 'Mô hình sở hữu theo cơ quan')}</h2>
               <div className="space-y-3">
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm font-semibold text-slate-900">{copy('Agency in charge', 'Cơ quan phụ trách')}</div>
+                  <div className="text-sm font-semibold text-slate-900">{copy('Coordinating Unit', 'Đơn vị điều phối')}</div>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
                     {copy(
                       'Primary organization responsible for a project task, data request, permit, or service workflow item.',
