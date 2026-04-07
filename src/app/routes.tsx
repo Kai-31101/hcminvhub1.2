@@ -129,6 +129,10 @@ export const router = createHashRouter([
     element: <ProtectedLayout defaultRole="agency"><ProjectManagementPage /></ProtectedLayout>,
   },
   {
+    path: '/agency/request-management',
+    element: <ProtectedLayout defaultRole="agency"><ProjectManagementPage /></ProtectedLayout>,
+  },
+  {
     path: '/agency/projects/:id',
     element: <ProtectedLayout defaultRole="agency"><ProjectViewPage /></ProtectedLayout>,
   },

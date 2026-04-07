@@ -36,6 +36,7 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
     label: 'ITPC Portal',
     items: [
       { label: 'Project Management', path: '/agency/projects', icon: <FolderOpen size={18} /> },
+      { label: 'Request Management', path: '/agency/request-management', icon: <ClipboardList size={18} /> },
     ],
   },
   admin: {
@@ -284,7 +285,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <div className="flex min-w-0 flex-1 items-center gap-6 lg:gap-8">
             <div className="min-w-0 shrink-0">
-              <h1 className="truncate text-[20px] font-bold uppercase tracking-[-0.5px] text-[#1E3A5F]">
+              <h1 className="block truncate py-1 text-[20px] font-bold uppercase leading-8 tracking-[-0.5px] text-[#1E3A5F]">
                 {t(nav.label)}
               </h1>
             </div>
