@@ -203,5 +203,6 @@ const projectAdministrativeLocationById: Record<string, string> = {
 };
 
 export function getProjectAdministrativeLocation(project: { id: string; location?: string }) {
-  return projectAdministrativeLocationById[project.id] ?? project.location?.split(',')[0]?.trim() ?? '';
+  const locationFromProject = project.location?.split(',')[0]?.trim();
+  return locationFromProject || projectAdministrativeLocationById[project.id] || '';
 }

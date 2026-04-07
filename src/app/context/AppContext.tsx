@@ -232,6 +232,13 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function toKebabCase(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function getNormalizedAgencyOwnership(agencyId: string, userId: string) {
   const migratedAgencyId = agencyId === 'ag1' && userId === 'u3' ? 'ag6' : agencyId;
   const migratedUserId = /^u[34]$/.test(userId) && /^ag\d+$/.test(migratedAgencyId) ? `${migratedAgencyId}-pic-1` : userId;
@@ -305,7 +312,7 @@ function getRequiredDataAlert(assignment: RequiredDataAssignment) {
 
 function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
   const today = new Date();
-  return [
+  const baseAssignments: RequiredDataAssignment[] = [
     {
       id: 'r1',
       projectId: 'p1',
@@ -371,11 +378,65 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       }],
     },
   ];
+
+  const agencyBySector: Record<string, string[]> = {
+    Infrastructure: ['ag17', 'ag5'],
+    Energy: ['ag13', 'ag6'],
+    Manufacturing: ['ag2', 'ag21'],
+    Tourism: ['ag3', 'ag35'],
+    Technology: ['ag7', 'ag20'],
+    Agriculture: ['ag10', 'ag52'],
+    Healthcare: ['ag18', 'ag6'],
+    Logistics: ['ag5', 'ag2'],
+    Education: ['ag4', 'ag6'],
+  };
+  const generatedAssignments = baseProjects
+    .filter((project) => Number(project.id.slice(1)) >= 7)
+    .flatMap((project, index) => {
+      const [primaryAgencyId, secondaryAgencyId] = agencyBySector[project.sector] ?? ['ag6', 'ag17'];
+      const assignmentBaseId = 5 + index * 2;
+      return [
+        {
+          id: `r${assignmentBaseId}`,
+          projectId: project.id,
+          fieldName: `${project.sector} investment brief confirmation`,
+          agencyId: primaryAgencyId,
+          userId: `${primaryAgencyId}-pic-1`,
+          status: index % 4 === 0 ? 'complete' : 'incomplete',
+          dueDate: toIsoDate(addDays(today, 6 + (index % 5) * 3)),
+          reminderDaysBefore: index % 2 === 0 ? 10 : 5,
+          note: 'Mock assignment generated for cross-workspace completeness tracking.',
+          attachments: [{
+            fileName: `${toKebabCase(project.name)}-investment-brief.pdf`,
+            fileUrl: '',
+            lastUploadDate: toIsoDate(addDays(today, -(index + 1))),
+          }],
+        },
+        {
+          id: `r${assignmentBaseId + 1}`,
+          projectId: project.id,
+          fieldName: `${project.sector} implementation readiness memo`,
+          agencyId: secondaryAgencyId,
+          userId: `${secondaryAgencyId}-pic-1`,
+          status: index % 3 === 0 ? 'complete' : 'incomplete',
+          dueDate: toIsoDate(addDays(today, 10 + (index % 4) * 4)),
+          reminderDaysBefore: index % 2 === 0 ? 5 : 10,
+          note: 'Mock assignment generated to keep agency and executive summaries aligned.',
+          attachments: [{
+            fileName: `${toKebabCase(project.name)}-readiness-memo.docx`,
+            fileUrl: '',
+            lastUploadDate: toIsoDate(addDays(today, -(index + 2))),
+          }],
+        },
+      ];
+    });
+
+  return [...baseAssignments, ...generatedAssignments];
 }
 
 function cloneProjectJobs(): ProjectJob[] {
   const today = new Date();
-  return [
+  const baseJobs: ProjectJob[] = [
     {
       id: 'pj1',
       projectId: 'p1',
@@ -700,6 +761,80 @@ function cloneProjectJobs(): ProjectJob[] {
       }],
     },
   ];
+
+  const jobAgencyBySector: Record<string, string[]> = {
+    Infrastructure: ['ag17', 'ag5', 'ag6'],
+    Energy: ['ag13', 'ag6', 'ag17'],
+    Manufacturing: ['ag2', 'ag21', 'ag17'],
+    Tourism: ['ag3', 'ag35', 'ag17'],
+    Technology: ['ag7', 'ag20', 'ag6'],
+    Agriculture: ['ag10', 'ag52', 'ag13'],
+    Healthcare: ['ag18', 'ag6', 'ag17'],
+    Logistics: ['ag5', 'ag2', 'ag17'],
+    Education: ['ag4', 'ag6', 'ag17'],
+  };
+  const generatedJobs = baseProjects
+    .filter((project) => Number(project.id.slice(1)) >= 7)
+    .flatMap((project, index) => {
+      const [leadAgencyId, coordinationAgencyId, technicalAgencyId] = jobAgencyBySector[project.sector] ?? ['ag6', 'ag17', 'ag13'];
+      const jobBaseId = 20 + index * 3;
+      const filePrefix = toKebabCase(project.name);
+      return [
+        {
+          id: `pj${jobBaseId}`,
+          projectId: project.id,
+          title: `Confirm ${project.sector.toLowerCase()} launch package`,
+          description: `Confirm the investor-facing launch package, phase gates, and coordination dependencies for ${project.name}.`,
+          agencyId: leadAgencyId,
+          userId: `${leadAgencyId}-pic-1`,
+          status: index % 5 === 0 ? 'complete' : 'incomplete',
+          dueDate: toIsoDate(addDays(today, 4 + (index % 4) * 3)),
+          reminderDaysBefore: 5,
+          note: 'Mock job generated for project list and project detail consistency.',
+          attachments: [{
+            fileName: `${filePrefix}-launch-package.pdf`,
+            fileUrl: '',
+            lastUploadDate: toIsoDate(addDays(today, -(index + 1))),
+          }],
+        },
+        {
+          id: `pj${jobBaseId + 1}`,
+          projectId: project.id,
+          title: `Coordinate ${project.sector.toLowerCase()} stakeholder note`,
+          description: `Coordinate the cross-agency stakeholder note covering sequencing, approvals, and external communication for ${project.name}.`,
+          agencyId: coordinationAgencyId,
+          userId: `${coordinationAgencyId}-pic-1`,
+          status: index % 4 === 1 ? 'complete' : 'incomplete',
+          dueDate: toIsoDate(addDays(today, 9 + (index % 5) * 2)),
+          reminderDaysBefore: 10,
+          note: 'Generated mock coordination item for agency processing summaries.',
+          attachments: [{
+            fileName: `${filePrefix}-stakeholder-note.docx`,
+            fileUrl: '',
+            lastUploadDate: toIsoDate(addDays(today, -(index + 3))),
+          }],
+        },
+        {
+          id: `pj${jobBaseId + 2}`,
+          projectId: project.id,
+          title: `Publish ${project.sector.toLowerCase()} technical readiness memo`,
+          description: `Publish the technical readiness memo covering utilities, land readiness, and implementation assumptions for ${project.name}.`,
+          agencyId: technicalAgencyId,
+          userId: `${technicalAgencyId}-pic-1`,
+          status: index % 3 === 2 ? 'complete' : 'incomplete',
+          dueDate: toIsoDate(addDays(today, 15 + (index % 6) * 2)),
+          reminderDaysBefore: 10,
+          note: 'Generated mock technical item so executive and agency pages keep the same processing baseline.',
+          attachments: [{
+            fileName: `${filePrefix}-technical-readiness.pdf`,
+            fileUrl: '',
+            lastUploadDate: toIsoDate(addDays(today, -(index + 4))),
+          }],
+        },
+      ];
+    });
+
+  return [...baseJobs, ...generatedJobs];
 }
 
 function cloneProjects() {

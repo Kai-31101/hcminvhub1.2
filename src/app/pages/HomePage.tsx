@@ -102,7 +102,18 @@ export default function HomePage() {
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const featuredProjectsRef = useRef<HTMLElement | null>(null);
 
-  const homeProjects = useMemo(() => projects.map((project) => ({ ...project, ...(META[project.id] ?? { sectorGroup: project.sector, investmentType: 'Greenfield', ward: 'Ph\u01b0\u1eddng B\u1ebfn Th\u00e0nh' }) })), [projects]);
+  const homeProjects = useMemo(
+    () =>
+      projects.map((project) => ({
+        ...project,
+        ...(META[project.id] ?? {
+          sectorGroup: project.sector,
+          investmentType: 'Greenfield',
+          ward: getProjectAdministrativeLocation(project) || project.location,
+        }),
+      })),
+    [projects],
+  );
   const sectors = Array.from(new Set(homeProjects.map((project) => project.sectorGroup)));
   const sectorOptions = useMemo(
     () => [
