@@ -85,7 +85,6 @@ export default function IntakeFormPage() {
     addNotification,
   } = useApp();
   const t = (value: string) => translateText(value, language);
-  const isVi = language === 'vi';
   const project = projects.find((item) => item.id === projectId);
 
   const latestKnownProfile = useMemo(() => {
@@ -120,11 +119,8 @@ export default function IntakeFormPage() {
     if (!project) return;
 
     if (!form.companyName.trim() || !form.contactName.trim() || !form.email.trim()) {
-      setError(
-        isVi
-          ? 'Vui lòng điền tên doanh nghiệp, người liên hệ và email.'
-          : 'Please complete company name, contact name, and email.',
-      );
+      setError(t('Please complete company name, contact name, and email.'));
+
       return;
     }
 
@@ -221,15 +217,9 @@ export default function IntakeFormPage() {
             <div className="mb-3 text-sm font-semibold text-slate-900">{t('Next steps')}</div>
             <div className="space-y-3">
               {[
-                isVi
-                  ? 'Thông tin quan tâm đã được ghi nhận cho dự án này.'
-                  : 'Your project interest has been recorded for this project.',
-                isVi
-                  ? 'ITPC sẽ tiếp nhận và điều phối bước tiếp theo trong quy trình.'
-                  : 'ITPC will receive the intake and coordinate the next step.',
-                isVi
-                  ? 'Nhóm phụ trách có thể liên hệ lại qua email hoặc số điện thoại đã cung cấp.'
-                  : 'The responsible team may follow up through the email or phone provided.',
+                t('Your project interest has been recorded for this project.'),
+                t('ITPC will receive the intake and coordinate the next step.'),
+                t('The responsible team may follow up through the email or phone provided.'),
               ].map((item, index) => (
                 <DataRow key={item} className="bg-white">
                   <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-800">
@@ -287,25 +277,21 @@ export default function IntakeFormPage() {
               style={{ backgroundColor: BRAND.blueSoft, borderColor: BRAND.blueBorder, color: BRAND.blue }}
             >
               <Landmark size={14} />
-              {isVi ? 'Gửi quan tâm nhanh' : 'Quick project intake'}
+              {t('Quick project intake')}
             </div>
             <h1 className="mt-4 text-3xl font-semibold" style={{ color: BRAND.blue }}>
               {t('Express Interest')}
             </h1>
             <p className="mt-3 max-w-[520px] text-sm leading-7 text-slate-600">
-              {isVi
-                ? 'Biểu mẫu một bước để gửi nhu cầu quan tâm cho dự án này. ITPC sẽ tiếp nhận thông tin, điều phối đầu mối phụ trách và theo dõi bước tiếp theo.'
-                : 'A single-step form to submit your interest in this project. ITPC will capture the request, route it to the responsible desk, and coordinate the next step.'}
+              {t('A single-step form to submit your interest in this project. ITPC will capture the request, route it to the responsible desk, and coordinate the next step.')}
             </p>
 
             <div className="mt-5 rounded-2xl border bg-white px-5 py-5" style={{ borderColor: BRAND.blueBorder }}>
               <div className="space-y-4">
                 {[
-                  isVi ? 'Tiếp nhận nhu cầu nhà đầu tư' : 'Capture investor demand',
-                  isVi ? 'Điều phối đến đầu mối phụ trách' : 'Route to the responsible support desk',
-                  isVi
-                    ? 'Phối hợp bước tiếp theo trong quy trình cấp thành phố'
-                    : 'Coordinate the next step inside the city workflow',
+                  t('Capture investor demand'),
+                  t('Route to the responsible support desk'),
+                  t('Coordinate the next step inside the city workflow'),
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
                     <CheckCircle2
@@ -344,10 +330,10 @@ export default function IntakeFormPage() {
           >
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.blue }}>
-                {isVi ? 'Biểu mẫu tiếp nhận' : 'Intake form'}
+                {t('Intake form')}
               </div>
               <h2 className="mt-2 text-2xl font-semibold" style={{ color: BRAND.blue }}>
-                {isVi ? 'Gửi quan tâm dự án' : 'Submit project interest'}
+                {t('Submit project interest')}
               </h2>
             </div>
 
@@ -456,11 +442,7 @@ export default function IntakeFormPage() {
                   className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]"
                   value={form.notes}
                   onChange={(event) => updateField('notes', event.target.value)}
-                  placeholder={
-                    isVi
-                      ? 'Mô tả nhu cầu đầu tư, phạm vi quan tâm hoặc các lưu ý cần hỗ trợ.'
-                      : 'Describe your investment intent, scope of interest, or support needed.'
-                  }
+                  placeholder={t('Describe your investment intent, scope of interest, or support needed.')}
                 />
               </label>
 

@@ -72,13 +72,15 @@ const initialSupportForm = {
   contactName: '',
   email: '',
   phone: '',
-  topic: 'Clarification on project scope and next coordination steps',
+  topic: '',
   projectId: '',
   details: '',
 };
 
 export default function ExplorerPage() {
   const { language, projects, watchlist, toggleWatchlist, activeInvestorCompany, setActiveInvestorCompany, createIssue, createOpportunity } = useApp();
+  const t = (value: string) => translateText(value, language);
+  const defaultSupportTopic = t('Project clarification and next-step coordination');
   const heroRef = useRef<HTMLElement | null>(null);
   const [selectedSector, setSelectedSector] = useState(ALL_OPTION);
   const [selectedLocation, setSelectedLocation] = useState(ALL_OPTION);
@@ -99,13 +101,12 @@ export default function ExplorerPage() {
   const [supportForm, setSupportForm] = useState({
     ...initialSupportForm,
     companyName: activeInvestorCompany,
+    topic: defaultSupportTopic,
   });
   const [supportStep, setSupportStep] = useState<'form' | 'success'>('form');
   const [submittedSupportId, setSubmittedSupportId] = useState('');
   const [supportError, setSupportError] = useState('');
   const listRef = useRef<HTMLElement | null>(null);
-
-  const t = (value: string) => translateText(value, language);
 
   const sectorOptions = useMemo(
     () => [
@@ -120,7 +121,7 @@ export default function ExplorerPage() {
 
   const locationOptions = useMemo(
     () => [
-      { value: ALL_OPTION, label: language === 'vi' ? 'Tất cả địa bàn' : 'All areas' },
+      { value: ALL_OPTION, label: t('All areas') },
       ...administrativeLocationOptions.map((location) => ({
         value: location,
         label: getAdministrativeLocationLabel(location, language),
@@ -231,6 +232,7 @@ export default function ExplorerPage() {
     setSupportForm({
       ...initialSupportForm,
       companyName: activeInvestorCompany,
+      topic: defaultSupportTopic,
       projectId: '',
     });
     setSupportStep('form');
@@ -424,7 +426,7 @@ export default function ExplorerPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-[24px] font-semibold leading-8 text-[#341100]">
-                  {t("Can’t find a suitable project?")}
+                  {t("Can't find a suitable project?")}
                 </h2>
                 <p className="mt-1 text-[16px] leading-6 text-[#783200]">
                   {t("Tell us about your investment criteria and we'll find the right opportunity for you.")}
@@ -486,7 +488,7 @@ export default function ExplorerPage() {
                 <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Location')}</div>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                    <SelectValue placeholder={language === 'vi' ? 'Tất cả địa bàn' : 'All areas'} />
+                    <SelectValue placeholder={t('All areas')} />
                   </SelectTrigger>
                   <SelectContent>
                     {locationOptions.map((option) => (

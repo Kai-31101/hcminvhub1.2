@@ -106,7 +106,11 @@ export default function AdminPage() {
 
   const t = (value: string) => translateText(value, language);
   const isVi = language === 'vi';
-  const copy = (en: string, vi: string) => (isVi ? vi : en);
+  const copy = (en: string, vi?: string) => {
+    const localized = t(en);
+    if (localized !== en) return localized;
+    return isVi ? vi ?? en : en;
+  };
   const highlightedId = searchParams.get('highlight');
   const defaultTab: AdminTab = location.pathname.includes('/agencies') ? 'agencies' : 'access';
 

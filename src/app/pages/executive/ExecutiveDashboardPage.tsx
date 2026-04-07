@@ -63,7 +63,11 @@ export default function ExecutiveDashboardPage() {
   const { language, projects, projectJobs, agencies, users } = useApp();
   const t = (value: string) => translateText(value, language);
   const isVi = language === 'vi';
-  const copy = (en: string, vi: string) => (isVi ? vi : en);
+  const copy = (en: string, vi?: string) => {
+    const localized = t(en);
+    if (localized !== en) return localized;
+    return isVi ? vi ?? en : en;
+  };
 
   const [nameFilter, setNameFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');

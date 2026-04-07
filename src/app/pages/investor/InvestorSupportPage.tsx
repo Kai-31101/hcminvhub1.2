@@ -78,9 +78,7 @@ export default function InvestorSupportPage() {
           </div>
         </div>
         <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-          {language === 'vi'
-            ? 'T\u00ednh n\u0103ng n\u00e0y s\u1ebd \u0111\u01b0\u1ee3c t\u00edch h\u1ee3p v\u1edbi C\u1ed5ng giao ti\u1ebfp ITBC hi\u1ec7n t\u1ea1i.'
-            : 'This feature will be integrated with current ITBC Communication Portal.'}
+          {t('This feature will be integrated with current ITBC Communication Portal.')}
         </div>
       </section>
 

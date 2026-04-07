@@ -116,7 +116,7 @@ export default function HomePage() {
   );
   const locationOptions = useMemo(
     () => [
-      { value: ALL_OPTION, label: language === 'vi' ? 'T?t c? ??a b?n' : 'All areas' },
+      { value: ALL_OPTION, label: t('All areas') },
       ...administrativeLocationOptions.map((locationName) => ({
         value: locationName,
         label: getAdministrativeLocationLabel(locationName, language),
@@ -147,7 +147,7 @@ export default function HomePage() {
   const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
   const [submissionDialog, setSubmissionDialog] = useState<'fast_track' | 'support' | null>(null);
   const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: 'Vietnam', sector: '', locationNeed: 'Ho Chi Minh City', investmentSize: '', investmentType: '', notes: '' });
-  const [supportForm, setSupportForm] = useState<SupportDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', projectId: homeProjects[0]?.id ?? 'p1', topic: isVi ? 'L\u00e0m r\u00f5 d\u1ef1 \u00e1n v\u00e0 \u0111i\u1ec1u ph\u1ed1i b\u01b0\u1edbc ti\u1ebfp theo' : 'Project clarification and next-step coordination', message: '', urgent: false });
+  const [supportForm, setSupportForm] = useState<SupportDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', projectId: homeProjects[0]?.id ?? 'p1', topic: t('Project clarification and next-step coordination'), message: '', urgent: false });
   const filteredProjects = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
@@ -223,16 +223,16 @@ export default function HomePage() {
     [projects],
   );
   const navItems = [
-    { label: isVi ? 'Trang ch\u1ee7' : 'Home', id: 'top' },
-    { label: isVi ? 'D\u1ef1 \u00e1n' : 'Projects', id: 'discover' },
-    { label: isVi ? 'Tiếp nhận nhanh' : 'Quick intake', id: 'fast-track' },
-    { label: isVi ? 'H\u1ed7 tr\u1ee3' : 'Support', id: 'support' },
+    { label: t('Home'), id: 'top' },
+    { label: t('Projects'), id: 'discover' },
+    { label: t('Quick intake'), id: 'fast-track' },
+    { label: t('Support'), id: 'support' },
   ];
   const solutionCards = [
-    [ShieldCheck, isVi ? 'H\u1ed3 s\u01a1 \u0111\u00e3 x\u00e1c th\u1ef1c' : 'Verified project records', isVi ? 'H\u1ed3 s\u01a1 d\u1ef1 \u00e1n \u0111\u01b0\u1ee3c c\u1ea5u tr\u00fac r\u00f5 r\u00e0ng v\u00e0 s\u1eb5n s\u00e0ng cho quy tr\u00ecnh ra quy\u1ebft \u0111\u1ecbnh.' : 'Structured project records prepared for serious investment review.'],
-    [Compass, isVi ? 'L\u1ecdc nhanh theo t\u00edn hi\u1ec7u' : 'Signal-first discovery', isVi ? 'Kh\u00e1m ph\u00e1 theo l\u0129nh v\u1ef1c, quy m\u00f4, \u0111\u1ecba \u0111i\u1ec3m v\u00e0 m\u1ee9c \u0111\u1ed9 s\u1eb5n s\u00e0ng.' : 'Discover by sector, size, geography, and readiness.'],
-    [Globe2, isVi ? '\u0110i\u1ec1u ph\u1ed1i h\u1ed7 tr\u1ee3 \u0111\u00fang \u0111\u1ea7u m\u1ed1i' : 'Coordinated investor support', isVi ? 'Y\u00eau c\u1ea7u \u0111\u01b0\u1ee3c chuy\u1ec3n \u0111\u1ebfn \u0111\u00fang \u0111\u01a1n v\u1ecb x\u1eed l\u00fd trong h\u1ea1 t\u1ea7ng c\u1ea5p th\u00e0nh ph\u1ed1.' : 'Requests are routed to the responsible city support desk.'],
-    [Building2, isVi ? 'V\u1eadn h\u00e0nh c\u1ea5p th\u00e0nh ph\u1ed1' : 'City-operated platform', isVi ? 'Giao di\u1ec7n doanh nghi\u1ec7p, s\u00e1ng r\u00f5, kh\u00f4ng theo b\u1ed1 c\u1ee5c b\u00e1o \u0111i\u1ec7n t\u1eed.' : 'An enterprise interface designed as operating infrastructure, not a news portal.'],
+    [ShieldCheck, t('Verified project records'), t('Structured project records prepared for serious investment review.')],
+    [Compass, t('Signal-first discovery'), t('Discover by sector, size, geography, and readiness.')],
+    [Globe2, t('Coordinated investor support'), t('Requests are routed to the responsible city support desk.')],
+    [Building2, t('City-operated platform'), t('An enterprise interface designed as operating infrastructure, not a news portal.')],
   ];
   function closeSubmissionDialog() {
     setSubmissionDialog(null);
@@ -289,7 +289,7 @@ export default function HomePage() {
   function submitFastTrack(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!fastTrackForm.companyName || !fastTrackForm.contactName || !fastTrackForm.email) {
-      setFastTrackNotice(isVi ? 'Vui l\u00f2ng \u0111i\u1ec1n doanh nghi\u1ec7p, ng\u01b0\u1eddi li\u00ean h\u1ec7 v\u00e0 email.' : 'Please complete company, contact, and email.');
+      setFastTrackNotice(t('Please complete company, contact, and email.'));
       return;
     }
     setFastTrackNotice(null);
@@ -298,7 +298,7 @@ export default function HomePage() {
     if (!project) return;
     const opportunityId = createOpportunity({ projectId: project.id, projectName: project.name, investorName: fastTrackForm.contactName, investorCompany: fastTrackForm.companyName, investorCountry: fastTrackForm.country, investorType: 'Strategic', amount: amountFromInvestmentSize(fastTrackForm.investmentSize), stage: 'new', notes: `Homepage fast-track request. Preferred sector: ${fastTrackForm.sector}. Preferred location: ${fastTrackForm.locationNeed}.`, intakeData: { investmentStructure: fastTrackForm.investmentType, timeline: 'Requested via homepage fast-track entry', fundSource: 'To be confirmed', experience: fastTrackForm.notes || 'Homepage lead', contactEmail: fastTrackForm.email, contactPhone: fastTrackForm.phone || 'To be confirmed' } });
     createIssue({ projectId: project.id, projectName: project.name, title: `Fast-track matching request - ${fastTrackForm.companyName}`, description: fastTrackForm.notes || 'Homepage fast-track request', priority: 'high', status: 'open', assignedTo: 'Investor Relations Desk', dueDate: dueDate(2), reportedBy: fastTrackForm.contactName, category: 'Support' });
-    addNotification({ title: 'Fast-track lead captured', message: isVi ? 'Y\u00eau c\u1ea7u fast-track \u0111\u00e3 \u0111\u01b0\u1ee3c chuy\u1ec3n \u0111\u1ebfn b\u00e0n ph\u1ee5 tr\u00e1ch.' : 'Fast-track request routed to the responsible desk.', type: 'success', path: `/gov/opportunities/${opportunityId}` });
+    addNotification({ title: 'Fast-track lead captured', message: t('Fast-track request routed to the responsible desk.'), type: 'success', path: `/gov/opportunities/${opportunityId}` });
     setIsFastTrackModalOpen(false);
     setSubmissionDialog('fast_track');
   }
@@ -306,7 +306,7 @@ export default function HomePage() {
   function submitSupport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supportForm.companyName || !supportForm.contactName || !supportForm.email || !supportForm.phone || !supportForm.message) {
-      setSupportNotice(isVi ? 'Vui l\u00f2ng \u0111i\u1ec1n \u0111\u1ee7 th\u00f4ng tin h\u1ed7 tr\u1ee3.' : 'Please complete the support request details.');
+      setSupportNotice(t('Please complete the support request details.'));
       return;
     }
     setSupportNotice(null);
@@ -314,7 +314,7 @@ export default function HomePage() {
     const project = homeProjects.find((item) => item.id === supportForm.projectId) ?? homeProjects[0];
     if (!project) return;
     createIssue({ projectId: project.id, projectName: project.name, title: `Investor support desk request - ${supportForm.topic}`, description: supportForm.message, priority: supportForm.urgent ? 'high' : 'medium', status: 'open', assignedTo: 'Investor Support Desk', dueDate: dueDate(supportForm.urgent ? 1 : 3), reportedBy: supportForm.contactName, category: 'Support' });
-    addNotification({ title: 'Support request submitted', message: isVi ? 'Y\u00eau c\u1ea7u h\u1ed7 tr\u1ee3 \u0111\u00e3 \u0111\u01b0\u1ee3c chuy\u1ec3n \u0111\u1ebfn b\u00e0n ph\u1ee5 tr\u00e1ch.' : 'Support request routed to the responsible desk.', type: supportForm.urgent ? 'warning' : 'info', path: '/agency/projects' });
+    addNotification({ title: 'Support request submitted', message: t('Support request routed to the responsible desk.'), type: supportForm.urgent ? 'warning' : 'info', path: '/agency/projects' });
     setSubmissionDialog('support');
   }
 
@@ -325,9 +325,9 @@ export default function HomePage() {
           label: item.label,
           onClick: () => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' }),
         }))}
-        title={isVi ? OFFICIAL_VI_TITLE : OFFICIAL_EN_TITLE}
-        subtitle={isVi ? HEADER_VI_GOV_LABEL : HEADER_EN_GOV_LABEL}
-        actionLabel="Login"
+        title={t('Hochiminh City Investment Hub')}
+        subtitle={t("HO CHI MINH CITY PEOPLE'S COMMITTEE")}
+        actionLabel={t('Login')}
         actionTo="/login"
       />
       <main className="mx-auto max-w-[1180px] flex-1 px-5 pb-16 pt-0 lg:px-6">
@@ -338,11 +338,11 @@ export default function HomePage() {
                 type="button"
                 className="absolute inset-0 block cursor-pointer overflow-hidden"
                 onClick={enterInteractiveHero}
-                aria-label={isVi ? 'Mở banner tương tác' : 'Open interactive hero banner'}
+                aria-label={t('Open interactive hero banner')}
               >
                 <img
                   src={homeHeroFigmaCity}
-                  alt={isVi ? 'Banner đầu trang TP. Hồ Chí Minh' : 'Ho Chi Minh City hero banner'}
+                  alt={t('Ho Chi Minh City hero banner')}
                   className="h-full w-full scale-[1.08] object-cover object-[center_28%]"
                   draggable={false}
                 />
@@ -359,7 +359,7 @@ export default function HomePage() {
                       <span className="mt-2 block" style={{ color: '#ff6a00' }}>Investment Hub</span>
                     </h1>
                     <p className="mt-8 text-[20px] font-medium tracking-[0.03em] text-white/72">
-                      {isVi ? 'Cổng kết nối. Hỗ trợ đồng hành. Thành công đầu tư.' : OFFICIAL_TAGLINE}
+                      {t('Your Gateway. Our Support. Your Success')}
                     </p>
                     <div className="mt-8 flex flex-wrap items-center gap-6">
                       <Button
@@ -367,14 +367,14 @@ export default function HomePage() {
                         style={{ background: 'linear-gradient(180deg, #ff7a1a 0%, #ed6203 100%)' }}
                         onClick={() => document.getElementById('discover')?.scrollIntoView({ behavior: 'smooth' })}
                       >
-                        {isVi ? 'Khám phá cơ hội' : 'Explore Opportunities'}
+                        {t('Explore Opportunities')}
                       </Button>
                       <button
                         type="button"
                         className="text-[16px] font-semibold text-white underline decoration-[#ff6a00] decoration-[1.5px] underline-offset-4 transition hover:text-white/85"
                         onClick={enterInteractiveHero}
                       >
-                        {isVi ? 'Bản đồ tương tác' : 'Interactive Map'}
+                        {t('Interactive Map')}
                       </button>
                     </div>
                   </div>
@@ -394,7 +394,7 @@ export default function HomePage() {
               <div className="absolute inset-0 overflow-hidden">
                 <img
                   src={homeHeroInteractive}
-                  alt={isVi ? 'Banner tương tác TP. Hồ Chí Minh' : 'Ho Chi Minh City interactive hero banner'}
+                  alt={t('Ho Chi Minh City interactive hero banner')}
                   className="h-full w-full object-cover object-center"
                   draggable={false}
                 />
@@ -408,7 +408,7 @@ export default function HomePage() {
                     className="inline-flex items-center gap-2 rounded-full border border-white/24 bg-[rgba(4,18,33,0.48)] px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-[rgba(4,18,33,0.68)]"
                   >
                     <ArrowLeft size={16} />
-                    {isVi ? 'Quay lại banner gốc' : 'Back'}
+                    {t('Back')}
                   </button>
                 </div>
                 <div className="absolute inset-0">
@@ -453,7 +453,7 @@ export default function HomePage() {
                                 {t(project.description).slice(0, 86)}...
                               </span>
                               <span className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold text-[#ffb77c]">
-                                {isVi ? 'Mở chi tiết dự án' : 'Open project detail'}
+                                {t('Open project detail')}
                                 <ArrowRight size={12} />
                               </span>
                             </span>
@@ -539,7 +539,7 @@ export default function HomePage() {
                   <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Location')}</div>
                   <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                     <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                      <SelectValue placeholder={isVi ? 'T\u1ea5t c\u1ea3 \u0111\u1ecba b\u00e0n' : 'All areas'} />
+                  <SelectValue placeholder={t('All areas')} />
                     </SelectTrigger>
                     <SelectContent>
                       {locationOptions.map((option) => (
@@ -603,7 +603,7 @@ export default function HomePage() {
         </section>
 
         <section id="featured-projects" ref={featuredProjectsRef} className="mt-12 space-y-10">
-          <div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'D\u1ef1 \u00e1n \u0111\u1ea7u t\u01b0 n\u1ed5i b\u1eadt' : 'Featured investment projects'}</h2></div>
+          <div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{t('Featured investment projects')}</h2></div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-[14px] text-[#455f87]">
               {t('Showing')} <span className="font-semibold text-[#191c1e]">{filteredProjects.length}</span> {t('projects')}
@@ -776,7 +776,7 @@ export default function HomePage() {
           )}
         </section>
 
-        <section className="mt-14"><div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Gi\u1ea3i ph\u00e1p to\u00e0n di\u1ec7n cho nh\u00e0 \u0111\u1ea7u t\u01b0' : 'Comprehensive solutions for investors'}</h2></div>
+        <section className="mt-14"><div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{t('Comprehensive solutions for investors')}</h2></div>
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {solutionCards.map(([Icon, title, body]) => <Card key={title as string} className="rounded-none border bg-white shadow-[0_10px_30px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}><CardContent className="p-5 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-none" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><Icon size={20} /></div><h3 className="mt-4 text-lg font-semibold" style={{ color: BRAND.blue }}>{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{body}</p></CardContent></Card>)}
           </div>
@@ -792,9 +792,9 @@ export default function HomePage() {
           </div>
         </section>
         <section className="mt-14">
-          <div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Tin t\u1ee9c \u0111\u1ea7u t\u01b0 TP. H\u1ed3 Ch\u00ed Minh' : 'Why Ho Chi Minh City?'}</h2></div>
+          <div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{t('Why Ho Chi Minh City?')}</h2></div>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            {investmentNews.map((item, index) => <a key={item.href} href={item.href} target="_blank" rel="noreferrer"><Card className="h-full overflow-hidden rounded-none border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)] transition-transform hover:-translate-y-1" style={{ borderColor: BRAND.blueBorder }}><div className="h-2" style={{ background: index % 2 === 0 ? `linear-gradient(90deg, ${BRAND.orange} 0%, #ffb77c 100%)` : `linear-gradient(90deg, ${BRAND.blue} 0%, #2e5f8f 100%)` }} /><div className="h-[220px] overflow-hidden bg-slate-100"><img src={item.image} alt={isVi ? item.viTitle : item.enTitle} className="h-full w-full object-cover" /></div><CardContent className="p-5"><div className="flex items-center justify-between gap-3"><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{item.source}</span><span className="text-xs text-slate-400">{isVi ? item.viDate : item.enDate}</span></div><h3 className="mt-4 text-lg font-semibold leading-snug" style={{ color: BRAND.blue }}>{isVi ? item.viTitle : item.enTitle}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{isVi ? item.viSummary : item.enSummary}</p><div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold" style={{ color: BRAND.blue }}>{isVi ? '\u0110\u1ecdc ngu\u1ed3n tin' : 'Read source'}<ArrowRight size={14} /></div></CardContent></Card></a>)}
+            {investmentNews.map((item, index) => <a key={item.href} href={item.href} target="_blank" rel="noreferrer"><Card className="h-full overflow-hidden rounded-none border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)] transition-transform hover:-translate-y-1" style={{ borderColor: BRAND.blueBorder }}><div className="h-2" style={{ background: index % 2 === 0 ? `linear-gradient(90deg, ${BRAND.orange} 0%, #ffb77c 100%)` : `linear-gradient(90deg, ${BRAND.blue} 0%, #2e5f8f 100%)` }} /><div className="h-[220px] overflow-hidden bg-slate-100"><img src={item.image} alt={isVi ? item.viTitle : item.enTitle} className="h-full w-full object-cover" /></div><CardContent className="p-5"><div className="flex items-center justify-between gap-3"><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{item.source}</span><span className="text-xs text-slate-400">{isVi ? item.viDate : item.enDate}</span></div><h3 className="mt-4 text-lg font-semibold leading-snug" style={{ color: BRAND.blue }}>{isVi ? item.viTitle : item.enTitle}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{isVi ? item.viSummary : item.enSummary}</p><div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold" style={{ color: BRAND.blue }}>{t('Read source')}<ArrowRight size={14} /></div></CardContent></Card></a>)}
           </div>
         </section>
         <section id="support" className="mt-16">
@@ -810,12 +810,10 @@ export default function HomePage() {
                       <Headset size={44} />
                     </div>
                     <h2 className="mt-4 text-[24px] font-semibold leading-[1.2] text-white lg:text-[26px]">
-                      {isVi ? 'C\u1ea7n h\u1ed7 tr\u1ee3 trong h\u00e0nh tr\u00ecnh \u0111\u1ea7u t\u01b0 c\u1ee7a b\u1ea1n?' : 'Need assistance with your investment journey?'}
+                      {t('Need assistance with your investment journey?')}
                     </h2>
                     <p className="mt-2 max-w-[560px] text-[15px] leading-[1.5] text-white/88 lg:text-[16px]">
-                      {isVi
-                        ? '\u0110\u1ed9i ng\u0169 c\u1ee7a ch\u00fang t\u00f4i s\u1eb5n s\u00e0ng cung c\u1ea5p h\u01b0\u1edbng d\u1eabn chuy\u00ean s\u00e2u v\u00e0 h\u1ed7 tr\u1ee3 th\u1ee7 t\u1ee5c trong t\u1eebng b\u01b0\u1edbc tri\u1ec3n khai d\u1ef1 \u00e1n.'
-                        : 'Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.'}
+                      {t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')}
                     </p>
                   </div>
                 </div>
@@ -823,7 +821,7 @@ export default function HomePage() {
 
               <div className="flex min-h-0 flex-col bg-white">
                 <div className="shrink-0 bg-[#5872A0] px-8 py-3 text-center text-[20px] font-semibold text-white md:px-12 md:py-4">
-                  {isVi ? 'H\u1ed7 tr\u1ee3 \u0111\u1ea7u t\u01b0' : 'Investment Support'}
+                  {t('Investment Support')}
                 </div>
                 <div className="flex-1 px-5 py-4 md:px-8 md:py-4">
                   <form className="space-y-4" onSubmit={submitSupport}>
@@ -835,20 +833,20 @@ export default function HomePage() {
 
                     <div className="grid gap-3 md:grid-cols-2">
                       <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'T\u00ean doanh nghi\u1ec7p' : 'Company Name'} <span className="text-[#f97316]">(*)</span></span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Company Name')} <span className="text-[#f97316]">(*)</span></span>
                         <Input
                           value={supportForm.companyName}
                           onChange={(event) => setSupportForm((current) => ({ ...current, companyName: event.target.value }))}
-                          placeholder={isVi ? 'Nh\u1eadp t\u00ean doanh nghi\u1ec7p' : 'Enter company name'}
+                          placeholder={t('Enter company name')}
                           className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                         />
                       </label>
                       <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Ng\u01b0\u1eddi li\u00ean h\u1ec7' : 'Contact Person'} <span className="text-[#f97316]">(*)</span></span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Contact Person')} <span className="text-[#f97316]">(*)</span></span>
                         <Input
                           value={supportForm.contactName}
                           onChange={(event) => setSupportForm((current) => ({ ...current, contactName: event.target.value }))}
-                          placeholder={isVi ? 'Nh\u1eadp h\u1ecd t\u00ean' : 'Enter full name'}
+                          placeholder={t('Enter full name')}
                           className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                         />
                       </label>
@@ -858,30 +856,30 @@ export default function HomePage() {
                           type="email"
                           value={supportForm.email}
                           onChange={(event) => setSupportForm((current) => ({ ...current, email: event.target.value }))}
-                          placeholder={isVi ? 'Nh\u1eadp email' : 'Enter email address'}
+                          placeholder={t('Enter email address')}
                           className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                         />
                       </label>
                       <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'S\u1ed1 \u0111i\u1ec7n tho\u1ea1i' : 'Phone Number'} <span className="text-[#f97316]">(*)</span></span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Phone Number')} <span className="text-[#f97316]">(*)</span></span>
                         <Input
                           value={supportForm.phone}
                           onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
-                          placeholder={isVi ? 'Nh\u1eadp s\u1ed1 \u0111i\u1ec7n tho\u1ea1i' : 'Enter phone number'}
+                          placeholder={t('Enter phone number')}
                           className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                         />
                       </label>
                       <label className="space-y-2 md:col-span-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Ch\u1ee7 \u0111\u1ec1 h\u1ed7 tr\u1ee3' : 'Support Topic'}</span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Support Topic')}</span>
                         <Input
                           value={supportForm.topic}
                           onChange={(event) => setSupportForm((current) => ({ ...current, topic: event.target.value }))}
-                          placeholder={isVi ? 'N\u00eau ch\u1ee7 \u0111\u1ec1 c\u1ea7n h\u1ed7 tr\u1ee3' : 'Clarification on project scope and next coordination steps'}
+                          placeholder={t('Project clarification and next-step coordination')}
                           className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                         />
                       </label>
                       <label className="space-y-2 md:col-span-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'D\u1ef1 \u00e1n' : 'Project'}</span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Project')}</span>
                         <select
                           value={supportForm.projectId}
                           onChange={(event) => setSupportForm((current) => ({ ...current, projectId: event.target.value }))}
@@ -893,12 +891,12 @@ export default function HomePage() {
                         </select>
                       </label>
                       <label className="space-y-2 md:col-span-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'N\u1ed9i dung h\u1ed7 tr\u1ee3' : 'Support Details'} <span className="text-[#f97316]">(*)</span></span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Support Details')} <span className="text-[#f97316]">(*)</span></span>
                         <Textarea
                           value={supportForm.message}
                           onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
                           rows={4}
-                          placeholder={isVi ? 'Nh\u1eadp n\u1ed9i dung y\u00eau c\u1ea7u h\u1ed7 tr\u1ee3' : 'Enter your request details'}
+                          placeholder={t('Enter your request details')}
                           className="min-h-[96px] rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 py-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                         />
                       </label>
@@ -910,7 +908,7 @@ export default function HomePage() {
                         className="inline-flex min-w-[260px] items-center justify-center gap-3 bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-7 py-3 text-[18px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
                       >
                         <Headset size={20} />
-                        {isVi ? 'Li\u00ean h\u1ec7 h\u1ed7 tr\u1ee3' : 'Contact Support'}
+                        {t('Contact Support')}
                       </button>
                     </div>
                   </form>
@@ -923,29 +921,29 @@ export default function HomePage() {
       {isFastTrackModalOpen && (
         <ExplorerActionModal
           onClose={closeFastTrackModal}
-          panelTitle={isVi ? 'Tiếp nhận nhanh' : 'Quick Intake'}
+          panelTitle={t('Quick Intake')}
           leftIcon={<Headset size={44} />}
-          leftTitle={isVi ? 'Tiếp nhận nhanh' : 'Quick Intake'}
+          leftTitle={t('Quick Intake')}
           leftDescription={t('Submit a quick intake so the platform can route the responsible desk and coordinate the next step inside the city workflow.')}
         >
           <form onSubmit={submitFastTrack} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Tên doanh nghiệp' : 'Company Name'} <span className="text-[#f97316]">(*)</span></span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Company Name')} <span className="text-[#f97316]">(*)</span></span>
                 <Input
                   value={fastTrackForm.companyName}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, companyName: event.target.value }))}
                   className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                  placeholder={isVi ? 'Nhập tên doanh nghiệp' : 'Enter company name'}
+                  placeholder={t('Enter company name')}
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Người liên hệ' : 'Contact Person'} <span className="text-[#f97316]">(*)</span></span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Contact Person')} <span className="text-[#f97316]">(*)</span></span>
                 <Input
                   value={fastTrackForm.contactName}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, contactName: event.target.value }))}
                   className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                  placeholder={isVi ? 'Nhập họ tên' : 'Enter full name'}
+                  placeholder={t('Enter full name')}
                 />
               </label>
               <label className="space-y-2">
@@ -955,62 +953,62 @@ export default function HomePage() {
                   value={fastTrackForm.email}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, email: event.target.value }))}
                   className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                  placeholder={isVi ? 'Nhập địa chỉ email' : 'Enter email address'}
+                  placeholder={t('Enter email address')}
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Số điện thoại' : 'Phone Number'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Phone Number')}</span>
                 <Input
                   value={fastTrackForm.phone}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, phone: event.target.value }))}
                   className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                  placeholder={isVi ? 'Nhập số điện thoại' : 'Enter phone number'}
+                  placeholder={t('Enter phone number')}
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Quốc gia' : 'Country'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Country')}</span>
                 <Input
                   value={fastTrackForm.country}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, country: event.target.value }))}
                   className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                  placeholder={isVi ? 'Nhập quốc gia' : 'Enter country'}
+                  placeholder={t('Enter country')}
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Lĩnh vực quan tâm' : 'Preferred Sector'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Preferred Sector')}</span>
                 <ClearableSelectField
-                  ariaLabel={isVi ? 'Lĩnh vực quan tâm' : 'Preferred Sector'}
+                  ariaLabel={t('Preferred Sector')}
                   value={fastTrackForm.sector}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, sector: value }))}
-                  placeholder={isVi ? 'Chọn lĩnh vực quan tâm' : 'Select preferred sector'}
+                  placeholder={t('Select preferred sector')}
                   options={sectors.map((sector) => ({ value: sector, label: t(sector) }))}
                   className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Địa bàn quan tâm' : 'Preferred Location'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Preferred Location')}</span>
                 <Input
                   value={fastTrackForm.locationNeed}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, locationNeed: event.target.value }))}
                   className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                  placeholder={isVi ? 'Nhập địa bàn ưu tiên' : 'Enter preferred location'}
+                  placeholder={t('Enter preferred location')}
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Quy mô đầu tư' : 'Investment Size'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Investment Size')}</span>
                 <ClearableSelectField
-                  ariaLabel={isVi ? 'Quy mô đầu tư' : 'Investment Size'}
+                  ariaLabel={t('Investment Size')}
                   value={fastTrackForm.investmentSize}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentSize: value }))}
-                  placeholder={isVi ? 'Chọn quy mô đầu tư' : 'Select investment size'}
+                  placeholder={t('Select investment size')}
                   options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: option }))}
                   className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
                 />
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Hình thức đầu tư' : 'Investment Type'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Investment Type')}</span>
                 <ClearableSelectField
-                  ariaLabel={isVi ? 'Hình thức đầu tư' : 'Investment Type'}
+                  ariaLabel={t('Investment Type')}
                   value={fastTrackForm.investmentType}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentType: value }))}
                   placeholder={t('Select investment type')}
@@ -1019,12 +1017,12 @@ export default function HomePage() {
                 />
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Ghi chú' : 'Notes'}</span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Notes')}</span>
                 <Textarea
                   value={fastTrackForm.notes}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, notes: event.target.value }))}
                   rows={4}
-                  placeholder={isVi ? 'Nhập mô tả ngắn về nhu cầu đầu tư' : 'Enter a short note about your investment needs'}
+                  placeholder={t('Enter a short note about your investment needs')}
                   className="min-h-[110px] rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 py-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
                 />
               </label>
@@ -1055,13 +1053,13 @@ export default function HomePage() {
               <div>
                 <div className="text-base font-semibold text-slate-900">
                   {submissionDialog === 'fast_track'
-                    ? (isVi ? 'Đã gửi yêu cầu tiếp nhận nhanh' : 'Fast-track request submitted')
+                    ? t('Fast-track request submitted')
                     : t('Support request submitted')}
                 </div>
                 <div className="mt-1 text-sm text-slate-500">
                   {submissionDialog === 'fast_track'
-                    ? (isVi ? 'Yêu cầu đã được ghi nhận và chuyển vào luồng điều phối phù hợp.' : 'Your request has been recorded and routed into the matching workflow.')
-                    : (isVi ? 'Yêu cầu hỗ trợ đã được ghi nhận và chuyển tới đầu mối phụ trách.' : 'Your support request has been recorded and routed to the responsible desk.')}
+                    ? t('Your request has been recorded and routed into the matching workflow.')
+                    : t('Your support request has been recorded and routed to the responsible desk.')}
                 </div>
               </div>
               <button type="button" onClick={closeSubmissionDialog} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
@@ -1073,7 +1071,7 @@ export default function HomePage() {
                 <CheckCircle2 size={24} className="mx-auto text-emerald-700" />
                 <div className="mt-2 text-sm font-semibold text-emerald-900">
                   {submissionDialog === 'fast_track'
-                    ? (isVi ? 'Đã gửi yêu cầu tiếp nhận nhanh' : 'Fast-track request submitted')
+                    ? t('Fast-track request submitted')
                     : t('Support request submitted')}
                 </div>
                 <div className="mt-1 text-xs text-emerald-700">
@@ -1095,5 +1093,4 @@ export default function HomePage() {
     </div>
   );
 }
-
 
