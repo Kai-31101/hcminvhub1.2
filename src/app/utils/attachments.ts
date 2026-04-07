@@ -1,0 +1,29 @@
+import { AttachmentItem } from '../context/AppContext';
+
+function triggerBrowserDownload(url: string, fileName: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export function downloadAttachment(file: AttachmentItem) {
+  if (file.fileUrl) {
+    triggerBrowserDownload(file.fileUrl, file.fileName);
+    return;
+  }
+
+  const fallbackContent = [
+    `Attachment: ${file.fileName}`,
+    `Uploaded: ${file.lastUploadDate || 'Unknown'}`,
+    '',
+    'This demo workspace stores attachment metadata only.',
+  ].join('\n');
+
+  const blob = new Blob([fallbackContent], { type: 'application/octet-stream' });
+  const objectUrl = URL.createObjectURL(blob);
+  triggerBrowserDownload(objectUrl, file.fileName);
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+}

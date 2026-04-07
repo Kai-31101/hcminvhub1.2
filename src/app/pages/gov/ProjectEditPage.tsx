@@ -62,10 +62,8 @@ export default function ProjectEditPage() {
   const {
     projects,
     updateProject,
-    updateOpportunity,
     language,
     agencies,
-    opportunities,
     requiredDataAssignments,
     projectJobs,
     getProjectProcessingSummary,
@@ -114,9 +112,6 @@ export default function ProjectEditPage() {
   const projectAssignments = requiredDataAssignments.filter((item) => item.projectId === activeProject.id);
   const projectJobItems = projectJobs.filter((item) => item.projectId === activeProject.id);
   const processingSummary = getProjectProcessingSummary(activeProject.id);
-  const latestOpportunity = opportunities
-    .filter((item) => item.projectId === activeProject.id)
-    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0];
   const isDataQualityMode = searchParams.get('focus') === 'data-quality';
   const projectJobFieldClass = 'app-input !border-slate-400 focus:!border-slate-500';
   const currentProjectStatus = normalizeProjectStatus(form.stage || activeProject.stage, form.stage || activeProject.stage);
@@ -135,7 +130,7 @@ export default function ProjectEditPage() {
   };
 
   const missingDataItems = [
-    !projectAssignments.length ? t('Define at least one required data item and assign an owner.') : null,
+    !projectAssignments.length ? t('Define at least one required data item and assign a coordinating unit.') : null,
     projectAssignments.some((item) => item.status !== 'complete') ? t('Complete all required data items before final publication review.') : null,
     !projectJobItems.length ? t('Define at least one project job to establish the delivery process.') : null,
     projectJobItems.some((item) => item.status !== 'complete') ? t('Close outstanding project jobs to reach full processing readiness.') : null,
@@ -166,8 +161,6 @@ export default function ProjectEditPage() {
   }
 
   function handleCreateJob() {
-    const agencyPeopleInCharge = getAgencyPeopleInCharge(newJob.agencyId);
-    const selectedPerson = agencyPeopleInCharge.find((person) => person.id === newJob.userId) ?? agencyPeopleInCharge[0];
     if (!newJob.title.trim() || !newJob.description.trim() || !newJob.agencyId || !selectedPerson?.id) return;
     createProjectJob({
       projectId: activeProject.id,
@@ -358,86 +351,11 @@ export default function ProjectEditPage() {
 
         </div>
 
-        {latestOpportunity ? (
-          <section className="section-panel p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="section-heading mb-0">{t('Investor Details')}</h2>
-              <StatusPill tone="info">{t('Linked investor record')}</StatusPill>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Representative')}</span>
-                <input
-                  value={latestOpportunity.investorName}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { investorName: event.target.value })}
-                  className="app-input"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Organization')}</span>
-                <input
-                  value={latestOpportunity.investorCompany}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { investorCompany: event.target.value })}
-                  className="app-input"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Country')}</span>
-                <input
-                  value={latestOpportunity.investorCountry}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { investorCountry: event.target.value })}
-                  className="app-input"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Investor Type')}</span>
-                <input
-                  value={latestOpportunity.investorType}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { investorType: event.target.value })}
-                  className="app-input"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Investment')}</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={latestOpportunity.amount}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { amount: Number(event.target.value || 0) })}
-                  className="app-input"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Submitted At')}</span>
-                <input
-                  type="date"
-                  value={latestOpportunity.submittedAt}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { submittedAt: event.target.value })}
-                  className="app-input"
-                />
-              </label>
-              <DataRow className="md:col-span-2">
-                <div className="text-sm text-slate-500">{t('Last Updated At')}</div>
-                <div className="text-sm font-semibold text-slate-900">{latestOpportunity.updatedAt}</div>
-              </DataRow>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Notes')}</span>
-                <textarea
-                  rows={4}
-                  value={latestOpportunity.notes}
-                  onChange={(event) => updateOpportunity(latestOpportunity.id, { notes: event.target.value })}
-                  className="app-input min-h-24"
-                />
-              </label>
-            </div>
-          </section>
-        ) : null}
-
         <section className="section-panel p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="section-heading mb-1">{t('Project Jobs')}</h2>
-              <p className="section-subheading">{t('Track the delivery process with accountable jobs, due dates, notes, and the latest uploaded work product.')}</p>
+              <p className="section-subheading">{t('Track the delivery process with coordinated jobs, due dates, notes, and the latest uploaded work product.')}</p>
             </div>
             <StatusPill tone={processingSummary.completed === processingSummary.total && processingSummary.total > 0 ? 'success' : 'info'}>
               {processingSummary.completed}/{processingSummary.total}
@@ -447,9 +365,7 @@ export default function ProjectEditPage() {
           <div className="space-y-4">
             {projectJobItems.length > 0 &&
               projectJobItems.map((job) => {
-                const jobAgency = agencies.find((item) => item.id === job.agencyId);
-                const jobPeopleInCharge = getAgencyPeopleInCharge(job.agencyId);
-                const selectedPersonInCharge = jobPeopleInCharge.find((person) => person.id === job.userId) ?? jobPeopleInCharge[0];
+                const jobAgency = agencies.find((item) => item.id === job.agencyId);
                 const jobAlert = getAlertMeta(job, t);
                 return (
                   <div key={job.id} className="relative rounded-2xl border border-slate-200 bg-white p-5 pb-16 shadow-sm">
@@ -458,10 +374,7 @@ export default function ProjectEditPage() {
                         <div className="text-base font-semibold text-slate-900">{job.title}</div>
                         <div className="mt-1 text-sm text-slate-600">{job.description}</div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1">{jobAgency?.shortName ?? '-'}</span>
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1">
-                            {selectedPersonInCharge ? `${selectedPersonInCharge.name} - ${selectedPersonInCharge.title}` : '-'}
-                          </span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1">{jobAgency?.shortName ?? '-'}</span>
                         </div>
                       </div>
                       <div className="flex min-w-[12rem] flex-col items-end gap-2">
@@ -538,20 +451,6 @@ export default function ProjectEditPage() {
                           {agencies.filter((item) => item.status === 'active').map((agency) => (
                             <option key={agency.id} value={agency.id}>
                               {agency.shortName} - {agency.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="space-y-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('People in charge')}</span>
-                        <select
-                          value={selectedPersonInCharge?.id ?? ''}
-                          onChange={(event) => updateProjectJob(job.id, { userId: event.target.value })}
-                          className={projectJobFieldClass}
-                        >
-                          {jobPeopleInCharge.map((person) => (
-                            <option key={person.id} value={person.id}>
-                              {person.name} - {person.title}
                             </option>
                           ))}
                         </select>
@@ -636,7 +535,7 @@ export default function ProjectEditPage() {
                         </div>
                       </div>
                       <label className="space-y-2 xl:col-span-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Owner note')}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Coordination note')}</span>
                         <textarea
                           rows={8}
                           value={job.note ?? ''}
@@ -666,7 +565,7 @@ export default function ProjectEditPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-slate-900">{t('Add project job')}</div>
-                <div className="mt-1 text-xs text-slate-500">{t('Create a delivery job with a due date, owner, and latest uploaded work product.')}</div>
+                <div className="mt-1 text-xs text-slate-500">{t('Create a delivery job with a due date and latest uploaded work product.')}</div>
               </div>
               <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{t('New row')}</div>
             </div>
@@ -696,17 +595,7 @@ export default function ProjectEditPage() {
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('People in charge')}</span>
-                <select value={newJob.userId} onChange={(event) => setNewJob((current) => ({ ...current, userId: event.target.value }))} className={projectJobFieldClass}>
-                  {getAgencyPeopleInCharge(newJob.agencyId).map((person) => (
-                    <option key={person.id} value={person.id}>
-                      {person.name} - {person.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              </label>
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Due date')}</span>
                 <input
@@ -801,7 +690,7 @@ export default function ProjectEditPage() {
                 </div>
               </label>
               <label className="space-y-2 md:col-span-2 xl:col-span-3">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Owner note')}</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Coordination note')}</span>
                 <textarea rows={3} value={newJob.note} onChange={(event) => setNewJob((current) => ({ ...current, note: event.target.value }))} className={`${projectJobFieldClass} min-h-24`} />
               </label>
             </div>

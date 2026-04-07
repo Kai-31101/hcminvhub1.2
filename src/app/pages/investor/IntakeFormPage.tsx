@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
+import { getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { useApp } from '../../context/AppContext';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
@@ -86,6 +87,7 @@ export default function IntakeFormPage() {
   } = useApp();
   const t = (value: string) => translateText(value, language);
   const project = projects.find((item) => item.id === projectId);
+  const locationLabel = project ? getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language) : '';
 
   const latestKnownProfile = useMemo(() => {
     const related = opportunities
@@ -308,7 +310,7 @@ export default function IntakeFormPage() {
             <div className="mt-5 rounded-2xl border bg-white p-5" style={{ borderColor: BRAND.blueBorder }}>
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <StatusPill tone="info">{t(project.sector)}</StatusPill>
-                <StatusPill tone="default">{t(project.location)}</StatusPill>
+                <StatusPill tone="default">{locationLabel}</StatusPill>
               </div>
               <div className="text-base font-semibold text-slate-900">{t(project.name)}</div>
               <div className="mt-4 space-y-2 text-sm text-slate-700">

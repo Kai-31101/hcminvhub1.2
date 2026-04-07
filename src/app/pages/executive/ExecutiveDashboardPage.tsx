@@ -23,8 +23,7 @@ type DashboardJobItem = {
   daysUntilDue: number;
   projectId: string;
   projectName: string;
-  agencyName: string;
-  ownerName: string;
+  agencyName: string;
   status: 'complete' | 'incomplete';
   latestAttachmentName?: string;
   latestAttachmentDate?: string;
@@ -60,7 +59,7 @@ function buildCountGroups(values: string[]) {
 }
 
 export default function ExecutiveDashboardPage() {
-  const { language, projects, projectJobs, agencies, users } = useApp();
+  const { language, projects, projectJobs, agencies } = useApp();
   const t = (value: string) => translateText(value, language);
   const isVi = language === 'vi';
   const copy = (en: string, vi?: string) => {
@@ -156,8 +155,6 @@ export default function ExecutiveDashboardPage() {
         .map((job) => {
           const project = projects.find((item) => item.id === job.projectId);
           const agency = agencies.find((item) => item.id === job.agencyId);
-          const officer = agency?.peopleInCharge?.find((person) => person.id === job.userId);
-          const user = users.find((item) => item.id === job.userId);
 
           return {
             id: job.id,
@@ -168,15 +165,14 @@ export default function ExecutiveDashboardPage() {
             daysUntilDue: getDaysUntilDue(job.dueDate),
             projectId: job.projectId,
             projectName: project?.name ?? job.projectId,
-            agencyName: isVi ? agency?.nameVi ?? agency?.name ?? '-' : agency?.nameEn ?? agency?.name ?? '-',
-            ownerName: (isVi ? officer?.nameVi : officer?.nameEn) ?? officer?.name ?? user?.name ?? '-',
+            agencyName: isVi ? agency?.nameVi ?? agency?.name ?? '-' : agency?.nameEn ?? agency?.name ?? '-',
             status: job.status,
             latestAttachmentName: job.attachments?.[0]?.fileName,
             latestAttachmentDate: job.attachments?.[0]?.lastUploadDate,
           };
         })
         .sort((left, right) => left.daysUntilDue - right.daysUntilDue),
-    [agencies, filteredProjectIds, isVi, projectJobs, projects, users],
+    [agencies, filteredProjectIds, isVi, projectJobs, projects],
   );
 
   const delayedJobs = useMemo(
@@ -546,11 +542,7 @@ export default function ExecutiveDashboardPage() {
                 <DataRow>
                   <div className="text-sm text-slate-500">{copy('Coordinating Unit', 'Đơn vị điều phối')}</div>
                   <div className="text-sm font-semibold text-slate-900">{t(selectedJob.agencyName)}</div>
-                </DataRow>
-                <DataRow>
-                  <div className="text-sm text-slate-500">{copy('Person in charge', 'Người phụ trách')}</div>
-                  <div className="text-sm font-semibold text-slate-900">{selectedJob.ownerName}</div>
-                </DataRow>
+                </DataRow>
                 <DataRow>
                   <div className="text-sm text-slate-500">{copy('Due date', 'Ngày đến hạn')}</div>
                   <div className="text-sm font-semibold text-slate-900">{selectedJob.dueDate}</div>

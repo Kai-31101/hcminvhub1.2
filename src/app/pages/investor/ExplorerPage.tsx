@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowRight, Headset, Landmark, Map, MapPin, Search, Send, Star, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, Headset, Landmark, Map, MapPin, Search, Send, Star, TrendingUp } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
+import { ExplorerActionModal } from '../../components/ExplorerActionModal';
 import { Input } from '../../components/ui/input';
 import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -573,6 +574,7 @@ export default function ExplorerPage() {
             {visibleProjects.map((project) => {
           const isWatching = watchlist.includes(project.id);
           const followerCount = getMockFollowerCount(project.id, project.budget);
+          const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
 
           return (
             <Link
@@ -617,7 +619,7 @@ export default function ExplorerPage() {
                   </h2>
                   <div className="mt-3 flex items-center gap-2 text-[12px] text-[#455f87]">
                     <MapPin size={13} />
-                    <span className="line-clamp-1">{t(project.location)}</span>
+                    <span className="line-clamp-1">{locationLabel}</span>
                   </div>
                   <p className="mt-4 line-clamp-3 min-h-[72px] text-[14px] leading-[1.65] text-[#455f87]">
                     {t(project.description)}
@@ -806,48 +808,22 @@ export default function ExplorerPage() {
 
 
       {activeModal && (
-        <div className="fixed inset-0 z-[140] overflow-y-auto bg-[rgba(15,23,42,0.72)] p-4 md:p-8">
-          <div className="relative mx-auto w-full max-w-[1760px] overflow-hidden rounded-[40px] shadow-[0_32px_72px_rgba(15,23,42,0.35)]">
-            <button
-              type="button"
-              onClick={closeModal}
-              className="absolute right-6 top-6 z-20 inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/90 bg-[rgba(255,255,255,0.06)] text-white backdrop-blur-sm transition-opacity hover:opacity-90"
-            >
-              <X size={28} />
-            </button>
-
-            <div className="grid min-h-[820px] bg-white lg:grid-cols-[1fr_1.08fr]">
-              <div className="relative hidden lg:block">
-                <img src={designHeroSkyline} alt="" className="h-full w-full object-cover object-center" />
-                <div className="absolute inset-0 bg-[rgba(7,17,31,0.62)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,31,0.22)_0%,rgba(7,17,31,0.68)_100%)]" />
-
-                <div className="absolute inset-0 flex items-center justify-center px-12">
-                  <div className="flex max-w-[640px] flex-col items-center text-center text-white">
-                    <div className="inline-flex h-[124px] w-[124px] items-center justify-center rounded-[20px] bg-[#ffe6d8] text-[#f97316] shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
-                      {activeModal === 'interest' ? <Landmark size={54} /> : <Headset size={54} />}
-                    </div>
-                    <h2 className="mt-6 text-[34px] font-semibold leading-[1.2] text-white">
-                      {activeModal === 'interest'
-                        ? t('Ready to submit your investment interest?')
-                        : t('Need assistance with your investment journey?')}
-                    </h2>
-                    <p className="mt-4 max-w-[640px] text-[19px] leading-[1.65] text-white/88">
-                      {activeModal === 'interest'
-                        ? t('Share your company profile and project intent. Our team will capture the request and coordinate the next step in the city investment workflow.')
-                        : t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white">
-                <div className="bg-[#5872A0] px-8 py-8 text-center text-[32px] font-semibold text-white md:px-12 md:py-10">
-                  {activeModal === 'interest' ? t('Investment Interest') : t('Investment Support')}
-                </div>
-
-                <div className="px-6 py-8 md:px-10 md:py-10">
-                  {activeModal === 'interest' && interestStep === 'form' && (
+        <ExplorerActionModal
+          onClose={closeModal}
+          panelTitle={activeModal === 'interest' ? t('Investment Interest') : t('Investment Support')}
+          leftIcon={activeModal === 'interest' ? <Landmark size={44} /> : <Headset size={44} />}
+          leftTitle={
+            activeModal === 'interest'
+              ? t('Ready to submit your investment interest?')
+              : t('Need assistance with your investment journey?')
+          }
+          leftDescription={
+            activeModal === 'interest'
+              ? t('Share your company profile and project intent. Our team will capture the request and coordinate the next step in the city investment workflow.')
+              : t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')
+          }
+        >
+          {activeModal === 'interest' && interestStep === 'form' && (
                     <div className="space-y-6">
                       {interestError ? (
                         <div className="border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
@@ -949,9 +925,9 @@ export default function ExplorerPage() {
                         </button>
                       </div>
                     </div>
-                  )}
+          )}
 
-                  {activeModal === 'interest' && interestStep === 'success' && (
+          {activeModal === 'interest' && interestStep === 'success' && (
                     <div className="space-y-6">
                       <div className="rounded-[24px] border border-[#dfe5ec] bg-[#f7f9fb] px-6 py-6">
                         <div className="text-[28px] font-semibold text-[#1a2755]">{t('Your interest has been submitted')}</div>
@@ -979,9 +955,9 @@ export default function ExplorerPage() {
                         </button>
                       </div>
                     </div>
-                  )}
+          )}
 
-                  {activeModal === 'support' && supportStep === 'form' && (
+          {activeModal === 'support' && supportStep === 'form' && (
                     <div className="space-y-6">
                       {supportError ? (
                         <div className="border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
@@ -1070,9 +1046,9 @@ export default function ExplorerPage() {
                         </button>
                       </div>
                     </div>
-                  )}
+          )}
 
-                  {activeModal === 'support' && supportStep === 'success' && (
+          {activeModal === 'support' && supportStep === 'success' && (
                     <div className="space-y-6">
                       <div className="rounded-[24px] border border-[#dfe5ec] bg-[#f7f9fb] px-6 py-6">
                         <div className="text-[28px] font-semibold text-[#1a2755]">{t('Support request submitted')}</div>
@@ -1094,12 +1070,8 @@ export default function ExplorerPage() {
                         </button>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          )}
+        </ExplorerActionModal>
       )}
     </div>
   );

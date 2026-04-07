@@ -1039,7 +1039,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return [{
           id: `required-data-${assignment.id}-overdue`,
           title: 'Required Data Overdue',
-          message: `${assignment.fieldName} for ${project?.name ?? 'project'} is overdue. PIC: ${owner?.name ?? 'Unassigned'} (${agency?.shortName ?? 'Agency'}).`,
+          message: `${assignment.fieldName} for ${project?.name ?? 'project'} is overdue. Coordinating Unit: ${agency?.shortName ?? 'Agency'}.`,
           time: assignment.dueDate,
           read: false,
           type: 'error' as const,
@@ -1055,7 +1055,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return [{
         id: `required-data-${assignment.id}-reminder-${reminderDays}`,
         title: 'Required Data Due Soon',
-        message: `${assignment.fieldName} for ${project?.name ?? 'project'} is due in ${reminderDays} days. PIC: ${owner?.name ?? 'Unassigned'} (${agency?.shortName ?? 'Agency'}).`,
+        message: `${assignment.fieldName} for ${project?.name ?? 'project'} is due in ${reminderDays} days. Coordinating Unit: ${agency?.shortName ?? 'Agency'}.`,
         time: assignment.dueDate,
         read: false,
         type: 'warning' as const,
@@ -1534,7 +1534,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const user = users.find((item) => item.id === assignment.userId);
     addNotification({
       title: 'Required Data Assignment Created',
-      message: `${assignment.fieldName} was assigned to ${user?.name ?? 'owner'} in ${agency?.shortName ?? 'agency'}.`,
+        message: `${assignment.fieldName} was assigned to ${user?.name ?? 'the coordinating unit contact'} in ${agency?.shortName ?? 'agency'}.`,
       type: 'info',
       path: `${getProjectWorkspaceBasePath(role)}/${assignment.projectId}/edit?focus=data-quality`,
     });
@@ -1571,7 +1571,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const user = users.find((item) => item.id === job.userId);
     addNotification({
       title: 'Project Job Created',
-      message: `${job.title} was assigned to ${user?.name ?? 'owner'} in ${agency?.shortName ?? 'agency'}.`,
+        message: `${job.title} was assigned to ${user?.name ?? 'the coordinating unit contact'} in ${agency?.shortName ?? 'agency'}.`,
       type: 'info',
       path: `${getProjectWorkspaceBasePath(role)}/${job.projectId}/edit`,
     });

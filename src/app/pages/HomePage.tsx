@@ -447,7 +447,7 @@ export default function HomePage() {
                                 {t(project.name)}
                               </span>
                               <span className="mt-2 block text-xs leading-5 text-white/72">
-                                {t(project.location)}
+                                {getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language)}
                               </span>
                               <span className="mt-2 block text-[11px] leading-5 text-white/78">
                                 {t(project.description).slice(0, 86)}...
@@ -617,6 +617,7 @@ export default function HomePage() {
             {visibleProjects.map((project) => {
               const isWatching = watchlist.includes(project.id);
               const followerCount = getMockFollowerCount(project.id, project.budget);
+              const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
 
               return (
                 <Link
@@ -661,7 +662,7 @@ export default function HomePage() {
                       </h3>
                       <div className="mt-3 flex items-center gap-2 text-[12px] text-[#455f87]">
                         <MapPin size={13} />
-                        <span className="line-clamp-1">{t(project.location)}</span>
+                          <span className="line-clamp-1">{locationLabel}</span>
                       </div>
                       <p className="mt-4 line-clamp-3 min-h-[72px] text-[14px] leading-[1.65] text-[#455f87]">
                         {t(project.description)}
@@ -1093,4 +1094,3 @@ export default function HomePage() {
     </div>
   );
 }
-

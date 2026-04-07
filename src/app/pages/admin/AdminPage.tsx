@@ -199,7 +199,7 @@ export default function AdminPage() {
     {
       title: copy('Coordinating unit matrix', 'Ma trận đơn vị điều phối'),
       body: copy(
-        'Maintain a master list of agencies, their officers, backup owners, and which object types they can own.',
+        'Maintain a master list of agencies, their contact details, and which object types they can own.',
         'Quản lý danh mục cơ quan, cán bộ phụ trách, người dự phòng và loại đối tượng mỗi cơ quan được phép phụ trách.',
       ),
     },
@@ -234,15 +234,15 @@ export default function AdminPage() {
     {
       title: copy('Notification templates and routing rules', 'Mẫu thông báo và quy tắc điều phối'),
       body: copy(
-        'Admin should be able to define which event notifies which role, agency, or person in charge.',
-        'Admin nên cấu hình được sự kiện nào gửi thông báo tới vai trò, cơ quan hoặc người phụ trách nào.',
+        'Admin should be able to define which event notifies which role or agency.',
+        'Admin n?n c?u h?nh ???c s? ki?n n?o g?i th?ng b?o t?i vai tr? ho?c c? quan t??ng ?ng.',
       ),
     },
   ];
 
   const ownershipRules = [
-    copy('Every Project Job should require one coordinating unit and one person in charge.', 'Mỗi đầu việc dự án nên bắt buộc có một đơn vị điều phối và một người phụ trách.'),
-    copy('Every Required Data assignment should map to the same agency and owner matrix.', 'Mỗi đầu việc dữ liệu được giao nên dùng cùng ma trận cơ quan và người phụ trách đó.'),
+    copy('Every Project Job should require one coordinating unit.', 'M?i ??u vi?c d? ?n n?n b?t bu?c c? m?t ??n v? ?i?u ph?i.'),
+    copy('Every Required Data assignment should map to the same coordinating unit matrix.', 'M?i ??u vi?c d? li?u ???c giao n?n d?ng c?ng ma tr?n ??n v? ?i?u ph?i t??ng ?ng.'),
     copy('Agency deactivation should warn if it is still assigned to open jobs, permits, or service requests.', 'Khi ngừng kích hoạt cơ quan, hệ thống nên cảnh báo nếu cơ quan đó vẫn đang được gán cho đầu việc, giấy phép hoặc yêu cầu dịch vụ đang mở.'),
     copy('Status changes should optionally trigger notifications, SLA recalculation, and audit logs.', 'Thay đổi trạng thái nên có thể kích hoạt thông báo, tính lại SLA và ghi nhận lịch sử thao tác.'),
   ];
@@ -525,27 +525,9 @@ export default function AdminPage() {
                       'Tổ chức chính chịu trách nhiệm cho đầu việc dự án, dữ liệu được giao, giấy phép hoặc một hạng mục dịch vụ.',
                     )}
                   </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm font-semibold text-slate-900">{copy('Person in charge', 'Người phụ trách')}</div>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {copy(
-                      'Named officer inside the assigned agency. This should always come from the agency master list.',
-                      'Cán bộ cụ thể trong cơ quan được giao. Trường này luôn nên lấy từ danh sách nhân sự của cơ quan.',
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm font-semibold text-slate-900">{copy('Agency type & jurisdiction', 'Loại cơ quan & thẩm quyền')}</div>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {copy(
-                      'Useful for routing logic, reporting hierarchy, and future approval rules.',
-                      'Quan trọng cho logic điều phối, phân cấp báo cáo và quy tắc phê duyệt trong tương lai.',
-                    )}
-                  </p>
-                </div>
-              </div>
+                </div>
 
+              </div>
             </section>
 
             <section className="section-panel p-6">
@@ -568,7 +550,6 @@ export default function AdminPage() {
                         <span>{agency.jurisdiction}</span>
                         <span>{agency.email}</span>
                         <span>{agency.phone}</span>
-                        <span>{(agency.peopleInCharge?.length ?? 0)} {copy('officers', 'cán bộ')}</span>
                       </div>
                     </div>
                     <div className="text-right">

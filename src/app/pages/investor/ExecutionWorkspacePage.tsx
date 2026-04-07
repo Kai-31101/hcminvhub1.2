@@ -1,12 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Calendar, CheckCircle2, MapPin, Send, X } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Download, MapPin, Send, X } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
+import { getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
 import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
+import { downloadAttachment } from '../../utils/attachments';
 import { translateText } from '../../utils/localization';
+import { formatFollowerCount, getProjectFollowerCount } from '../../utils/projectFollowers';
 import { getProjectStageLabel, getProjectStatusTone } from '../../utils/projectStatus';
 
 type DetailAction = 'question' | 'meeting';
@@ -54,7 +57,6 @@ export default function ExecutionWorkspacePage() {
     projects,
     agencies,
     users,
-    opportunities,
     projectJobs,
     getProjectProcessingSummary,
     activeInvestorCompany,
@@ -84,14 +86,12 @@ export default function ExecutionWorkspacePage() {
     return <Navigate to="/investor/execution" replace />;
   }
 
-  const latestOpportunity = joinedOpportunities
-    .filter((item) => item.projectId === project.id)
-    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0];
+  const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
   const overviewRows = [
     ['Name', project.name],
     ['Sector', project.sector],
     ['Province', project.province],
-    ['Location', project.location],
+    ['Location', locationLabel],
     ['Budget (USD M)', String(project.budget)],
     ['Minimum Investment (USD M)', String(project.minInvestment)],
     ['Timeline', project.timeline],
@@ -100,6 +100,7 @@ export default function ExecutionWorkspacePage() {
     ['Project Stage', getProjectStageLabel(project.status, project.stage)],
   ];
   const projectJobItems = projectJobs.filter((item) => item.projectId === project.id);
+  const followerCount = getProjectFollowerCount(project);
   const processingSummary = getProjectProcessingSummary(project.id);
   const agencyOptions = useMemo(
     () => Array.from(new Set(['Department of Planning and Investment', 'Investor Operations Team', ...agencies.map((agency) => agency.name)])),
@@ -198,6 +199,9 @@ export default function ExecutionWorkspacePage() {
         <div className="relative h-80">
           <img src={project.image} alt={t(project.name)} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0c2d4a]/92 via-[#0c2d4a]/64 to-[#0c2d4a]/18" />
+          <div className="absolute left-6 top-6 z-10 rounded-none border border-white/60 bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9d4300] shadow-sm">
+            {formatFollowerCount(followerCount)} {t('followers')}
+          </div>
           <div className="absolute inset-x-0 bottom-0 p-6 lg:p-8">
             <div className="mb-3 flex flex-wrap gap-2">
               <StatusPill tone="info">{t(project.sector)}</StatusPill>
@@ -211,7 +215,7 @@ export default function ExecutionWorkspacePage() {
             </h1>
             <div className="mt-2 flex items-center gap-2 text-sm text-blue-100">
               <MapPin size={14} />
-              {t(project.location)}
+              {locationLabel}
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <button
@@ -253,44 +257,6 @@ export default function ExecutionWorkspacePage() {
           </div>
         </section>
 
-        {latestOpportunity ? (
-          <section className="section-panel p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="section-heading mb-0">{t('Investor Details')}</h2>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <DataRow>
-                <div className="text-sm text-slate-500">{t('Representative')}</div>
-                <div className="text-sm font-semibold text-slate-900">{latestOpportunity.investorName}</div>
-              </DataRow>
-              <DataRow>
-                <div className="text-sm text-slate-500">{t('Organization')}</div>
-                <div className="text-sm font-semibold text-slate-900">{latestOpportunity.investorCompany}</div>
-              </DataRow>
-              <DataRow>
-                <div className="text-sm text-slate-500">{t('Country')}</div>
-                <div className="text-sm font-semibold text-slate-900">{t(latestOpportunity.investorCountry)}</div>
-              </DataRow>
-              <DataRow>
-                <div className="text-sm text-slate-500">{t('Investor Type')}</div>
-                <div className="text-sm font-semibold text-slate-900">{t(latestOpportunity.investorType)}</div>
-              </DataRow>
-              <DataRow>
-                <div className="text-sm text-slate-500">{t('Investment')}</div>
-                <div className="text-sm font-semibold text-slate-900">${latestOpportunity.amount}M</div>
-              </DataRow>
-              <DataRow>
-                <div className="text-sm text-slate-500">{t('Submitted At')}</div>
-                <div className="text-sm font-semibold text-slate-900">{latestOpportunity.submittedAt}</div>
-              </DataRow>
-              <DataRow className="md:col-span-2">
-                <div className="text-sm text-slate-500">{t('Last Updated At')}</div>
-                <div className="text-sm font-semibold text-slate-900">{latestOpportunity.updatedAt}</div>
-              </DataRow>
-            </div>
-          </section>
-        ) : null}
-
         <section className="section-panel p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="section-heading mb-0">{t('Project Jobs')}</h2>
@@ -302,9 +268,6 @@ export default function ExecutionWorkspacePage() {
             {projectJobItems.length > 0 ? (
               projectJobItems.map((job) => {
                 const agency = agencies.find((item) => item.id === job.agencyId);
-                const personInCharge = agency?.peopleInCharge?.find((person) => person.id === job.userId);
-                const user = users.find((item) => item.id === job.userId);
-                const responsibleUserName = personInCharge?.name ?? user?.name ?? '-';
                 const statusMeta = getJobStatusMeta(job.status, t);
                 const dueDateMeta = getDueDateMeta(job.status, job.dueDate, t);
                 return (
@@ -321,8 +284,6 @@ export default function ExecutionWorkspacePage() {
                         <div className="mt-1 text-sm text-slate-600">{t(job.description)}</div>
                         <div className="mt-2 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
                           <div>{t('Coordinating Unit')}: {agency?.name ?? '-'}</div>
-                          <div>{t('Responsible user')}: {responsibleUserName}</div>
-                          <div>{t('Reminder timing')}: {job.reminderDaysBefore} {t('days before due date')}</div>
                         </div>
                         {job.note ? (
                           <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
@@ -335,15 +296,25 @@ export default function ExecutionWorkspacePage() {
                           </div>
                           <div className="space-y-2">
                             {(job.attachments ?? []).length > 0 ? (
-                              (job.attachments ?? []).map((file) => (
-                                <div
-                                  key={`${file.fileName}-${file.lastUploadDate ?? ''}`}
-                                  className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600"
-                                >
-                                  <span className="truncate">{t(file.fileName)}</span>
-                                  <span className="shrink-0">{file.lastUploadDate || '-'}</span>
-                                </div>
-                              ))
+                                (job.attachments ?? []).map((file) => (
+                                  <div
+                                    key={`${file.fileName}-${file.lastUploadDate ?? ''}`}
+                                    className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600"
+                                  >
+                                    <div className="flex min-w-0 items-center gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => downloadAttachment(file)}
+                                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-[rgba(224,192,177,0.18)] bg-white text-[#9d4300] transition-colors hover:bg-[#fff1e7]"
+                                        aria-label={`${t('Download')} ${t(file.fileName)}`}
+                                      >
+                                        <Download size={14} />
+                                      </button>
+                                      <span className="truncate">{t(file.fileName)}</span>
+                                    </div>
+                                    <span className="shrink-0">{file.lastUploadDate || '-'}</span>
+                                  </div>
+                                ))
                             ) : (
                               <div className="text-xs text-slate-500">-</div>
                             )}

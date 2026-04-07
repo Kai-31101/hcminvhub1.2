@@ -70,8 +70,7 @@ export default function InvestorExecutionListPage() {
             return [project.id, undefined];
           }
 
-          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
-          const personInCharge = agency?.peopleInCharge?.find((person) => person.id === primaryJob.userId);
+          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
           const user = users.find((item) => item.id === primaryJob.userId);
 
           return [
@@ -79,7 +78,6 @@ export default function InvestorExecutionListPage() {
             {
               agency: agency?.shortName ?? agency?.name ?? '-',
               agencyFullName: agency?.name ?? agency?.shortName ?? '-',
-              person: personInCharge?.name ?? user?.name ?? '-',
             },
           ];
         }),

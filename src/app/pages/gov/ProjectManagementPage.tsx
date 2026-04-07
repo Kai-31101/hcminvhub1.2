@@ -7,9 +7,58 @@ import { SeeAllButton } from '../../components/SeeAllButton';
 import { StatusPill } from '../../components/ui/status-pill';
 import { translateText } from '../../utils/localization';
 import { PROJECT_STAGE_OPTIONS } from '../../utils/projectStatus';
+import projectKpiIcon from '../../assets/project-kpi-icon.svg';
+import projectKpiTrend from '../../assets/project-kpi-trend.svg';
 
 type ProjectJobFilter = 'all' | 'pending' | 'delayed' | 'upcoming';
 const DEFAULT_LIST_COUNT = 6;
+
+type ManagementKpiCardProps = {
+  labelLines: string[];
+  value: number;
+  tone: string;
+  support: string;
+  onClick?: () => void;
+  isActive?: boolean;
+};
+
+function ManagementKpiCard({ labelLines, value, tone, support, onClick, isActive = false }: ManagementKpiCardProps) {
+  const sharedClassName = `flex min-h-[168px] w-full flex-col gap-[8px] border-l-4 px-6 py-6 text-left shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-all ${
+    isActive
+      ? 'border-[#9d4300] bg-white ring-2 ring-[#9d4300]/20'
+      : 'border-[#9d4300] bg-[#f2f4f6]'
+  }`;
+
+  const content = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="pr-4 text-[16px] font-bold uppercase leading-6 tracking-[0.05em] text-[#455f87]">
+          {labelLines.map((line) => (
+            <div key={line}>{line}</div>
+          ))}
+        </div>
+        <img src={projectKpiIcon} alt="" className="mt-0.5 h-[18px] w-5 shrink-0" />
+      </div>
+      <div className={`pt-[8px] text-[30px] font-bold leading-9 ${tone}`} style={{ fontFamily: 'var(--font-heading)' }}>
+        {value}
+      </div>
+      <div className="mt-auto flex items-center gap-[6px] text-[12px] leading-4 text-[#006398]">
+        <img src={projectKpiTrend} alt="" className="h-[6px] w-[10px] shrink-0" />
+        <span>{support}</span>
+      </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`${sharedClassName} hover:-translate-y-0.5 hover:bg-white`}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={sharedClassName}>{content}</div>;
+}
 
 export default function ProjectManagementPage() {
   const navigate = useNavigate();
@@ -21,6 +70,7 @@ export default function ProjectManagementPage() {
   const [projectJobFilter, setProjectJobFilter] = useState<ProjectJobFilter>('all');
   const [selectedAgencyIds, setSelectedAgencyIds] = useState<string[]>([]);
   const [showAllProjects, setShowAllProjects] = useState(false);
+  const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const workspaceBasePath = role === 'agency' ? '/agency' : '/gov';
   const canManageProjects = role !== 'agency';
   const visibleProjects = useMemo(() => {
@@ -74,8 +124,7 @@ export default function ProjectManagementPage() {
             return [project.id, undefined];
           }
 
-          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
-          const personInCharge = agency?.peopleInCharge?.find((person) => person.id === primaryJob.userId);
+          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
           const user = users.find((item) => item.id === primaryJob.userId);
 
           return [
@@ -84,7 +133,6 @@ export default function ProjectManagementPage() {
               agencyId: agency?.id ?? '',
               agency: agency?.shortName ?? agency?.name ?? '-',
               agencyFullName: agency?.name ?? agency?.shortName ?? '-',
-              person: personInCharge?.name ?? user?.name ?? '-',
             },
           ];
         }),
@@ -180,6 +228,63 @@ export default function ProjectManagementPage() {
     },
   ];
   const visibleFilteredProjects = showAllProjects ? filtered : filtered.slice(0, DEFAULT_LIST_COUNT);
+  const isVi = language === 'vi';
+  const portfolioMetrics = [
+    {
+      labelLines: isVi ? ['Tổng', 'dự án'] : ['Total', 'Projects'],
+      value: visibleProjects.length,
+      tone: 'text-[#191c1e]',
+      support: isVi ? 'Danh mục đang theo dõi' : 'Tracked in this workspace',
+    },
+    {
+      labelLines: isVi ? ['Dự án', 'nháp'] : ['Draft', 'Projects'],
+      value: visibleProjects.filter((project) => project.status === 'draft').length,
+      tone: 'text-[#191c1e]',
+      support: isVi ? 'Chờ hoàn thiện dữ liệu' : 'Awaiting data readiness',
+    },
+    {
+      labelLines: isVi ? ['Dự án', 'công bố'] : ['Published', 'Projects'],
+      value: visibleProjects.filter((project) => project.status === 'published').length,
+      tone: 'text-[#191c1e]',
+      support: isVi ? 'Hiển thị cho nhà đầu tư' : 'Visible to investors',
+    },
+    {
+      labelLines: isVi ? ['Dự án', 'xử lý'] : ['Processing', 'Projects'],
+      value: visibleProjects.filter((project) => project.status === 'processing').length,
+      tone: 'text-[#191c1e]',
+      support: isVi ? 'Đang phối hợp thực thi' : 'Under active coordination',
+    },
+    {
+      labelLines: isVi ? ['Dự án', 'hoàn tất'] : ['Completed', 'Projects'],
+      value: visibleProjects.filter((project) => project.status === 'completed').length,
+      tone: 'text-[#191c1e]',
+      support: isVi ? 'Đã đóng giai đoạn xử lý' : 'Closed delivery stage',
+    },
+    {
+      labelLines: isVi ? ['Dự án', 'hủy'] : ['Cancelled', 'Projects'],
+      value: visibleProjects.filter((project) => project.status === 'cancelled').length,
+      tone: 'text-[#191c1e]',
+      support: isVi ? 'Ngừng hoặc rút khỏi quy trình' : 'Stopped or withdrawn',
+    },
+  ];
+  const projectJobFilterCardDetails: Record<ProjectJobFilter, { labelLines: string[]; support: string }> = {
+    all: {
+      labelLines: isVi ? ['Tất cả', 'dự án'] : ['All', 'Projects'],
+      support: isVi ? 'Xem toàn bộ danh mục dự án' : 'View the full project set',
+    },
+    pending: {
+      labelLines: isVi ? ['Việc xử lý', 'đang mở'] : ['Processing', 'Jobs'],
+      support: isVi ? 'Có việc cần tiếp tục theo dõi' : 'Need continued coordination',
+    },
+    delayed: {
+      labelLines: isVi ? ['Việc', 'trễ hạn'] : ['Delayed', 'Jobs'],
+      support: isVi ? 'Ưu tiên xử lý ngay' : 'Require immediate attention',
+    },
+    upcoming: {
+      labelLines: isVi ? ['Cảnh báo', 'sắp tới'] : ['Upcoming', 'Alerts'],
+      support: isVi ? 'Sắp đến mốc nhắc việc' : 'Approaching reminder windows',
+    },
+  };
 
   const handleCreateProject = () => {
     const projectId = createProject({
@@ -218,19 +323,15 @@ export default function ProjectManagementPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-        {[
-          { label: t('All'), value: visibleProjects.length, tone: 'text-slate-900' },
-          { label: t('Draft'), value: visibleProjects.filter((project) => project.status === 'draft').length, tone: 'text-slate-700' },
-          { label: t('Published'), value: visibleProjects.filter((project) => project.status === 'published').length, tone: 'text-amber-700' },
-          { label: t('Processing'), value: visibleProjects.filter((project) => project.status === 'processing').length, tone: 'text-sky-700' },
-          { label: t('Completed'), value: visibleProjects.filter((project) => project.status === 'completed').length, tone: 'text-emerald-700' },
-          { label: t('Cancelled'), value: visibleProjects.filter((project) => project.status === 'cancelled').length, tone: 'text-red-700' },
-        ].map((metric) => (
-          <div key={metric.label} className="kpi-tile">
-            <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>{metric.value}</div>
-            <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{metric.label}</div>
-          </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+        {portfolioMetrics.map((metric) => (
+          <ManagementKpiCard
+            key={metric.labelLines.join('-')}
+            labelLines={metric.labelLines}
+            value={metric.value}
+            tone={metric.tone}
+            support={metric.support}
+          />
         ))}
       </div>
 
@@ -240,19 +341,19 @@ export default function ProjectManagementPage() {
               <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Job Alerts')}</h2>
               <div className="text-xs text-slate-500">{t('Click a KPI card to filter the project list')}</div>
             </div>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {projectJobFilterCards.map((metric) => {
                 const isActive = projectJobFilter === metric.id;
                 return (
-                  <button
+                  <ManagementKpiCard
                     key={metric.id}
-                    type="button"
                     onClick={() => setProjectJobFilter(metric.id)}
-                    className={`kpi-tile text-left transition-all ${isActive ? 'ring-2 ring-primary shadow-md' : 'hover:border-slate-300 hover:shadow-sm'}`}
-                  >
-                    <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>{metric.value}</div>
-                    <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{metric.label}</div>
-                  </button>
+                    isActive={isActive}
+                    labelLines={projectJobFilterCardDetails[metric.id].labelLines}
+                    value={metric.value}
+                    tone={metric.tone}
+                    support={projectJobFilterCardDetails[metric.id].support}
+                  />
                 );
               })}
             </div>
@@ -329,6 +430,11 @@ export default function ProjectManagementPage() {
                 workspaceBasePath={workspaceBasePath}
                 canManageProjects={canManageProjects}
                 translate={t}
+                variant="managementExpandable"
+                isExpanded={expandedProjectId === project.id}
+                onToggleExpand={() =>
+                  setExpandedProjectId((current) => (current === project.id ? null : project.id))
+                }
                 assignmentSummary={projectAssignmentMap[project.id]}
                 auditSummary={projectAuditMap[project.id]}
                 processingSummary={getProjectProcessingSummary(project.id)}
