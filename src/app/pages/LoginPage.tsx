@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowRight, Building2, Globe, Shield, TrendingUp, Users } from 'lucide-react';
+import { ExplorerFooter } from '../components/ExplorerFooter';
+import { PublicPortalHeader } from '../components/PublicPortalHeader';
 import { useApp, UserRole } from '../context/AppContext';
 import { clearPendingHomeAction, readPendingHomeAction } from '../utils/homeLeadFlow';
 import { translateText } from '../utils/localization';
@@ -97,7 +99,6 @@ function dueDate(daysFromNow: number) {
 export default function LoginPage() {
   const {
     language,
-    setLanguage,
     setRole,
     projects,
     setActiveInvestorCompany,
@@ -199,27 +200,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#fff8f1_0%,#ffffff_32%,#f7fbff_100%)]">
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-6 lg:px-8">
-        <div />
+    <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#fff8f1_0%,#ffffff_32%,#f7fbff_100%)]">
+      <PublicPortalHeader
+        items={[
+          { label: t('Home'), to: '/home' },
+          { label: t('Project Explorer'), to: '/investor/explorer' },
+        ]}
+        title={t('Investment Management Platform')}
+        subtitle={t('Select your portal')}
+        actionLabel={t('Back to Home')}
+        actionTo="/home"
+      />
 
-        <div className="flex items-center overflow-hidden rounded-lg border border-[#d8e2ef] bg-white shadow-sm">
-          {(['vi', 'en'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setLanguage(option)}
-              className={`px-3 py-2 text-xs font-semibold transition-colors ${
-                language === option ? 'bg-[#0B2447] text-white' : 'text-[#5f7696] hover:bg-[#f6f9fc]'
-              }`}
-            >
-              {option.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-7xl flex-col px-6 pb-12 pt-8 lg:px-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 pb-12 pt-8 lg:px-8">
         <div className="mb-12 text-center">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#fdba74] bg-[#fff1e7] px-4 py-1.5 text-sm text-[#c2410c]">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#f97316]" />
@@ -259,6 +252,7 @@ export default function LoginPage() {
           ))}
         </div>
       </main>
+      <ExplorerFooter />
     </div>
   );
 }

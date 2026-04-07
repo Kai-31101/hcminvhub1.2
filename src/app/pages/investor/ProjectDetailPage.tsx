@@ -3,13 +3,14 @@ import { ArrowLeft, Calendar, CheckCircle2, Download, MapPin, Send, X } from 'lu
 import { Link, useNavigate, useParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
+import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { translateText } from '../../utils/localization';
 import { getProjectStatusTone } from '../../utils/projectStatus';
 
 type DetailAction = 'question' | 'meeting';
-type MeetingType = 'Online' | 'Onsite';
+type MeetingType = '' | 'Online' | 'Onsite';
 
 const initialQuestionForm = {
   question: '',
@@ -18,11 +19,11 @@ const initialQuestionForm = {
 const initialMeetingForm = {
   preferredDate: '',
   preferredTime: '',
-  meetingType: 'Online' as MeetingType,
+  meetingType: '' as MeetingType,
   participants: '',
   agenda: '',
   notes: '',
-  assignedAgency: 'Department of Planning and Investment',
+  assignedAgency: '',
 };
 
 function getJobStatusMeta(status: string, t: (value: string) => string) {
@@ -391,26 +392,28 @@ export default function ProjectDetailPage() {
                   </label>
                   <label className="space-y-2">
                     <span className="text-[14px] font-medium text-[#1a2755]">{t('Meeting type')}</span>
-                    <select
+                    <ClearableSelectField
+                      ariaLabel={t('Meeting type')}
                       value={meetingForm.meetingType}
-                      onChange={(event) => setMeetingForm((current) => ({ ...current, meetingType: event.target.value as MeetingType }))}
-                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
-                    >
-                      <option value="Online">{t('Online')}</option>
-                      <option value="Onsite">{t('Onsite')}</option>
-                    </select>
+                      onChange={(value) => setMeetingForm((current) => ({ ...current, meetingType: value as MeetingType }))}
+                      placeholder={t('Select meeting type')}
+                      options={[
+                        { value: 'Online', label: t('Online') },
+                        { value: 'Onsite', label: t('Onsite') },
+                      ]}
+                      className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                    />
                   </label>
                   <label className="space-y-2">
                     <span className="text-[14px] font-medium text-[#1a2755]">{t('Assigned agency')}</span>
-                    <select
+                    <ClearableSelectField
+                      ariaLabel={t('Assigned agency')}
                       value={meetingForm.assignedAgency}
-                      onChange={(event) => setMeetingForm((current) => ({ ...current, assignedAgency: event.target.value }))}
-                      className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
-                    >
-                      {agencyOptions.map((agencyName) => (
-                        <option key={agencyName} value={agencyName}>{t(agencyName)}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setMeetingForm((current) => ({ ...current, assignedAgency: value }))}
+                      placeholder={t('Select agency')}
+                      options={agencyOptions.map((agencyName) => ({ value: agencyName, label: t(agencyName) }))}
+                      className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                    />
                   </label>
                   <label className="space-y-2 md:col-span-2">
                     <span className="text-[14px] font-medium text-[#1a2755]">{t('Participants')}</span>

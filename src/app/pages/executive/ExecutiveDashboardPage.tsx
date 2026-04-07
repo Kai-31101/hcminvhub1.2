@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { AlertTriangle, ArrowRight, BarChart3, Clock3, FileText, Filter, MapPin, ShieldAlert, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { translateText } from '../../utils/localization';
@@ -40,10 +41,6 @@ function getDaysUntilDue(dueDate: string) {
   const target = new Date(dueDate);
   target.setHours(0, 0, 0, 0);
   return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-function getLocationGroup(location: string) {
-  return location.split(',')[0]?.trim() || location;
 }
 
 function buildCountGroups(values: string[]) {
@@ -117,8 +114,8 @@ export default function ExecutiveDashboardPage() {
   }
 
   const locationOptions = useMemo(
-    () => Array.from(new Set(projects.map((project) => getLocationGroup(project.location)))).sort((left, right) => left.localeCompare(right)),
-    [projects],
+    () => administrativeLocationOptions,
+    [],
   );
   const typeOptions = useMemo(
     () => Array.from(new Set(projects.map((project) => project.sector))).sort((left, right) => left.localeCompare(right)),
@@ -138,7 +135,7 @@ export default function ExecutiveDashboardPage() {
             .join(' ')
             .toLowerCase()
             .includes(nameFilter.trim().toLowerCase());
-        const matchesLocation = locationFilter === 'all' || getLocationGroup(project.location) === locationFilter;
+        const matchesLocation = locationFilter === 'all' || getProjectAdministrativeLocation(project) === locationFilter;
         const matchesType = typeFilter === 'all' || project.sector === typeFilter;
         const matchesTimeline = timelineFilter === 'all' || project.timeline === timelineFilter;
         return matchesName && matchesLocation && matchesType && matchesTimeline;
@@ -189,7 +186,7 @@ export default function ExecutiveDashboardPage() {
   const activeJobs = dashboardJobs.filter((job) => job.status !== 'complete').length;
 
   const groupedByLocation = useMemo(
-    () => buildCountGroups(filteredProjects.map((project) => getLocationGroup(project.location))),
+    () => buildCountGroups(filteredProjects.map((project) => getProjectAdministrativeLocation(project))),
     [filteredProjects],
   );
   const groupedByType = useMemo(
@@ -249,7 +246,7 @@ export default function ExecutiveDashboardPage() {
     {
       title: copy('Watch portfolio concentration', 'Theo dõi mức độ tập trung danh mục'),
       body: topLocation
-        ? `${topLocation.label} ${copy('currently carries the highest share of projects in this view at', 'hiện chiếm tỷ trọng dự án cao nhất trong màn hình này với')} ${topLocation.percentage}%. ${copy('Balance leadership attention across locations, types, and execution load.', 'Nên cân đối sự tập trung điều hành giữa địa bàn, loại dự án và khối lượng thực thi.')}`
+        ? `${getAdministrativeLocationLabel(topLocation.label, language)} ${copy('currently carries the highest share of projects in this view at', 'hiện chiếm tỷ trọng dự án cao nhất trong màn hình này với')} ${topLocation.percentage}%. ${copy('Balance leadership attention across locations, types, and execution load.', 'Nên cân đối sự tập trung điều hành giữa địa bàn, loại dự án và khối lượng thực thi.')}`
         : copy(
             'No project concentration signal is available for the current filters.',
             'Chưa có tín hiệu tập trung danh mục nào trong bộ lọc hiện tại.',
@@ -305,7 +302,7 @@ export default function ExecutiveDashboardPage() {
               <option value="all">{copy('All locations', 'Tất cả địa điểm')}</option>
               {locationOptions.map((option) => (
                 <option key={option} value={option}>
-                  {t(option)}
+                  {getAdministrativeLocationLabel(option, language)}
                 </option>
               ))}
             </select>
@@ -353,12 +350,12 @@ export default function ExecutiveDashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         {[
-          { title: copy('Group by Location', 'Nhóm theo địa điểm'), rows: groupedByLocation, accent: 'bg-sky-600' },
-          { title: copy('Group by Type', 'Nhóm theo loại dự án'), rows: groupedByType, accent: 'bg-violet-600' },
-          { title: copy('Group by Project Status', 'Nhóm theo trạng thái dự án'), rows: groupedByProjectStatus, accent: 'bg-emerald-600' },
-          { title: copy('Group by Project Jobs Status', 'Nhóm theo trạng thái đầu việc'), rows: groupedByProjectJobStatus, accent: 'bg-amber-600' },
+          { key: 'location', title: copy('Group by Location', 'Nhóm theo địa điểm'), rows: groupedByLocation, accent: 'bg-sky-600' },
+          { key: 'type', title: copy('Group by Type', 'Nhóm theo loại dự án'), rows: groupedByType, accent: 'bg-violet-600' },
+          { key: 'project_status', title: copy('Group by Project Status', 'Nhóm theo trạng thái dự án'), rows: groupedByProjectStatus, accent: 'bg-emerald-600' },
+          { key: 'job_status', title: copy('Group by Project Jobs Status', 'Nhóm theo trạng thái đầu việc'), rows: groupedByProjectJobStatus, accent: 'bg-amber-600' },
         ].map((section) => (
-          <section key={section.title} className="section-panel p-6">
+          <section key={section.key} className="section-panel p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="section-heading mb-0">{section.title}</h2>
               <StatusPill tone="default">{section.rows.length}</StatusPill>
@@ -369,9 +366,11 @@ export default function ExecutiveDashboardPage() {
                   <div key={row.label}>
                     <div className="mb-1 flex items-center justify-between gap-3 text-sm">
                       <span className="font-semibold text-slate-800">
-                        {section.title === copy('Group by Project Jobs Status', 'Nhom theo trang thai dau viec')
+                        {section.key === 'job_status'
                           ? getJobStatusLabel(row.label as DashboardJobStatus)
-                          : t(row.label)}
+                          : section.key === 'location'
+                            ? getAdministrativeLocationLabel(row.label, language)
+                            : t(row.label)}
                       </span>
                       <span className="text-slate-500">
                         {row.count} ({row.percentage}%)

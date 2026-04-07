@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowRight, Facebook, Headset, Landmark, Linkedin, Mail, Map, MapPin, Search, Send, Star, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, Headset, Landmark, Map, MapPin, Search, Send, Star, TrendingUp, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { Input } from '../../components/ui/input';
+import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { SeeAllButton } from '../../components/SeeAllButton';
 import { translateText } from '../../utils/localization';
@@ -60,8 +62,8 @@ const initialInterestForm = {
   email: '',
   phone: '',
   projectId: '',
-  investmentSize: '$10M - $50M',
-  investmentType: 'JV',
+  investmentSize: '',
+  investmentType: '',
   notes: '',
 };
 
@@ -118,13 +120,13 @@ export default function ExplorerPage() {
 
   const locationOptions = useMemo(
     () => [
-      { value: ALL_OPTION, label: t('All Districts') },
-      ...Array.from(new Set(projects.map((project) => project.location.split(',')[0]?.trim()).filter(Boolean))).map((location) => ({
+      { value: ALL_OPTION, label: language === 'vi' ? 'Tất cả địa bàn' : 'All areas' },
+      ...administrativeLocationOptions.map((location) => ({
         value: location,
-        label: t(location),
+        label: getAdministrativeLocationLabel(location, language),
       })),
     ],
-    [language, projects],
+    [language],
   );
 
   const investmentRangeOptions = useMemo(
@@ -145,7 +147,7 @@ export default function ExplorerPage() {
       const haystack = [project.name, project.location, project.province, project.sector, project.description]
         .join(' ')
         .toLowerCase();
-      const district = project.location.split(',')[0]?.trim();
+      const district = getProjectAdministrativeLocation(project);
       const projectType = 'public';
 
       let investmentRangeMatch = true;
@@ -221,10 +223,6 @@ export default function ExplorerPage() {
     setCurrentPage(1);
   }
 
-  function getDefaultProjectId() {
-    return filteredProjects[0]?.id ?? projects[0]?.id ?? '';
-  }
-
   function openInterestFlow() {
     openSupportFlow();
   }
@@ -233,7 +231,7 @@ export default function ExplorerPage() {
     setSupportForm({
       ...initialSupportForm,
       companyName: activeInvestorCompany,
-      projectId: getDefaultProjectId(),
+      projectId: '',
     });
     setSupportStep('form');
     setSubmittedSupportId('');
@@ -488,7 +486,7 @@ export default function ExplorerPage() {
                 <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Location')}</div>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                    <SelectValue placeholder={t('All Districts')} />
+                    <SelectValue placeholder={language === 'vi' ? 'Tất cả địa bàn' : 'All areas'} />
                   </SelectTrigger>
                   <SelectContent>
                     {locationOptions.map((option) => (
@@ -804,68 +802,6 @@ export default function ExplorerPage() {
         </section>
       </div>
 
-      <footer className="bg-[#1e3a5f] py-16 text-white">
-        <div className="mx-auto max-w-[1280px] px-8">
-          <div className="grid gap-16 lg:grid-cols-3">
-            <div className="flex flex-col gap-6">
-              <div className="text-[20px] font-normal uppercase tracking-[2px] text-white">
-                {t('HCMC Investment Hub')}
-              </div>
-              <div className="max-w-[320px] text-[12px] leading-[19.5px] text-[#cbd5e1]">
-                <p>{t('The official portal for investment promotion and')}</p>
-                <p>{t('facilitation in Ho Chi Minh City, managed by the')}</p>
-                <p>{t('Investment Promotion Center (ITPC).')}</p>
-              </div>
-              <div className="flex items-start gap-4 text-[#cbd5e1]">
-                <Facebook size={20} strokeWidth={1.75} />
-                <Mail size={20} strokeWidth={1.75} />
-                <Linkedin size={18} strokeWidth={1.75} />
-              </div>
-            </div>
-
-            <div className="grid gap-8 sm:grid-cols-2">
-              <div className="flex flex-col gap-4">
-                <div className="text-[14px] uppercase tracking-[0.7px] text-[#f97316]">{t('Quick Links')}</div>
-                <div className="flex flex-col gap-2 text-[12px] leading-4 text-[#cbd5e1]">
-                  <div>{t('Explore Projects')}</div>
-                  <div>{t('Interactive Map')}</div>
-                  <div>{t('Legal Framework')}</div>
-                  <div>{t('Investment News')}</div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="text-[14px] uppercase tracking-[0.7px] text-[#f97316]">{t('Support')}</div>
-                <div className="flex flex-col gap-2 text-[12px] leading-4 text-[#cbd5e1]">
-                  <div>{t('Contact Us')}</div>
-                  <div>{t('FAQs')}</div>
-                  <div>{t('Sitemap')}</div>
-                  <div>{t('E-Governance')}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-6">
-              <div className="text-[14px] uppercase tracking-[0.7px] text-[#f97316]">{t('About Arobid')}</div>
-              <div className="text-[12px] leading-[19.5px] text-[#cbd5e1]">
-                <p>{t('Powered by Arobid. Providing cutting-edge investment')}</p>
-                <p>{t('management technology for modern government hubs.')}</p>
-              </div>
-              <div className="bg-[rgba(255,255,255,0.05)] p-4 text-[10px] italic leading-[15px] text-[#94a3b8]">
-                {t('Technology Partner of HCMC Government Since 2024')}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-16 flex flex-col gap-4 border-t border-[rgba(255,255,255,0.1)] pt-[33px] text-[10px] text-[#94a3b8] sm:flex-row sm:items-center sm:justify-between">
-            <div>{t('© 2024 HCMC Investment Promotion Center. All Rights Reserved.')}</div>
-            <div className="flex items-center gap-6">
-              <div>{t('Privacy Policy')}</div>
-              <div>{t('Terms of Service')}</div>
-            </div>
-          </div>
-        </div>
-      </footer>
 
       {activeModal && (
         <div className="fixed inset-0 z-[140] overflow-y-auto bg-[rgba(15,23,42,0.72)] p-4 md:p-8">
@@ -957,39 +893,36 @@ export default function ExplorerPage() {
                         </label>
                         <label className="space-y-2">
                           <span className="text-[14px] font-medium text-[#1a2755]">{t('Investment Size')}</span>
-                          <select
+                          <ClearableSelectField
+                            ariaLabel={t('Investment Size')}
                             value={interestForm.investmentSize}
-                            onChange={(event) => handleInterestFieldChange('investmentSize', event.target.value)}
-                            className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
-                          >
-                            {['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => (
-                              <option key={option} value={option}>{option}</option>
-                            ))}
-                          </select>
+                            onChange={(value) => handleInterestFieldChange('investmentSize', value)}
+                            placeholder={t('Select investment size')}
+                            options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: option }))}
+                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                          />
                         </label>
                         <label className="space-y-2">
                           <span className="text-[14px] font-medium text-[#1a2755]">{t('Investment Type')}</span>
-                          <select
+                          <ClearableSelectField
+                            ariaLabel={t('Investment Type')}
                             value={interestForm.investmentType}
-                            onChange={(event) => handleInterestFieldChange('investmentType', event.target.value)}
-                            className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
-                          >
-                            {['Equity', 'JV', 'PPP'].map((option) => (
-                              <option key={option} value={option}>{t(option)}</option>
-                            ))}
-                          </select>
+                            onChange={(value) => handleInterestFieldChange('investmentType', value)}
+                            placeholder={t('Select investment type')}
+                            options={['Equity', 'JV', 'PPP'].map((option) => ({ value: option, label: t(option) }))}
+                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                          />
                         </label>
                         <label className="space-y-2 md:col-span-2">
                           <span className="text-[14px] font-medium text-[#1a2755]">{t('Project')}</span>
-                          <select
+                          <ClearableSelectField
+                            ariaLabel={t('Project')}
                             value={interestForm.projectId}
-                            onChange={(event) => handleInterestFieldChange('projectId', event.target.value)}
-                            className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
-                          >
-                            {projects.map((project) => (
-                              <option key={project.id} value={project.id}>{t(project.name)}</option>
-                            ))}
-                          </select>
+                            onChange={(value) => handleInterestFieldChange('projectId', value)}
+                            placeholder={t('Select project')}
+                            options={projects.map((project) => ({ value: project.id, label: t(project.name) }))}
+                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                          />
                         </label>
                         <label className="space-y-2 md:col-span-2">
                           <span className="text-[14px] font-medium text-[#1a2755]">{t('Investment Details')}</span>
@@ -1103,16 +1036,14 @@ export default function ExplorerPage() {
                         </label>
                         <label className="space-y-2 md:col-span-2">
                           <span className="text-[14px] font-medium text-[#1a2755]">{t('Project')}</span>
-                          <select
+                          <ClearableSelectField
+                            ariaLabel={t('Project')}
                             value={supportForm.projectId}
-                            onChange={(event) => handleSupportFieldChange('projectId', event.target.value)}
-                            className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
-                          >
-                            <option value="">{t('Select project')}</option>
-                            {projects.map((project) => (
-                              <option key={project.id} value={project.id}>{t(project.name)}</option>
-                            ))}
-                          </select>
+                            onChange={(value) => handleSupportFieldChange('projectId', value)}
+                            placeholder={t('Select project')}
+                            options={projects.map((project) => ({ value: project.id, label: t(project.name) }))}
+                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                          />
                         </label>
                         <label className="space-y-2 md:col-span-2">
                           <span className="text-[14px] font-medium text-[#1a2755]">{t('Support Details')}</span>
@@ -1171,3 +1102,5 @@ export default function ExplorerPage() {
     </div>
   );
 }
+
+

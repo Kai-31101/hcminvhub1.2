@@ -19,6 +19,7 @@ import {
 import { services } from '../../data/mockData';
 import { useApp } from '../../context/AppContext';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
+import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { translateText } from '../../utils/localization';
@@ -216,12 +217,14 @@ export default function ServiceCatalogPage() {
                 <div className="grid gap-5 md:grid-cols-2">
                   <label className="space-y-2">
                     <span className="text-[14px] font-medium text-[#1a2755]">{t('Associated Project')} <span className="text-[#f97316]">(*)</span></span>
-                    <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="h-14 w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none">
-                      <option value="">{t('Select project')}</option>
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>{t(project.name)}</option>
-                      ))}
-                    </select>
+                    <ClearableSelectField
+                      ariaLabel={t('Associated Project')}
+                      value={projectId}
+                      onChange={setProjectId}
+                      placeholder={t('Select project')}
+                      options={projects.map((project) => ({ value: project.id, label: t(project.name) }))}
+                      className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                    />
                   </label>
                   <div className="space-y-2">
                     <span className="text-[14px] font-medium text-[#1a2755]">{t('Document Upload')}</span>

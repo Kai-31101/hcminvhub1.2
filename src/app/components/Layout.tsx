@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { ExplorerFooter } from './ExplorerFooter';
 import { useApp, UserRole } from '../context/AppContext';
 import { translateText } from '../utils/localization';
 import {
@@ -523,9 +524,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <div className="flex-1 overflow-y-auto">
+          <main>{children}</main>
+          <ExplorerFooter />
+        </div>
       </div>
 
       {/* Click outside to close dropdowns */}

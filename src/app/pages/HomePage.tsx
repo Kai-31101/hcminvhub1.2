@@ -1,16 +1,26 @@
-﻿import React, { FormEvent, useMemo, useState } from 'react';
+import React, { FormEvent, useMemo, useRef, useState } from 'react';
 import { useEffect } from 'react';
-import { ArrowRight, Building2, CheckCircle2, Compass, Globe2, Landmark, Mail, MapPin, Phone, Search, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CheckCircle2, Compass, Globe2, Headset, Landmark, Mail, Map, MapPin, Phone, Search, ShieldCheck, Star, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
+import { ExplorerFooter } from '../components/ExplorerFooter';
+import { ExplorerActionModal } from '../components/ExplorerActionModal';
+import { PublicPortalHeader } from '../components/PublicPortalHeader';
+import { ClearableSelectField } from '../components/ui/clearable-select-field';
 import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
-import hcmcMapArt from '../assets/hcmc-map-art.png';
+import { SeeAllButton } from '../components/SeeAllButton';
+import designHeroSkyline from '../assets/design-hero-skyline.png';
+import homeHeroFigmaCity from '../assets/home-hero-figma-city.png';
+import homeHeroInteractive from '../assets/home-hero-interactive.png';
+import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../data/administrativeLocations';
 import { investmentNews } from '../data/investmentNews';
-import { useApp, UserRole } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 import { FastTrackDraft, SupportDraft } from '../utils/homeLeadFlow';
 import { translateText } from '../utils/localization';
+import { normalizeProjectStatus } from '../utils/projectStatus';
 
 const BRAND = {
   orange: '#eb7a1a',
@@ -21,38 +31,32 @@ const BRAND = {
   blueBorder: '#d9e3ec',
 };
 
-const OFFICIAL_VI_TITLE = 'H\u1ea0 T\u1ea6NG X\u00daC TI\u1ebeN \u0110\u1ea6U T\u01af';
-const OFFICIAL_VI_TITLE_CITY = 'TH\u00c0NH PH\u1ed0 H\u1ed2 CH\u00cd MINH';
-const OFFICIAL_EN_TITLE = 'Hochiminh City Investment Hub';
-const OFFICIAL_TAGLINE = 'Your Gateway. Our Support. Your Success';
 const HEADER_VI_GOV_LABEL = 'ỦY BAN NHÂN DÂN TP. HỒ CHÍ MINH';
 const HEADER_EN_GOV_LABEL = 'HO CHI MINH CITY PEOPLE\'S COMMITTEE';
-const HEADER_VI_PORTAL_TITLE = 'Hạ tầng Xúc tiến Đầu tư';
-const MAP_PROJECT_POSITIONS: Record<string, { leftPct: number; topPct: number }> = {
-  // Manual positions aligned to the provided PNG map artwork.
-  p1: { leftPct: 56, topPct: 43 },
-  p2: { leftPct: 60, topPct: 74 },
-  p3: { leftPct: 27, topPct: 21 },
-  p4: { leftPct: 46, topPct: 45 },
-  p5: { leftPct: 52, topPct: 50 },
-  p6: { leftPct: 34, topPct: 32 },
-};
-
-const ROLE_HOME_ROUTE: Record<UserRole, string> = {
-  investor: '/investor/explorer',
-  gov_operator: '/gov/projects',
-  agency: '/agency/projects',
-  admin: '/admin/roles',
-  executive: '/executive/dashboard',
-};
+const OFFICIAL_VI_TITLE = 'H\u1ea0 T\u1ea6NG X\u00daC TI\u1ebeN \u0110\u1ea6U T\u01af';
+const OFFICIAL_EN_TITLE = 'Hochiminh City Investment Hub';
+const OFFICIAL_TAGLINE = 'Your Gateway. Our Support. Your Success';
+const ALL_OPTION = '__all__';
+const DEFAULT_LIST_COUNT = 6;
+const PAGINATION_PAGE_SIZE = 9;
+const DEFAULT_PROJECT_TYPE = 'public';
+const HERO_HOTSPOTS = [
+  { id: 'hotspot-west', projectId: 'p3', left: 8, top: 56, color: '#5140b2' },
+  { id: 'hotspot-center-west', projectId: 'p1', left: 25, top: 45, color: '#5d7486' },
+  { id: 'hotspot-south', projectId: 'p4', left: 31, top: 70, color: '#c7b326' },
+  { id: 'hotspot-center', projectId: 'p5', left: 57, top: 43, color: '#5aa85e' },
+  { id: 'hotspot-east-center', projectId: 'p6', left: 69, top: 53, color: '#ca4a9b' },
+  { id: 'hotspot-south-east', projectId: 'p2', left: 65, top: 73, color: '#443c5d' },
+  { id: 'hotspot-east', projectId: 'p4', left: 84, top: 45, color: '#c87a29' },
+];
 
 const META: Record<string, { sectorGroup: string; investmentType: string; ward: string }> = {
-  p1: { sectorGroup: 'Smart City & Urban Tech', investmentType: 'PPP', ward: 'Linh Trung' },
-  p2: { sectorGroup: 'Renewable Energy', investmentType: 'Greenfield', ward: 'Thanh An' },
-  p3: { sectorGroup: 'Manufacturing & Industrial', investmentType: 'Greenfield', ward: 'Thai My' },
-  p4: { sectorGroup: 'Tourism & Hospitality', investmentType: 'Joint Venture', ward: 'An Khanh' },
-  p5: { sectorGroup: 'R&D & Innovation', investmentType: 'Acquisition', ward: 'Hiep Phu' },
-  p6: { sectorGroup: 'Food Processing & Supply Chain', investmentType: 'Brownfield', ward: 'Nhuan Duc' },
+  p1: { sectorGroup: 'Smart City & Urban Tech', investmentType: 'PPP', ward: 'Phường Thủ Đức' },
+  p2: { sectorGroup: 'Renewable Energy', investmentType: 'Greenfield', ward: 'Xã Thanh An' },
+  p3: { sectorGroup: 'Manufacturing & Industrial', investmentType: 'Greenfield', ward: 'Xã Thái Mỹ' },
+  p4: { sectorGroup: 'Tourism & Hospitality', investmentType: 'Joint Venture', ward: 'Phường An Khánh' },
+  p5: { sectorGroup: 'R&D & Innovation', investmentType: 'Acquisition', ward: 'Phường Tăng Nhơn Phú' },
+  p6: { sectorGroup: 'Food Processing & Supply Chain', investmentType: 'Brownfield', ward: 'Xã Nhuận Đức' },
 };
 
 function dueDate(days: number) {
@@ -69,6 +73,22 @@ function amountFromInvestmentSize(investmentSize: string) {
   return 25;
 }
 
+function getMockFollowerCount(projectId: string, budget: number) {
+  const seed = projectId.split('').reduce((total, character) => total + character.charCodeAt(0), 0) + budget;
+  return 120 + (seed % 38) * 17;
+}
+
+function formatFollowerCount(count: number) {
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}k`;
+  }
+  return `${count}`;
+}
+
+function formatPortfolioValue(totalBudgetInMillions: number) {
+  return `$${(totalBudgetInMillions / 1000).toFixed(2)}B`;
+}
+
 function selectClassName() {
   return 'h-11 w-full rounded-xl border border-[#d9e3ec] bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-[#0f3557]';
 }
@@ -76,40 +96,91 @@ function selectClassName() {
 export default function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, language, setLanguage, projects, opportunities, activeInvestorCompany, setActiveInvestorCompany, createOpportunity, createIssue, addNotification } = useApp();
+  const { language, projects, watchlist, toggleWatchlist, activeInvestorCompany, setActiveInvestorCompany, createOpportunity, createIssue, addNotification } = useApp();
   const t = (value: string) => translateText(value, language);
   const isVi = language === 'vi';
+  const heroSectionRef = useRef<HTMLElement | null>(null);
+  const featuredProjectsRef = useRef<HTMLElement | null>(null);
 
-  const homeProjects = useMemo(() => projects.map((project) => ({ ...project, ...(META[project.id] ?? { sectorGroup: project.sector, investmentType: 'Greenfield', ward: 'Ben Nghe' }) })), [projects]);
-  const cityCards = homeProjects.slice(0, 4);
+  const homeProjects = useMemo(() => projects.map((project) => ({ ...project, ...(META[project.id] ?? { sectorGroup: project.sector, investmentType: 'Greenfield', ward: 'Ph\u01b0\u1eddng B\u1ebfn Th\u00e0nh' }) })), [projects]);
   const sectors = Array.from(new Set(homeProjects.map((project) => project.sectorGroup)));
-  const wards = Array.from(new Set(homeProjects.map((project) => project.ward)));
+  const sectorOptions = useMemo(
+    () => [
+      { value: ALL_OPTION, label: t('All') },
+      ...Array.from(new Set(projects.map((project) => project.sector))).map((sector) => ({
+        value: sector,
+        label: t(sector),
+      })),
+    ],
+    [language, projects],
+  );
+  const locationOptions = useMemo(
+    () => [
+      { value: ALL_OPTION, label: language === 'vi' ? 'T?t c? ??a b?n' : 'All areas' },
+      ...administrativeLocationOptions.map((locationName) => ({
+        value: locationName,
+        label: getAdministrativeLocationLabel(locationName, language),
+      })),
+    ],
+    [language],
+  );
+  const investmentRangeOptions = useMemo(
+    () => [
+      { value: ALL_OPTION, label: t('Any Range') },
+      { value: '0-100', label: '$0 - $100M' },
+      { value: '100-250', label: '$100M - $250M' },
+      { value: '250-500', label: '$250M - $500M' },
+      { value: '500+', label: '$500M+' },
+    ],
+    [language],
+  );
 
-  const [query, setQuery] = useState('');
-  const [sectorFilter, setSectorFilter] = useState('all');
-  const [wardFilter, setWardFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSector, setSelectedSector] = useState(ALL_OPTION);
+  const [selectedLocation, setSelectedLocation] = useState(ALL_OPTION);
+  const [selectedInvestmentRange, setSelectedInvestmentRange] = useState(ALL_OPTION);
+  const [selectedProjectType, setSelectedProjectType] = useState(DEFAULT_PROJECT_TYPE);
+  const [isPaginationMode, setIsPaginationMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [fastTrackNotice, setFastTrackNotice] = useState<string | null>(null);
   const [supportNotice, setSupportNotice] = useState<string | null>(null);
+  const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
   const [submissionDialog, setSubmissionDialog] = useState<'fast_track' | 'support' | null>(null);
-  const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: 'Vietnam', sector: sectors[0] ?? 'Infrastructure', locationNeed: 'Ho Chi Minh City', investmentSize: '$10M - $50M', investmentType: 'Joint Venture', notes: '' });
+  const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: 'Vietnam', sector: '', locationNeed: 'Ho Chi Minh City', investmentSize: '', investmentType: '', notes: '' });
   const [supportForm, setSupportForm] = useState<SupportDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', projectId: homeProjects[0]?.id ?? 'p1', topic: isVi ? 'L\u00e0m r\u00f5 d\u1ef1 \u00e1n v\u00e0 \u0111i\u1ec1u ph\u1ed1i b\u01b0\u1edbc ti\u1ebfp theo' : 'Project clarification and next-step coordination', message: '', urgent: false });
-  const filtered = homeProjects.filter((project) => {
-    const haystack = [project.name, project.location, project.description, project.sectorGroup].join(' ').toLowerCase();
-    return (!query || haystack.includes(query.toLowerCase())) && (sectorFilter === 'all' || project.sectorGroup === sectorFilter) && (wardFilter === 'all' || project.ward === wardFilter);
-  });
-  const featured = filtered.slice(0, 4);
-  const mapProjects = useMemo(() => ([
-    { project: homeProjects.find((item) => item.id === 'p3') ?? homeProjects[2], ...MAP_PROJECT_POSITIONS.p3 },
-    { project: homeProjects.find((item) => item.id === 'p6') ?? homeProjects[5], ...MAP_PROJECT_POSITIONS.p6 },
-    { project: homeProjects.find((item) => item.id === 'p4') ?? homeProjects[3], ...MAP_PROJECT_POSITIONS.p4 },
-    { project: homeProjects.find((item) => item.id === 'p1') ?? homeProjects[0], ...MAP_PROJECT_POSITIONS.p1 },
-    { project: homeProjects.find((item) => item.id === 'p5') ?? homeProjects[4], ...MAP_PROJECT_POSITIONS.p5 },
-    { project: homeProjects.find((item) => item.id === 'p2') ?? homeProjects[1], ...MAP_PROJECT_POSITIONS.p2 },
-  ].filter((item) => item.project)), [homeProjects]);
-  const [activeMapProjectId, setActiveMapProjectId] = useState<string | null>(null);
-  const [mapZoom, setMapZoom] = useState(1);
-  const activeMapProjectMarker = activeMapProjectId ? (mapProjects.find((item) => item.project?.id === activeMapProjectId) ?? null) : null;
-  const activeMapProject = activeMapProjectMarker?.project ?? null;
+  const filteredProjects = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    return projects.filter((project) => {
+      const haystack = [project.name, project.location, project.province, project.sector, project.description]
+        .join(' ')
+        .toLowerCase();
+      const district = getProjectAdministrativeLocation(project);
+      const projectType = 'public';
+
+      let investmentRangeMatch = true;
+      if (selectedInvestmentRange === '0-100') investmentRangeMatch = project.budget < 100;
+      if (selectedInvestmentRange === '100-250') investmentRangeMatch = project.budget >= 100 && project.budget < 250;
+      if (selectedInvestmentRange === '250-500') investmentRangeMatch = project.budget >= 250 && project.budget < 500;
+      if (selectedInvestmentRange === '500+') investmentRangeMatch = project.budget >= 500;
+
+      if (selectedSector !== ALL_OPTION && project.sector !== selectedSector) return false;
+      if (selectedLocation !== ALL_OPTION && district !== selectedLocation) return false;
+      if (selectedProjectType !== ALL_OPTION && projectType !== selectedProjectType) return false;
+      if (!investmentRangeMatch) return false;
+      if (keyword && !haystack.includes(keyword)) return false;
+
+      return true;
+    });
+  }, [projects, searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGINATION_PAGE_SIZE));
+  const visibleProjects = isPaginationMode
+    ? filteredProjects.slice((currentPage - 1) * PAGINATION_PAGE_SIZE, currentPage * PAGINATION_PAGE_SIZE)
+    : filteredProjects.slice(0, DEFAULT_LIST_COUNT);
+  const highlightedProject = homeProjects[0] ?? null;
+  const heroHotspots = useMemo(() => HERO_HOTSPOTS.map((hotspot) => ({ ...hotspot, project: homeProjects.find((project) => project.id === hotspot.projectId) ?? null })).filter((hotspot) => hotspot.project), [homeProjects]);
+  const [interactiveHero, setInteractiveHero] = useState(false);
+  const [activeHeroHotspotId, setActiveHeroHotspotId] = useState<string | null>(null);
 
   const submittedType = new URLSearchParams(location.search).get('submitted');
   useEffect(() => {
@@ -125,11 +196,32 @@ export default function HomePage() {
       setSupportNotice(null);
     }
   }, [submittedType]);
-  const stats = [
-    { label: isVi ? 'D\u1ef1 \u00e1n c\u00f4ng b\u1ed1' : 'Published projects', value: `${homeProjects.length}` },
-    { label: isVi ? 'Gi\u00e1 tr\u1ecb danh m\u1ee5c' : 'Portfolio value', value: `$${homeProjects.reduce((sum, project) => sum + project.budget, 0).toLocaleString()}M` },
-    { label: isVi ? 'Th\u1ecb tr\u01b0\u1eddng quan t\u00e2m' : 'Investor markets', value: `${new Set(opportunities.map((item) => item.investorCountry)).size || 1}+` },
-  ];
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
+  const stats = useMemo(() => {
+    const totalFollowers = projects.reduce((sum, project) => sum + getMockFollowerCount(project.id, project.budget), 0);
+
+    return [
+      { label: 'Total Projects', value: `${projects.length}` },
+      { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
+      { label: 'Follower', value: formatFollowerCount(totalFollowers) },
+      { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0)) },
+    ];
+  }, [projects]);
+  const keyStats = useMemo(
+    () => {
+      const totalFollowers = projects.reduce((sum, project) => sum + getMockFollowerCount(project.id, project.budget), 0);
+
+      return [
+        { label: 'Total Projects', value: `${projects.length}` },
+        { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
+        { label: 'Follower', value: formatFollowerCount(totalFollowers) },
+        { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0)) },
+      ];
+    },
+    [projects],
+  );
   const navItems = [
     { label: isVi ? 'Trang ch\u1ee7' : 'Home', id: 'top' },
     { label: isVi ? 'D\u1ef1 \u00e1n' : 'Projects', id: 'discover' },
@@ -149,6 +241,51 @@ export default function HomePage() {
     }
   }
 
+  function openFastTrackModal() {
+    setFastTrackNotice(null);
+    setIsFastTrackModalOpen(true);
+  }
+
+  function closeFastTrackModal() {
+    setFastTrackNotice(null);
+    setIsFastTrackModalOpen(false);
+  }
+
+  function enterInteractiveHero() {
+    setInteractiveHero(true);
+    setActiveHeroHotspotId((current) => current ?? heroHotspots[0]?.id ?? null);
+  }
+
+  function exitInteractiveHero() {
+    setInteractiveHero(false);
+  }
+
+  function openHeroMapView() {
+    enterInteractiveHero();
+    heroSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetExplorerFilters() {
+    setSearchTerm('');
+    setSelectedSector(ALL_OPTION);
+    setSelectedLocation(ALL_OPTION);
+    setSelectedInvestmentRange(ALL_OPTION);
+    setSelectedProjectType(DEFAULT_PROJECT_TYPE);
+    setIsPaginationMode(false);
+    setCurrentPage(1);
+  }
+
+  function enablePaginationMode() {
+    setIsPaginationMode(true);
+    setCurrentPage(1);
+  }
+
+  function handleToggleWatchlist(id: string, event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleWatchlist(id);
+  }
+
   function submitFastTrack(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!fastTrackForm.companyName || !fastTrackForm.contactName || !fastTrackForm.email) {
@@ -162,12 +299,13 @@ export default function HomePage() {
     const opportunityId = createOpportunity({ projectId: project.id, projectName: project.name, investorName: fastTrackForm.contactName, investorCompany: fastTrackForm.companyName, investorCountry: fastTrackForm.country, investorType: 'Strategic', amount: amountFromInvestmentSize(fastTrackForm.investmentSize), stage: 'new', notes: `Homepage fast-track request. Preferred sector: ${fastTrackForm.sector}. Preferred location: ${fastTrackForm.locationNeed}.`, intakeData: { investmentStructure: fastTrackForm.investmentType, timeline: 'Requested via homepage fast-track entry', fundSource: 'To be confirmed', experience: fastTrackForm.notes || 'Homepage lead', contactEmail: fastTrackForm.email, contactPhone: fastTrackForm.phone || 'To be confirmed' } });
     createIssue({ projectId: project.id, projectName: project.name, title: `Fast-track matching request - ${fastTrackForm.companyName}`, description: fastTrackForm.notes || 'Homepage fast-track request', priority: 'high', status: 'open', assignedTo: 'Investor Relations Desk', dueDate: dueDate(2), reportedBy: fastTrackForm.contactName, category: 'Support' });
     addNotification({ title: 'Fast-track lead captured', message: isVi ? 'Y\u00eau c\u1ea7u fast-track \u0111\u00e3 \u0111\u01b0\u1ee3c chuy\u1ec3n \u0111\u1ebfn b\u00e0n ph\u1ee5 tr\u00e1ch.' : 'Fast-track request routed to the responsible desk.', type: 'success', path: `/gov/opportunities/${opportunityId}` });
+    setIsFastTrackModalOpen(false);
     setSubmissionDialog('fast_track');
   }
 
   function submitSupport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!supportForm.companyName || !supportForm.contactName || !supportForm.email || !supportForm.message) {
+    if (!supportForm.companyName || !supportForm.contactName || !supportForm.email || !supportForm.phone || !supportForm.message) {
       setSupportNotice(isVi ? 'Vui l\u00f2ng \u0111i\u1ec1n \u0111\u1ee7 th\u00f4ng tin h\u1ed7 tr\u1ee3.' : 'Please complete the support request details.');
       return;
     }
@@ -181,253 +319,738 @@ export default function HomePage() {
   }
 
   return (
-    <div id="top" className="min-h-screen bg-white text-slate-900">
-      <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur" style={{ borderColor: BRAND.blueBorder }}>
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-5 py-4 lg:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border" style={{ backgroundColor: BRAND.orangeSoft, borderColor: BRAND.orangeBorder, color: BRAND.blue }}><Landmark size={18} /></div>
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: BRAND.orange }}>
-                {isVi ? HEADER_VI_GOV_LABEL : HEADER_EN_GOV_LABEL}
-              </div>
-              <div className="text-sm font-semibold" style={{ color: BRAND.blue }}>
-                {isVi ? HEADER_VI_PORTAL_TITLE : OFFICIAL_EN_TITLE}
-              </div>
-            </div>
-          </div>
-          <div className="hidden items-center gap-7 text-sm text-slate-600 lg:flex">
-            {navItems.map((item) => <button key={item.id} type="button" className="transition hover:text-slate-900" onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' })}>{item.label}</button>)}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="inline-flex rounded-full border border-[#d9e3ec] bg-white p-1">{(['vi', 'en'] as const).map((option) => <button key={option} type="button" onClick={() => setLanguage(option)} className="rounded-full px-3 py-1.5 text-xs font-semibold" style={{ backgroundColor: language === option ? BRAND.blue : 'transparent', color: language === option ? '#fff' : BRAND.blue }}>{option.toUpperCase()}</button>)}</div>
-            <Button className="rounded-full px-5 text-white" style={{ backgroundColor: BRAND.blue }} asChild><Link to="/login">Login / create account</Link></Button>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-[1180px] px-5 pb-16 pt-8 lg:px-6">
-        <section className="grid items-start gap-6 lg:grid-cols-[1.05fr,0.95fr]">
-          <div className="pt-4">
-            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ backgroundColor: BRAND.orangeSoft, borderColor: BRAND.orangeBorder, color: BRAND.orange }}><Sparkles size={14} />{isVi ? 'H\u1ea1 t\u1ea7ng v\u1eadn h\u00e0nh \u0111\u1ea7u t\u01b0 c\u1ea5p th\u00e0nh ph\u1ed1' : 'City-level investment operations infrastructure'}</div>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.2] md:text-[52px]" style={{ color: BRAND.blue }}>
-              {isVi ? (
-                <>
-                  {OFFICIAL_VI_TITLE}
-                  <br />
-                  {OFFICIAL_VI_TITLE_CITY}
-                </>
-              ) : (
-                OFFICIAL_EN_TITLE
-              )}
-            </h1>
-            <div className="mt-4 text-lg font-semibold text-slate-800">{OFFICIAL_EN_TITLE}</div>
-            <div className="mt-1 text-sm font-medium text-slate-500">{OFFICIAL_TAGLINE}</div>
-            <p className="mt-5 max-w-[620px] text-sm leading-7 text-slate-600 md:text-[15px]">{isVi ? 'N\u1ec1n t\u1ea3ng \u0111\u01b0\u1ee3c thi\u1ebft k\u1ebf nh\u01b0 m\u1ed9t h\u1ea1 t\u1ea7ng v\u1eadn h\u00e0nh \u0111\u1ea7u t\u01b0 c\u1ea5p th\u00e0nh ph\u1ed1, gi\u00fap kh\u00e1m ph\u00e1 d\u1ef1 \u00e1n, \u0111i\u1ec1u ph\u1ed1i h\u1ed7 tr\u1ee3 v\u00e0 r\u00fat ng\u1eafn b\u01b0\u1edbc ti\u1ebfp theo cho nh\u00e0 \u0111\u1ea7u t\u01b0.' : 'A city-operated platform for project discovery, support routing, and investor coordination across Ho Chi Minh City.'}</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button className="rounded-full px-6 text-white" style={{ backgroundColor: BRAND.orange }} onClick={() => document.getElementById('discover')?.scrollIntoView({ behavior: 'smooth' })}>{isVi ? 'Kh\u00e1m ph\u00e1 d\u1ef1 \u00e1n' : 'Explore projects'}</Button>
-              <Button variant="outline" className="rounded-full px-6" style={{ borderColor: BRAND.blueBorder, color: BRAND.blue }} onClick={() => document.getElementById('support')?.scrollIntoView({ behavior: 'smooth' })}>{isVi ? 'Li\u00ean h\u1ec7 h\u1ed7 tr\u1ee3' : 'Contact support'}</Button>
-            </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {stats.map((item) => <div key={item.label} className="rounded-[22px] border bg-white px-4 py-4 shadow-[0_10px_30px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}><div className="text-[28px] font-bold leading-none" style={{ color: BRAND.blue }}>{item.value}</div><div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{item.label}</div></div>)}
-            </div>
-          </div>
-          <Card className="overflow-hidden rounded-[30px] border bg-white shadow-[0_30px_70px_rgba(15,53,87,0.08)]" style={{ borderColor: BRAND.blueBorder }}>
-            <CardContent className="p-5">
-              <div className="rounded-[26px] border p-5" style={{ borderColor: BRAND.blueBorder, background: 'radial-gradient(circle at top left, rgba(255,228,204,0.8), transparent 34%), linear-gradient(180deg, #fafcfe 0%, #ffffff 100%)' }}>
-                <div className="flex items-start justify-between gap-4"><div><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>HCMC Investment Infrastructure</div><h2 className="mt-2 text-xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'B\u1ea3n \u0111\u1ed3 \u0111i\u1ec1u ph\u1ed1i \u0111\u1ea7u t\u01b0' : 'Investment coordination map'}</h2><p className="mt-2 max-w-[280px] text-sm leading-6 text-slate-500">{isVi ? 'Tr\u1ef1c quan h\u00f3a vai tr\u00f2 \u0111i\u1ec1u ph\u1ed1i d\u1ef1 \u00e1n, h\u1ed7 tr\u1ee3 v\u00e0 v\u1eadn h\u00e0nh c\u1ea5p th\u00e0nh ph\u1ed1.' : 'A visual snapshot of city-level investment coordination and support coverage.'}</p></div><div className="rounded-2xl p-2" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><ShieldCheck size={20} /></div></div>
-                <div className="relative mt-8 h-[600px] overflow-hidden rounded-[26px] border bg-white" style={{ borderColor: BRAND.blueBorder }}>
-                  <div className="absolute right-4 top-4 z-40 flex items-center gap-2 rounded-full border bg-white/95 px-2 py-2 shadow-sm" style={{ borderColor: BRAND.blueBorder }}>
-                    <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold" style={{ color: mapZoom <= 0.6 ? '#94a3b8' : BRAND.blue, backgroundColor: '#f8fafc' }} onClick={() => setMapZoom((current) => Math.max(0.6, Number((current - 0.2).toFixed(1))))} disabled={mapZoom <= 0.6}>-</button>
-                    <span className="min-w-10 text-center text-xs font-semibold" style={{ color: BRAND.blue }}>{`${Math.round(mapZoom * 100)}%`}</span>
-                    <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold" style={{ color: mapZoom >= 1.8 ? '#94a3b8' : BRAND.blue, backgroundColor: '#f8fafc' }} onClick={() => setMapZoom((current) => Math.min(1.8, Number((current + 0.2).toFixed(1))))} disabled={mapZoom >= 1.8}>+</button>
-                  </div>
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,#f7fbfe_0%,#fdfefe_100%)]" />
-                  <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(15,53,87,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15,53,87,0.04) 1px, transparent 1px)', backgroundSize: '34px 34px' }} />
-                  <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${mapZoom})` }}>
-                    <img
-                      src={hcmcMapArt}
-                      alt={isVi ? 'Bản đồ TP. Hồ Chí Minh' : 'Ho Chi Minh City map'}
-                      className="absolute inset-[10px] h-[calc(100%-20px)] w-[calc(100%-20px)] object-contain"
-                    />
-                    <div className="absolute left-4 top-4 z-10 rounded-full border bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] shadow-sm" style={{ borderColor: BRAND.blueBorder, color: BRAND.blue }}>
-                      {isVi ? 'B\u1ea3n \u0111\u1ed3 h\u00e0nh ch\u00ednh TP.HCM' : 'Ho Chi Minh City administrative map'}
-                    </div>
-                    {mapProjects.map(({ project, leftPct, topPct }) => project && (
+    <div id="top" className="flex min-h-screen flex-col bg-white text-slate-900">
+      <PublicPortalHeader
+        items={navItems.map((item) => ({
+          label: item.label,
+          onClick: () => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' }),
+        }))}
+        title={isVi ? OFFICIAL_VI_TITLE : OFFICIAL_EN_TITLE}
+        subtitle={isVi ? HEADER_VI_GOV_LABEL : HEADER_EN_GOV_LABEL}
+        actionLabel="Login"
+        actionTo="/login"
+      />
+      <main className="mx-auto max-w-[1180px] flex-1 px-5 pb-16 pt-0 lg:px-6">
+        <section ref={heroSectionRef} className="relative h-[600px] overflow-hidden bg-[#081d36]">
+          {!interactiveHero ? (
+            <>
+              <button
+                type="button"
+                className="absolute inset-0 block cursor-pointer overflow-hidden"
+                onClick={enterInteractiveHero}
+                aria-label={isVi ? 'Mở banner tương tác' : 'Open interactive hero banner'}
+              >
+                <img
+                  src={homeHeroFigmaCity}
+                  alt={isVi ? 'Banner đầu trang TP. Hồ Chí Minh' : 'Ho Chi Minh City hero banner'}
+                  className="h-full w-full scale-[1.08] object-cover object-[center_28%]"
+                  draggable={false}
+                />
+              </button>
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,12,33,0.08)_0%,rgba(0,12,33,0.16)_24%,rgba(0,13,38,0.82)_100%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,22,45,0.88)_0%,rgba(5,22,45,0.48)_26%,rgba(5,22,45,0.12)_56%,rgba(5,22,45,0.12)_84%,rgba(5,22,45,0.62)_100%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_64%,rgba(1,15,33,0.36)_0%,rgba(1,15,33,0.18)_15%,rgba(1,15,33,0)_34%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_98%_95%,rgba(1,15,33,0.86)_0%,rgba(1,15,33,0.58)_3%,rgba(1,15,33,0)_12%)]" />
+              <div className="relative flex h-full flex-col justify-between px-6 pb-10 pt-12 lg:px-10 lg:pb-12 lg:pt-14">
+                <div className="grid gap-8">
+                  <div className="relative z-20 max-w-[520px] pt-4 lg:pt-8">
+                    <h1 className="text-[38px] font-extrabold leading-[0.98] tracking-[-0.04em] text-white md:text-[54px]">
+                      <span className="block">Hochiminh City</span>
+                      <span className="mt-2 block" style={{ color: '#ff6a00' }}>Investment Hub</span>
+                    </h1>
+                    <p className="mt-8 text-[20px] font-medium tracking-[0.03em] text-white/72">
+                      {isVi ? 'Cổng kết nối. Hỗ trợ đồng hành. Thành công đầu tư.' : OFFICIAL_TAGLINE}
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center gap-6">
+                      <Button
+                        className="inline-flex h-[50px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
+                        style={{ background: 'linear-gradient(180deg, #ff7a1a 0%, #ed6203 100%)' }}
+                        onClick={() => document.getElementById('discover')?.scrollIntoView({ behavior: 'smooth' })}
+                      >
+                        {isVi ? 'Khám phá cơ hội' : 'Explore Opportunities'}
+                      </Button>
                       <button
-                        key={project.id}
                         type="button"
-                        className="absolute z-20 -translate-x-1/2 -translate-y-1/2"
-                        style={{ left: `${leftPct}%`, top: `${topPct}%` }}
-                        onMouseEnter={() => setActiveMapProjectId(project.id)}
-                        onMouseLeave={() => setActiveMapProjectId((current) => (current === project.id ? null : current))}
-                        onFocus={() => setActiveMapProjectId(project.id)}
-                        onBlur={() => setActiveMapProjectId((current) => (current === project.id ? null : current))}
-                        onClick={() => navigate(`/investor/project/${project.id}`)}
+                        className="text-[16px] font-semibold text-white underline decoration-[#ff6a00] decoration-[1.5px] underline-offset-4 transition hover:text-white/85"
+                        onClick={enterInteractiveHero}
+                      >
+                        {isVi ? 'Bản đồ tương tác' : 'Interactive Map'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="relative z-10 mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {stats.map((item) => (
+                    <div key={item.label} className="rounded-none border border-[rgba(224,192,177,0.18)] bg-white/70 px-4 py-4 backdrop-blur-sm">
+                      <div className="tabular-nums text-[26px] font-normal leading-8 text-[#9d4300]">{item.value}</div>
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[#455f87]">{t(item.label)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 overflow-hidden">
+                <img
+                  src={homeHeroInteractive}
+                  alt={isVi ? 'Banner tương tác TP. Hồ Chí Minh' : 'Ho Chi Minh City interactive hero banner'}
+                  className="h-full w-full object-cover object-center"
+                  draggable={false}
+                />
+              </div>
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,13,38,0)_0%,rgba(0,13,38,0.08)_58%,rgba(0,13,38,0.34)_100%)]" />
+              <div className="relative h-full">
+                <div className="absolute left-6 top-6 z-30 lg:left-8">
+                  <button
+                    type="button"
+                    onClick={exitInteractiveHero}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/24 bg-[rgba(4,18,33,0.48)] px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-[rgba(4,18,33,0.68)]"
+                  >
+                    <ArrowLeft size={16} />
+                    {isVi ? 'Quay lại banner gốc' : 'Back'}
+                  </button>
+                </div>
+                <div className="absolute inset-0">
+                  {heroHotspots.map(({ id, projectId, left, top, color, project }) => {
+                    if (!project) return null;
+                    const isActive = activeHeroHotspotId === id;
+                    const cardPositionClass = left > 70
+                      ? 'right-[calc(100%+14px)] items-end text-right'
+                      : 'left-[calc(100%+14px)] items-start text-left';
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none ${isActive ? 'z-40' : 'z-20'}`}
+                        style={{ left: `${left}%`, top: `${top}%` }}
+                        onMouseEnter={() => setActiveHeroHotspotId(id)}
+                        onMouseLeave={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
+                        onFocus={() => setActiveHeroHotspotId(id)}
+                        onBlur={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
+                        onClick={() => navigate(`/investor/project/${projectId}`)}
                         aria-label={t(project.name)}
                       >
-                        <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#eb7a1a]/20 blur-[2px]" />
-                        <span className="relative flex h-5 w-5 items-center justify-center rounded-full border-2 border-white shadow-lg" style={{ backgroundColor: BRAND.orange }}>
-                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                        </span>
+                        <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full blur-md" style={{ backgroundColor: `${color}66` }} />
+                        <MapPin size={28} fill={color} color={color} strokeWidth={1.8} className={`drop-shadow-[0_10px_18px_rgba(15,23,42,0.38)] transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
+                        {isActive && (
+                          <span className={`absolute top-1/2 z-50 flex w-[240px] -translate-y-1/2 ${cardPositionClass}`}>
+                            <span className="block rounded-none border border-white/18 bg-[rgba(7,18,35,0.88)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.42)] backdrop-blur">
+                              <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color }}>
+                                <MapPin size={12} />
+                                {t(project.sectorGroup)}
+                              </span>
+                              <span className="mt-3 block overflow-hidden rounded-none border border-white/10 bg-white/5">
+                                <img src={project.image} alt={t(project.name)} className="h-[120px] w-full object-cover" />
+                              </span>
+                              <span className="mt-3 block text-sm font-semibold leading-5 text-white">
+                                {t(project.name)}
+                              </span>
+                              <span className="mt-2 block text-xs leading-5 text-white/72">
+                                {t(project.location)}
+                              </span>
+                              <span className="mt-2 block text-[11px] leading-5 text-white/78">
+                                {t(project.description).slice(0, 86)}...
+                              </span>
+                              <span className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold text-[#ffb77c]">
+                                {isVi ? 'Mở chi tiết dự án' : 'Open project detail'}
+                                <ArrowRight size={12} />
+                              </span>
+                            </span>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+        <section
+          id="fast-track"
+          className="relative z-20 w-full border px-6 py-4 md:px-8 md:py-4"
+          style={{ borderColor: '#f2e2d5', background: 'linear-gradient(135deg, #fff2e6 0%, #f5f8fb 68%, #edf4f9 100%)' }}>
+          <div className="grid gap-4 md:grid-cols-2 md:items-center">
+            <div className="flex min-h-[96px] flex-col items-center justify-center text-center">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>
+                {t('Need tailored support')}
+              </div>
+              <div className="mt-2 text-2xl font-semibold" style={{ color: BRAND.blue }}>
+                {t("FAST-TRACK")}
+              </div>
+              <div className="mt-2 text-sm leading-6 text-slate-600">
+                {t('Submit a quick intake')}
+              </div>
+            </div>
+            <div className="flex min-h-[96px] items-center justify-center">
+              <Button
+                className="inline-flex h-[50px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
+                style={{ backgroundColor: BRAND.orange }}
+                onClick={openFastTrackModal}
+              >
+                {t('Submit quick intake')}
+              </Button>
+            </div>
+          </div>
+        </section>
+        <section id="discover" className="mt-10">
+          <Card className="mt-6 rounded-none border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}>
+            <CardContent className="grid gap-5 p-5">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px]">
+                <div className="relative">
+                  <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8c7164]" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder={t('Search by project name, ID, or keywords...')}
+                    className="h-[60px] rounded-none border-[rgba(224,192,177,0.2)] bg-[#f2f4f6] pl-12 text-[16px] text-[#191c1e] shadow-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openHeroMapView}
+                  className="inline-flex h-[60px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
+                >
+                  <Map size={18} />
+                  {t('View on Map')}
+                </button>
+              </div>
+
+              <div className="grid gap-4 border-t border-[rgba(224,192,177,0.12)] pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:items-end">
+                <div className="space-y-2">
+                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Sector')}</div>
+                  <Select value={selectedSector} onValueChange={setSelectedSector}>
+                    <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
+                      <SelectValue placeholder={t('All Sectors')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sectorOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Location')}</div>
+                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                    <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
+                      <SelectValue placeholder={isVi ? 'T\u1ea5t c\u1ea3 \u0111\u1ecba b\u00e0n' : 'All areas'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locationOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Investment Size')}</div>
+                  <Select value={selectedInvestmentRange} onValueChange={setSelectedInvestmentRange}>
+                    <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
+                      <SelectValue placeholder={t('Any Range')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {investmentRangeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Project Type')}</div>
+                  <div className="inline-flex rounded-none bg-[#f2f4f6] p-1">
+                    {[
+                      { value: 'public', label: 'Public' },
+                      { value: 'private', label: 'Private' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSelectedProjectType(option.value)}
+                        className={`rounded-none px-4 py-2 text-[13px] font-medium transition-colors ${
+                          selectedProjectType === option.value
+                            ? 'bg-[#ffd7c5] text-[#6a2d00]'
+                            : 'text-[#455f87]'
+                        }`}
+                      >
+                        {t(option.label)}
                       </button>
                     ))}
-                    {activeMapProject && (
-                      <div
-                        className="absolute z-30 w-[215px] rounded-[22px] border bg-white/96 p-4 shadow-[0_16px_40px_rgba(15,53,87,0.14)] backdrop-blur"
-                        style={{
-                          borderColor: BRAND.blueBorder,
-                          left: `${activeMapProjectMarker?.leftPct ?? 50}%`,
-                          top: `${activeMapProjectMarker?.topPct ?? 50}%`,
-                          transform: `${(activeMapProjectMarker?.leftPct ?? 50) > 72 ? 'translate(calc(-100% - 18px), -50%)' : 'translate(18px, -50%)'} ${(activeMapProjectMarker?.topPct ?? 50) > 82 ? 'translateY(-20%)' : ''}`.trim(),
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{t((activeMapProject as typeof homeProjects[number] & { sectorGroup: string }).sectorGroup)}</span>
-                          <span className="text-[11px] text-slate-400">{`$${activeMapProject.budget}M`}</span>
-                        </div>
-                        <div className="mt-3 text-sm font-semibold leading-6" style={{ color: BRAND.blue }}>{t(activeMapProject.name)}</div>
-                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500"><MapPin size={12} />{t(activeMapProject.location)}</div>
-                        <p className="mt-3 text-xs leading-5 text-slate-600">{t(activeMapProject.description).slice(0, 88)}...</p>
-                        <div className="mt-3 inline-flex items-center gap-2 text-xs font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Xem chi ti\u1ebft d\u1ef1 \u00e1n' : 'Open project detail'}<ArrowRight size={12} /></div>
-                        <div
-                          className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rotate-45 bg-white"
-                          style={{
-                            borderColor: BRAND.blueBorder,
-                            borderStyle: 'solid',
-                            left: (activeMapProjectMarker?.leftPct ?? 50) > 72 ? 'auto' : '-8px',
-                            right: (activeMapProjectMarker?.leftPct ?? 50) > 72 ? '-8px' : 'auto',
-                            borderBottomWidth: (activeMapProjectMarker?.leftPct ?? 50) > 72 ? 1 : 0,
-                            borderRightWidth: (activeMapProjectMarker?.leftPct ?? 50) > 72 ? 1 : 0,
-                            borderLeftWidth: (activeMapProjectMarker?.leftPct ?? 50) > 72 ? 0 : 1,
-                            borderTopWidth: 0,
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {[[isVi ? 'Khu tr\u1ecdng \u0111i\u1ec3m' : 'Priority zones', '06'], [isVi ? '\u0110\u1ea7u m\u1ed1i h\u1ed7 tr\u1ee3' : 'Support desks', '04'], [isVi ? 'D\u1ef1 \u00e1n s\u1eb5n s\u00e0ng' : 'Ready projects', '12']].map(([label, value]) => <div key={label as string} className="rounded-2xl border bg-white px-4 py-3" style={{ borderColor: BRAND.blueBorder }}><div className="text-lg font-semibold" style={{ color: BRAND.blue }}>{value}</div><div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div></div>)}
-                </div>
+
+                <button
+                  type="button"
+                  onClick={resetExplorerFilters}
+                  className="justify-self-start border-b border-[rgba(157,67,0,0.2)] pb-1 text-[14px] font-medium text-[#9d4300] lg:justify-self-end"
+                >
+                  {t('Clear all filters')}
+                </button>
               </div>
             </CardContent>
           </Card>
         </section>
 
-        <section className="mt-8 rounded-[30px] border px-6 py-6" style={{ borderColor: '#f2e2d5', background: 'linear-gradient(135deg, #fff2e6 0%, #f5f8fb 68%, #edf4f9 100%)' }}>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-[720px]"><div className="text-center text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'G\u1ee3i m\u1edf lu\u1ed3ng h\u1ed7 tr\u1ee3' : 'Need tailored support'}</div><div className="mt-2 text-center text-2xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Kh\u00f4ng t\u00ecm th\u1ea5y d\u1ef1 \u00e1n ph\u00f9 h\u1ee3p?' : "Can't find a suitable project?"}</div><div className="mt-2 text-center text-sm leading-7 text-slate-600">{isVi ? 'G\u1eedi bi\u1ec3u m\u1eabu ti\u1ebfp nh\u1eadn nhanh \u0111\u1ec3 h\u1ec7 th\u1ed1ng \u0111i\u1ec1u ph\u1ed1i \u0111\u1ea7u m\u1ed1i ph\u1ee5 tr\u00e1ch v\u00e0 b\u01b0\u1edbc ti\u1ebfp theo trong quy tr\u00ecnh c\u1ea5p th\u00e0nh ph\u1ed1.' : 'Submit a quick intake so the platform can route the responsible desk and coordinate the next step inside the city workflow.'}</div></div>
-            <Button className="rounded-full px-6 text-white" style={{ backgroundColor: BRAND.orange }} onClick={() => document.getElementById('fast-track')?.scrollIntoView({ behavior: 'smooth' })}>{isVi ? 'G\u1eedi ti\u1ebfp nh\u1eadn nhanh' : 'Submit quick intake'}</Button>
+        <section id="featured-projects" ref={featuredProjectsRef} className="mt-12 space-y-10">
+          <div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'D\u1ef1 \u00e1n \u0111\u1ea7u t\u01b0 n\u1ed5i b\u1eadt' : 'Featured investment projects'}</h2></div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-[14px] text-[#455f87]">
+              {t('Showing')} <span className="font-semibold text-[#191c1e]">{filteredProjects.length}</span> {t('projects')}
+            </div>
+            <div className="text-[12px] uppercase tracking-[0.12em] text-[#8c7164]">
+              {t('Sorted by')}: <span className="text-[#455f87]">{t('Relevance')}</span>
+            </div>
           </div>
-        </section>
-        <section id="discover" className="mt-14">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'Kh\u00e1m ph\u00e1 c\u01a1 h\u1ed9i \u0111\u1ea7u t\u01b0' : 'Discover investment opportunities'}</div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Kh\u00e1m ph\u00e1 c\u01a1 h\u1ed9i \u0111\u1ea7u t\u01b0' : 'Discover investment opportunities'}</h2></div>
-            {featured[0] && <Button variant="outline" className="rounded-full px-5" style={{ borderColor: BRAND.orangeBorder, color: BRAND.orange }} asChild><Link to={`/investor/project/${featured[0].id}`}>{isVi ? 'Xem d\u1ef1 \u00e1n ti\u00eau bi\u1ec3u' : 'Open highlighted project'}</Link></Button>}
-          </div>
-          <Card className="mt-6 rounded-[28px] border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}>
-            <CardContent className="grid gap-4 p-5 lg:grid-cols-[1.2fr,0.8fr,0.8fr,auto]">
-              <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><Input className="h-11 rounded-xl border-[#d9e3ec] pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={isVi ? 'T\u00ecm theo t\u00ean d\u1ef1 \u00e1n, l\u0129nh v\u1ef1c ho\u1eb7c \u0111\u1ecba \u0111i\u1ec3m' : 'Search by project, sector, or location'} /></div>
-              <select className={selectClassName()} value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)}><option value="all">{isVi ? 'T\u1ea5t c\u1ea3 l\u0129nh v\u1ef1c' : 'All sectors'}</option>{sectors.map((sector) => <option key={sector} value={sector}>{t(sector)}</option>)}</select>
-              <select className={selectClassName()} value={wardFilter} onChange={(event) => setWardFilter(event.target.value)}><option value="all">{isVi ? 'T\u1ea5t c\u1ea3 khu v\u1ef1c' : 'All areas'}</option>{wards.map((ward) => <option key={ward} value={ward}>{t(ward)}</option>)}</select>
-              <Button className="h-11 rounded-full px-6 text-white" style={{ backgroundColor: BRAND.orange }} onClick={() => document.getElementById('featured-projects')?.scrollIntoView({ behavior: 'smooth' })}>{isVi ? 'T\u00ecm d\u1ef1 \u00e1n' : 'Search'}</Button>
-            </CardContent>
-          </Card>
-        </section>
 
-        <section id="featured-projects" className="mt-12">
-          <div><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'D\u1ef1 \u00e1n \u0111\u1ea7u t\u01b0 n\u1ed5i b\u1eadt' : 'Featured investment projects'}</div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'D\u1ef1 \u00e1n \u0111\u1ea7u t\u01b0 n\u1ed5i b\u1eadt' : 'Featured investment projects'}</h2></div>
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            {featured.map((project) => (
-              <Link key={project.id} to={`/investor/project/${project.id}`}>
-                <Card className="overflow-hidden rounded-[26px] border bg-white shadow-[0_16px_40px_rgba(15,53,87,0.06)] transition-transform hover:-translate-y-1" style={{ borderColor: BRAND.blueBorder }}>
-                  <div className="grid md:grid-cols-[1.1fr,0.9fr]">
-                    <div className="h-[220px] overflow-hidden"><img src={project.image} alt={t(project.name)} className="h-full w-full object-cover" /></div>
-                    <CardContent className="flex h-full flex-col justify-between p-5">
-                      <div>
-                        <div className="flex flex-wrap gap-2"><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{t(project.sectorGroup)}</span><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.blueSoft, color: BRAND.blue }}>{t(project.investmentType)}</span></div>
-                        <h3 className="mt-4 text-xl font-semibold leading-snug" style={{ color: BRAND.blue }}>{t(project.name)}</h3>
-                        <p className="mt-3 text-sm leading-6 text-slate-600">{t(project.description).slice(0, 140)}...</p>
+          <div className="grid gap-6 xl:grid-cols-3">
+            {visibleProjects.map((project) => {
+              const isWatching = watchlist.includes(project.id);
+              const followerCount = getMockFollowerCount(project.id, project.budget);
+
+              return (
+                <Link
+                  key={project.id}
+                  to={`/investor/project/${project.id}`}
+                  className="group overflow-hidden rounded-none border border-[rgba(224,192,177,0.1)] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(69,95,135,0.12)]"
+                >
+                  <div className="relative h-52 overflow-hidden bg-[#e0e3e5]">
+                    <img
+                      src={project.image}
+                      alt={t(project.name)}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+                      <div className="rounded-none border border-white/60 bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9d4300] shadow-sm">
+                        {formatFollowerCount(followerCount)} {t('followers')}
                       </div>
-                      <div className="mt-5 space-y-3">
-                        <div className="flex items-center justify-between text-sm"><span className="text-slate-500">{isVi ? '\u0110\u1ecba \u0111i\u1ec3m' : 'Location'}</span><span className="font-medium text-slate-700">{t(project.location)}</span></div>
-                        <div className="flex items-center justify-between text-sm"><span className="text-slate-500">{isVi ? 'Quy m\u00f4 v\u1ed1n' : 'Capital size'}</span><span className="font-medium text-slate-700">{`$${project.budget}M`}</span></div>
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Xem chi ti\u1ebft' : 'View detail'}<ArrowRight size={14} /></div>
-                      </div>
-                    </CardContent>
+                      <button
+                        type="button"
+                        onClick={(event) => handleToggleWatchlist(project.id, event)}
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-none border backdrop-blur-sm transition-colors ${
+                          isWatching
+                            ? 'border-[#f6d6bf] bg-[#fff1e7] text-[#9d4300]'
+                            : 'border-white/70 bg-white/92 text-[#8c7164] hover:text-[#9d4300]'
+                        }`}
+                        aria-label={isWatching ? t('Watching') : t('Follow')}
+                      >
+                        <Star size={14} fill={isWatching ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-3 left-3">
+                      <span className="rounded-none bg-white/92 px-2 py-1 text-[10px] uppercase tracking-[0.06em] text-[#9d4300] shadow-sm">
+                        {t(project.sector)}
+                      </span>
+                    </div>
                   </div>
-                </Card>
-              </Link>
-            ))}
+
+                  <div className="flex h-[290px] flex-col px-5 py-5">
+                    <div>
+                      <h3 className="line-clamp-2 text-[20px] font-normal leading-7 text-[#191c1e]">
+                        {t(project.name)}
+                      </h3>
+                      <div className="mt-3 flex items-center gap-2 text-[12px] text-[#455f87]">
+                        <MapPin size={13} />
+                        <span className="line-clamp-1">{t(project.location)}</span>
+                      </div>
+                      <p className="mt-4 line-clamp-3 min-h-[72px] text-[14px] leading-[1.65] text-[#455f87]">
+                        {t(project.description)}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-4 gap-3 border-t border-[rgba(224,192,177,0.15)] pt-4">
+                      {[
+                        { label: 'Total Budget', value: `$${project.budget}M` },
+                        { label: 'IRR', value: t(project.returnRate) },
+                        { label: 'Min Invest', value: `$${project.minInvestment}M` },
+                        { label: 'Timeline', value: t(project.timeline) },
+                      ].map((metric) => (
+                        <div key={metric.label} className="min-w-0">
+                          <div className="text-[10px] uppercase tracking-[0.08em] text-[#8c7164]">
+                            {t(metric.label)}
+                          </div>
+                          <div className="mt-1 truncate text-[12px] font-medium text-[#191c1e]">
+                            {metric.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {(project.highlights ?? []).slice(0, 2).map((highlight) => (
+                        <span
+                          key={highlight}
+                          className="rounded-none bg-[#f2f4f6] px-2 py-1 text-[11px] font-medium text-[#455f87]"
+                        >
+                          {t(highlight)}
+                        </span>
+                      ))}
+                      {(project.highlights?.length ?? 0) > 2 && (
+                        <span className="rounded-none bg-[#f2f4f6] px-2 py-1 text-[11px] font-medium text-[#8c7164]">
+                          +{(project.highlights?.length ?? 0) - 2}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between border-t border-[rgba(224,192,177,0.15)] pt-4">
+                      <button
+                        type="button"
+                        onClick={(event) => handleToggleWatchlist(project.id, event)}
+                        className={`inline-flex items-center justify-center rounded-none px-4 py-2 text-[14px] font-medium transition-colors ${
+                          isWatching
+                            ? 'bg-[#fff1e7] text-[#9d4300]'
+                            : 'bg-[#f2f4f6] text-[#455f87] hover:bg-[#e6eaee]'
+                        }`}
+                      >
+                        {isWatching ? t('Watching') : t('Follow')}
+                      </button>
+                      <div className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#9d4300]">
+                        {t('View detail')}
+                        <ArrowRight size={14} />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-          {!featured.length && <Card className="mt-6 rounded-[24px] border bg-white" style={{ borderColor: BRAND.blueBorder }}><CardContent className="p-8 text-center text-sm text-slate-500">{isVi ? 'Ch\u01b0a c\u00f3 d\u1ef1 \u00e1n ph\u00f9 h\u1ee3p v\u1edbi b\u1ed9 l\u1ecdc hi\u1ec7n t\u1ea1i.' : 'No projects match the current filters.'}</CardContent></Card>}
+
+          {!isPaginationMode && filteredProjects.length > 0 && (
+            <SeeAllButton label={t('View More')} onClick={enablePaginationMode} />
+          )}
+
+          {isPaginationMode && filteredProjects.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex min-w-[88px] items-center justify-center border border-[rgba(224,192,177,0.24)] px-4 py-2 text-[14px] font-medium text-[#455f87] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {t('Previous')}
+              </button>
+
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`inline-flex h-10 min-w-[40px] items-center justify-center border px-3 text-[14px] font-medium transition-colors ${
+                    page === currentPage
+                      ? 'border-[#9d4300] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] text-white'
+                      : 'border-[rgba(224,192,177,0.24)] bg-white text-[#455f87] hover:bg-[#f7f1ec]'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex min-w-[88px] items-center justify-center border border-[rgba(224,192,177,0.24)] px-4 py-2 text-[14px] font-medium text-[#455f87] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {t('Next')}
+              </button>
+            </div>
+          )}
+
+          {filteredProjects.length === 0 && (
+            <div className="rounded-none border border-[rgba(224,192,177,0.1)] bg-white px-6 py-14 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <div className="text-[18px] font-medium text-[#191c1e]">{t('No projects found')}</div>
+              <div className="mt-2 text-[14px] text-[#455f87]">
+                {t('Try adjusting your filters to explore other projects.')}
+              </div>
+            </div>
+          )}
         </section>
 
-        <section className="mt-14"><div className="text-center"><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'Gi\u1ea3i ph\u00e1p to\u00e0n di\u1ec7n cho nh\u00e0 \u0111\u1ea7u t\u01b0' : 'Comprehensive solutions for investors'}</div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Gi\u1ea3i ph\u00e1p to\u00e0n di\u1ec7n cho nh\u00e0 \u0111\u1ea7u t\u01b0' : 'Comprehensive solutions for investors'}</h2></div>
+        <section className="mt-14"><div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Gi\u1ea3i ph\u00e1p to\u00e0n di\u1ec7n cho nh\u00e0 \u0111\u1ea7u t\u01b0' : 'Comprehensive solutions for investors'}</h2></div>
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {solutionCards.map(([Icon, title, body]) => <Card key={title as string} className="rounded-[24px] border bg-white shadow-[0_10px_30px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}><CardContent className="p-5 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><Icon size={20} /></div><h3 className="mt-4 text-lg font-semibold" style={{ color: BRAND.blue }}>{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{body}</p></CardContent></Card>)}
+            {solutionCards.map(([Icon, title, body]) => <Card key={title as string} className="rounded-none border bg-white shadow-[0_10px_30px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}><CardContent className="p-5 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-none" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><Icon size={20} /></div><h3 className="mt-4 text-lg font-semibold" style={{ color: BRAND.blue }}>{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{body}</p></CardContent></Card>)}
+          </div>
+        </section>
+        <section className="mt-14 bg-[#455f87] px-6 py-16 text-white md:px-10">
+          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+            {keyStats.map((item) => (
+              <div key={item.label} className="rounded-none border border-white/12 bg-white/6 px-4 py-4 backdrop-blur-sm">
+                <div className="tabular-nums text-[26px] font-normal leading-8 text-[#f97316]">{item.value}</div>
+                <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/70">{t(item.label)}</div>
+              </div>
+            ))}
           </div>
         </section>
         <section className="mt-14">
-          <div><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'Tin t\u1ee9c \u0111\u1ea7u t\u01b0 TP. H\u1ed3 Ch\u00ed Minh' : 'Investment News of Ho Chi Minh City'}</div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Tin t\u1ee9c \u0111\u1ea7u t\u01b0 TP. H\u1ed3 Ch\u00ed Minh' : 'Investment News of Ho Chi Minh City'}</h2></div>
+          <div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Tin t\u1ee9c \u0111\u1ea7u t\u01b0 TP. H\u1ed3 Ch\u00ed Minh' : 'Why Ho Chi Minh City?'}</h2></div>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            {investmentNews.map((item, index) => <a key={item.href} href={item.href} target="_blank" rel="noreferrer"><Card className="h-full overflow-hidden rounded-[26px] border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)] transition-transform hover:-translate-y-1" style={{ borderColor: BRAND.blueBorder }}><div className="h-2" style={{ background: index % 2 === 0 ? `linear-gradient(90deg, ${BRAND.orange} 0%, #ffb77c 100%)` : `linear-gradient(90deg, ${BRAND.blue} 0%, #2e5f8f 100%)` }} /><div className="h-[220px] overflow-hidden bg-slate-100"><img src={item.image} alt={isVi ? item.viTitle : item.enTitle} className="h-full w-full object-cover" /></div><CardContent className="p-5"><div className="flex items-center justify-between gap-3"><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{item.source}</span><span className="text-xs text-slate-400">{isVi ? item.viDate : item.enDate}</span></div><h3 className="mt-4 text-lg font-semibold leading-snug" style={{ color: BRAND.blue }}>{isVi ? item.viTitle : item.enTitle}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{isVi ? item.viSummary : item.enSummary}</p><div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold" style={{ color: BRAND.blue }}>{isVi ? '\u0110\u1ecdc ngu\u1ed3n tin' : 'Read source'}<ArrowRight size={14} /></div></CardContent></Card></a>)}
+            {investmentNews.map((item, index) => <a key={item.href} href={item.href} target="_blank" rel="noreferrer"><Card className="h-full overflow-hidden rounded-none border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)] transition-transform hover:-translate-y-1" style={{ borderColor: BRAND.blueBorder }}><div className="h-2" style={{ background: index % 2 === 0 ? `linear-gradient(90deg, ${BRAND.orange} 0%, #ffb77c 100%)` : `linear-gradient(90deg, ${BRAND.blue} 0%, #2e5f8f 100%)` }} /><div className="h-[220px] overflow-hidden bg-slate-100"><img src={item.image} alt={isVi ? item.viTitle : item.enTitle} className="h-full w-full object-cover" /></div><CardContent className="p-5"><div className="flex items-center justify-between gap-3"><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{item.source}</span><span className="text-xs text-slate-400">{isVi ? item.viDate : item.enDate}</span></div><h3 className="mt-4 text-lg font-semibold leading-snug" style={{ color: BRAND.blue }}>{isVi ? item.viTitle : item.enTitle}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{isVi ? item.viSummary : item.enSummary}</p><div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold" style={{ color: BRAND.blue }}>{isVi ? '\u0110\u1ecdc ngu\u1ed3n tin' : 'Read source'}<ArrowRight size={14} /></div></CardContent></Card></a>)}
           </div>
         </section>
-
-        <section id="fast-track" className="mt-14">
-          <Card className="rounded-[28px] border bg-[linear-gradient(180deg,#fff8f1_0%,#ffffff_100%)] shadow-[0_12px_36px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.orangeBorder }}>
-            <CardContent className="px-6 py-6">
-              <div className="flex items-center justify-between gap-4"><div><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'G\u1eedi nhu c\u1ea7u nhanh' : 'Submit quick intake'}</div><h3 className="mt-2 text-2xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Bi\u1ec3u m\u1eabu ti\u1ebfp nh\u1eadn nhanh' : 'Quick intake form'}</h3></div><div className="hidden rounded-2xl p-3 md:block" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><Compass size={20} /></div></div>
-              <div className="mt-5 rounded-2xl border bg-white px-5 py-5" style={{ borderColor: BRAND.blueBorder }}>
-                <div className="space-y-4">{[(isVi ? 'Ti\u1ebfp nh\u1eadn nhu c\u1ea7u nh\u00e0 \u0111\u1ea7u t\u01b0' : 'Capture investor demand'), (isVi ? '\u0110i\u1ec1u ph\u1ed1i \u0111\u1ebfn \u0111\u1ea7u m\u1ed1i ph\u1ee5 tr\u00e1ch' : 'Route to the responsible support desk'), (isVi ? 'Ph\u1ed1i h\u1ee3p b\u01b0\u1edbc ti\u1ebfp theo trong quy tr\u00ecnh c\u1ea5p th\u00e0nh ph\u1ed1' : 'Coordinate the next step inside the city workflow')].map((item) => <div key={item} className="flex items-start gap-3"><CheckCircle2 size={18} style={{ color: BRAND.orange }} className="mt-0.5 shrink-0" /><span className="text-sm leading-6 text-slate-700">{item}</span></div>)}</div>
+        <section id="support" className="mt-16">
+          <div className="overflow-hidden bg-white shadow-[0_32px_72px_rgba(15,23,42,0.18)]">
+            <div className="grid bg-white lg:grid-cols-[1fr_1.08fr]">
+              <div className="relative min-h-[220px] lg:min-h-full">
+                <img src={designHeroSkyline} alt="" className="h-full w-full object-cover object-center" />
+                <div className="absolute inset-0 bg-[rgba(7,17,31,0.62)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,31,0.22)_0%,rgba(7,17,31,0.68)_100%)]" />
+                <div className="absolute inset-0 flex items-center justify-center px-6 py-6 lg:px-10">
+                  <div className="flex max-w-[640px] flex-col items-center text-center text-white">
+                    <div className="inline-flex h-[84px] w-[84px] items-center justify-center rounded-[20px] bg-[#ffe6d8] text-[#f97316] shadow-[0_18px_40px_rgba(0,0,0,0.16)] lg:h-[92px] lg:w-[92px]">
+                      <Headset size={44} />
+                    </div>
+                    <h2 className="mt-4 text-[24px] font-semibold leading-[1.2] text-white lg:text-[26px]">
+                      {isVi ? 'C\u1ea7n h\u1ed7 tr\u1ee3 trong h\u00e0nh tr\u00ecnh \u0111\u1ea7u t\u01b0 c\u1ee7a b\u1ea1n?' : 'Need assistance with your investment journey?'}
+                    </h2>
+                    <p className="mt-2 max-w-[560px] text-[15px] leading-[1.5] text-white/88 lg:text-[16px]">
+                      {isVi
+                        ? '\u0110\u1ed9i ng\u0169 c\u1ee7a ch\u00fang t\u00f4i s\u1eb5n s\u00e0ng cung c\u1ea5p h\u01b0\u1edbng d\u1eabn chuy\u00ean s\u00e2u v\u00e0 h\u1ed7 tr\u1ee3 th\u1ee7 t\u1ee5c trong t\u1eebng b\u01b0\u1edbc tri\u1ec3n khai d\u1ef1 \u00e1n.'
+                        : 'Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              {fastTrackNotice && <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{fastTrackNotice}</div>}
-              <form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={submitFastTrack}>
-                <label className="space-y-2"><span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{isVi ? 'T\u00ean doanh nghi\u1ec7p' : 'Company name'}</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={fastTrackForm.companyName} onChange={(event) => setFastTrackForm((current) => ({ ...current, companyName: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{isVi ? 'Ng\u01b0\u1eddi li\u00ean h\u1ec7' : 'Contact name'}</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={fastTrackForm.contactName} onChange={(event) => setFastTrackForm((current) => ({ ...current, contactName: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Email</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" type="email" value={fastTrackForm.email} onChange={(event) => setFastTrackForm((current) => ({ ...current, email: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{isVi ? 'L\u0129nh v\u1ef1c quan t\u00e2m' : 'Target sector'}</span><select className={selectClassName()} value={fastTrackForm.sector} onChange={(event) => setFastTrackForm((current) => ({ ...current, sector: event.target.value }))}>{sectors.map((sector) => <option key={sector} value={sector}>{t(sector)}</option>)}</select></label>
-                <label className="space-y-2 md:col-span-2"><span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{isVi ? 'Ghi ch\u00fa' : 'Notes'}</span><Textarea className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={fastTrackForm.notes} onChange={(event) => setFastTrackForm((current) => ({ ...current, notes: event.target.value }))} /></label>
-                <div className="md:col-span-2 flex justify-end"><Button type="submit" className="rounded-full px-6 text-white" style={{ backgroundColor: BRAND.orange }}>{isVi ? 'G\u1eedi ti\u1ebfp nh\u1eadn nhanh' : 'Submit quick intake'}</Button></div>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
 
-        <section id="support" className="mt-14">
-          <div className="grid gap-6 lg:grid-cols-[0.92fr,1.08fr]">
-            <Card className="rounded-[28px] border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}>
-              <CardContent className="p-6">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>Contact Arobid for Support</div>
-                <h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'B\u00e0n h\u1ed7 tr\u1ee3 \u0111\u1ea7u t\u01b0' : 'Investor support desk'}</h2>
-                <p className="mt-3 max-w-[360px] text-sm leading-7 text-slate-600">{isVi ? 'Gi\u1ea3i \u0111\u00e1p c\u00e2u h\u1ecfi d\u1ef1 \u00e1n, \u0111i\u1ec1u ph\u1ed1i cu\u1ed9c h\u1ecdp v\u00e0 theo d\u00f5i b\u01b0\u1edbc ti\u1ebfp theo trong lu\u1ed3ng c\u00f4ng v\u1ee5 c\u1ea5p th\u00e0nh ph\u1ed1.' : 'Get help with project questions, meeting coordination, and next-step follow-up across the city workflow.'}</p>
-                <div className="mt-6 space-y-3">{[(isVi ? 'L\u00e0m r\u00f5 d\u1ef1 \u00e1n v\u00e0 t\u00e0i li\u1ec7u' : 'Project and document clarification'), (isVi ? '\u0110i\u1ec1u ph\u1ed1i l\u1ecbch l\u00e0m vi\u1ec7c v\u1edbi \u0111\u1ea7u m\u1ed1i ph\u1ee5 tr\u00e1ch' : 'Meeting coordination with the responsible desk'), (isVi ? 'Theo d\u00f5i b\u01b0\u1edbc ti\u1ebfp theo trong t\u1eebng lu\u1ed3ng x\u1eed l\u00fd' : 'Track next steps across city processing flows')].map((item) => <div key={item} className="flex items-start gap-3 rounded-2xl border px-4 py-4" style={{ borderColor: BRAND.blueBorder, backgroundColor: '#fbfdff' }}><CheckCircle2 size={18} className="mt-0.5" style={{ color: BRAND.orange }} /><span className="text-sm leading-6 text-slate-700">{item}</span></div>)}</div>
-                <div className="mt-6 flex items-center gap-3 rounded-2xl border px-4 py-4" style={{ borderColor: BRAND.orangeBorder, backgroundColor: BRAND.orangeSoft }}><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white"><Building2 size={18} style={{ color: BRAND.orange }} /></div><div><div className="text-sm font-semibold" style={{ color: BRAND.blue }}>Powered by Arobid</div><div className="text-xs text-slate-500">{isVi ? 'H\u1ea1 t\u1ea7ng h\u1ed7 tr\u1ee3 nh\u00e0 \u0111\u1ea7u t\u01b0 c\u1ea5p th\u00e0nh ph\u1ed1' : 'City investment support infrastructure'}</div></div></div>
-              </CardContent>
-            </Card>
-            <Card className="rounded-[28px] border bg-[linear-gradient(180deg,#fffaf4_0%,#ffffff_100%)] shadow-[0_12px_36px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.orangeBorder }}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between gap-4"><div><div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>{isVi ? 'G\u1eedi y\u00eau c\u1ea7u h\u1ed7 tr\u1ee3' : 'Support request form'}</div><h3 className="mt-2 text-2xl font-semibold" style={{ color: BRAND.blue }}>{isVi ? 'Li\u00ean h\u1ec7 b\u00e0n h\u1ed7 tr\u1ee3' : 'Contact support desk'}</h3></div><div className="hidden rounded-2xl p-3 md:block" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><ArrowRight size={18} /></div></div>
-                <form className="mt-5 grid gap-4 rounded-[22px] bg-white p-5 shadow-sm md:grid-cols-2" onSubmit={submitSupport}>
-                {supportNotice && <div className="md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{supportNotice}</div>}
-                <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{isVi ? 'T\u00ean doanh nghi\u1ec7p' : 'Company name'}</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={supportForm.companyName} onChange={(event) => setSupportForm((current) => ({ ...current, companyName: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{isVi ? 'Ng\u01b0\u1eddi li\u00ean h\u1ec7' : 'Contact name'}</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={supportForm.contactName} onChange={(event) => setSupportForm((current) => ({ ...current, contactName: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Email</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" type="email" value={supportForm.email} onChange={(event) => setSupportForm((current) => ({ ...current, email: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{isVi ? 'S\u1ed1 \u0111i\u1ec7n tho\u1ea1i' : 'Phone'}</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={supportForm.phone} onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))} /></label>
-                <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{isVi ? 'D\u1ef1 \u00e1n' : 'Project'}</span><select className={selectClassName()} value={supportForm.projectId} onChange={(event) => setSupportForm((current) => ({ ...current, projectId: event.target.value }))}>{homeProjects.map((project) => <option key={project.id} value={project.id}>{t(project.name)}</option>)}</select></label>
-                <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{isVi ? 'Ch\u1ee7 \u0111\u1ec1 h\u1ed7 tr\u1ee3' : 'Support topic'}</span><Input className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={supportForm.topic} onChange={(event) => setSupportForm((current) => ({ ...current, topic: event.target.value }))} /></label>
-                <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{isVi ? 'N\u1ed9i dung h\u1ed7 tr\u1ee3' : 'Support details'}</span><Textarea className="border-[#cfdbe5] bg-white shadow-[inset_0_0_0_1px_rgba(15,53,87,0.05)]" value={supportForm.message} onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))} /></label>
-                <label className="md:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3"><input type="checkbox" checked={supportForm.urgent} onChange={(event) => setSupportForm((current) => ({ ...current, urgent: event.target.checked }))} /><span className="text-sm text-slate-600">{isVi ? '\u0110\u00e1nh d\u1ea5u kh\u1ea9n' : 'Mark as urgent'}</span></label>
-                <div className="md:col-span-2 flex justify-end"><Button type="submit" className="rounded-full px-6 text-white" style={{ backgroundColor: BRAND.blue }}>{isVi ? 'G\u1eedi y\u00eau c\u1ea7u h\u1ed7 tr\u1ee3' : 'Submit support request'}</Button></div>
-              </form>
-              </CardContent>
-            </Card>
+              <div className="flex min-h-0 flex-col bg-white">
+                <div className="shrink-0 bg-[#5872A0] px-8 py-3 text-center text-[20px] font-semibold text-white md:px-12 md:py-4">
+                  {isVi ? 'H\u1ed7 tr\u1ee3 \u0111\u1ea7u t\u01b0' : 'Investment Support'}
+                </div>
+                <div className="flex-1 px-5 py-4 md:px-8 md:py-4">
+                  <form className="space-y-4" onSubmit={submitSupport}>
+                    {supportNotice ? (
+                      <div className="border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
+                        {supportNotice}
+                      </div>
+                    ) : null}
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="space-y-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'T\u00ean doanh nghi\u1ec7p' : 'Company Name'} <span className="text-[#f97316]">(*)</span></span>
+                        <Input
+                          value={supportForm.companyName}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, companyName: event.target.value }))}
+                          placeholder={isVi ? 'Nh\u1eadp t\u00ean doanh nghi\u1ec7p' : 'Enter company name'}
+                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Ng\u01b0\u1eddi li\u00ean h\u1ec7' : 'Contact Person'} <span className="text-[#f97316]">(*)</span></span>
+                        <Input
+                          value={supportForm.contactName}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, contactName: event.target.value }))}
+                          placeholder={isVi ? 'Nh\u1eadp h\u1ecd t\u00ean' : 'Enter full name'}
+                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">Email <span className="text-[#f97316]">(*)</span></span>
+                        <Input
+                          type="email"
+                          value={supportForm.email}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, email: event.target.value }))}
+                          placeholder={isVi ? 'Nh\u1eadp email' : 'Enter email address'}
+                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'S\u1ed1 \u0111i\u1ec7n tho\u1ea1i' : 'Phone Number'} <span className="text-[#f97316]">(*)</span></span>
+                        <Input
+                          value={supportForm.phone}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
+                          placeholder={isVi ? 'Nh\u1eadp s\u1ed1 \u0111i\u1ec7n tho\u1ea1i' : 'Enter phone number'}
+                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                        />
+                      </label>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Ch\u1ee7 \u0111\u1ec1 h\u1ed7 tr\u1ee3' : 'Support Topic'}</span>
+                        <Input
+                          value={supportForm.topic}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, topic: event.target.value }))}
+                          placeholder={isVi ? 'N\u00eau ch\u1ee7 \u0111\u1ec1 c\u1ea7n h\u1ed7 tr\u1ee3' : 'Clarification on project scope and next coordination steps'}
+                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                        />
+                      </label>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'D\u1ef1 \u00e1n' : 'Project'}</span>
+                        <select
+                          value={supportForm.projectId}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, projectId: event.target.value }))}
+                          className="h-10 w-full rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none"
+                        >
+                          {homeProjects.map((project) => (
+                            <option key={project.id} value={project.id}>{t(project.name)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'N\u1ed9i dung h\u1ed7 tr\u1ee3' : 'Support Details'} <span className="text-[#f97316]">(*)</span></span>
+                        <Textarea
+                          value={supportForm.message}
+                          onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
+                          rows={4}
+                          placeholder={isVi ? 'Nh\u1eadp n\u1ed9i dung y\u00eau c\u1ea7u h\u1ed7 tr\u1ee3' : 'Enter your request details'}
+                          className="min-h-[96px] rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 py-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex justify-center pt-0.5">
+                      <button
+                        type="submit"
+                        className="inline-flex min-w-[260px] items-center justify-center gap-3 bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-7 py-3 text-[18px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
+                      >
+                        <Headset size={20} />
+                        {isVi ? 'Li\u00ean h\u1ec7 h\u1ed7 tr\u1ee3' : 'Contact Support'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>
+      {isFastTrackModalOpen && (
+        <ExplorerActionModal
+          onClose={closeFastTrackModal}
+          panelTitle={isVi ? 'Tiếp nhận nhanh' : 'Quick Intake'}
+          leftIcon={<Headset size={44} />}
+          leftTitle={isVi ? 'Tiếp nhận nhanh' : 'Quick Intake'}
+          leftDescription={t('Submit a quick intake so the platform can route the responsible desk and coordinate the next step inside the city workflow.')}
+        >
+          <form onSubmit={submitFastTrack} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Tên doanh nghiệp' : 'Company Name'} <span className="text-[#f97316]">(*)</span></span>
+                <Input
+                  value={fastTrackForm.companyName}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, companyName: event.target.value }))}
+                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  placeholder={isVi ? 'Nhập tên doanh nghiệp' : 'Enter company name'}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Người liên hệ' : 'Contact Person'} <span className="text-[#f97316]">(*)</span></span>
+                <Input
+                  value={fastTrackForm.contactName}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, contactName: event.target.value }))}
+                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  placeholder={isVi ? 'Nhập họ tên' : 'Enter full name'}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">Email <span className="text-[#f97316]">(*)</span></span>
+                <Input
+                  type="email"
+                  value={fastTrackForm.email}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, email: event.target.value }))}
+                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  placeholder={isVi ? 'Nhập địa chỉ email' : 'Enter email address'}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Số điện thoại' : 'Phone Number'}</span>
+                <Input
+                  value={fastTrackForm.phone}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, phone: event.target.value }))}
+                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  placeholder={isVi ? 'Nhập số điện thoại' : 'Enter phone number'}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Quốc gia' : 'Country'}</span>
+                <Input
+                  value={fastTrackForm.country}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, country: event.target.value }))}
+                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  placeholder={isVi ? 'Nhập quốc gia' : 'Enter country'}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Lĩnh vực quan tâm' : 'Preferred Sector'}</span>
+                <ClearableSelectField
+                  ariaLabel={isVi ? 'Lĩnh vực quan tâm' : 'Preferred Sector'}
+                  value={fastTrackForm.sector}
+                  onChange={(value) => setFastTrackForm((current) => ({ ...current, sector: value }))}
+                  placeholder={isVi ? 'Chọn lĩnh vực quan tâm' : 'Select preferred sector'}
+                  options={sectors.map((sector) => ({ value: sector, label: t(sector) }))}
+                  className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Địa bàn quan tâm' : 'Preferred Location'}</span>
+                <Input
+                  value={fastTrackForm.locationNeed}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, locationNeed: event.target.value }))}
+                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  placeholder={isVi ? 'Nhập địa bàn ưu tiên' : 'Enter preferred location'}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Quy mô đầu tư' : 'Investment Size'}</span>
+                <ClearableSelectField
+                  ariaLabel={isVi ? 'Quy mô đầu tư' : 'Investment Size'}
+                  value={fastTrackForm.investmentSize}
+                  onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentSize: value }))}
+                  placeholder={isVi ? 'Chọn quy mô đầu tư' : 'Select investment size'}
+                  options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: option }))}
+                  className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
+                />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Hình thức đầu tư' : 'Investment Type'}</span>
+                <ClearableSelectField
+                  ariaLabel={isVi ? 'Hình thức đầu tư' : 'Investment Type'}
+                  value={fastTrackForm.investmentType}
+                  onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentType: value }))}
+                  placeholder={t('Select investment type')}
+                  options={['I have investment requirements', 'I want project suggestions', 'I need investment support', 'I want to explore partnership', 'Others'].map((option) => ({ value: option, label: t(option) }))}
+                  className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
+                />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-[12px] font-medium text-[#1a2755]">{isVi ? 'Ghi chú' : 'Notes'}</span>
+                <Textarea
+                  value={fastTrackForm.notes}
+                  onChange={(event) => setFastTrackForm((current) => ({ ...current, notes: event.target.value }))}
+                  rows={4}
+                  placeholder={isVi ? 'Nhập mô tả ngắn về nhu cầu đầu tư' : 'Enter a short note about your investment needs'}
+                  className="min-h-[110px] rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 py-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                />
+              </label>
+            </div>
+
+            {fastTrackNotice && (
+              <div className="rounded-[14px] border border-[#f2c5a5] bg-[#fff3e7] px-4 py-3 text-sm text-[#9d4300]">
+                {fastTrackNotice}
+              </div>
+            )}
+
+            <div className="flex justify-center pt-1">
+              <button
+                type="submit"
+                className="inline-flex min-w-[240px] items-center justify-center gap-3 bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-7 py-3 text-[18px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
+              >
+                <Mail size={18} />
+                {t('Submit quick intake')}
+              </button>
+            </div>
+          </form>
+        </ExplorerActionModal>
+      )}
       {submissionDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-xl rounded-none bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-200 p-6">
               <div>
                 <div className="text-base font-semibold text-slate-900">
@@ -468,72 +1091,9 @@ export default function HomePage() {
           </div>
         </div>
       )}
-      <footer className="border-t bg-white" style={{ borderColor: '#9ca3af' }}>
-        <div className="mx-auto max-w-[1180px] px-5 py-10 lg:px-6">
-          <div className="grid gap-10 md:grid-cols-3 md:gap-12">
-            <div>
-              <div className="flex items-start gap-3">
-                <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: BRAND.blue }}>
-                  <Building2 size={28} strokeWidth={2.1} />
-                </div>
-                <div>
-                  <div className="text-[15px] font-bold uppercase leading-tight" style={{ color: BRAND.blue }}>
-                    {'H\u1ea0 T\u1ea6NG X\u00daC TI\u1ebeN \u0110\u1ea6U T\u01af'}
-                  </div>
-                  <div className="mt-1 inline-block px-2 py-0.5 text-sm text-slate-500">
-                    {'TP. H\u1ed3 Ch\u00ed Minh'}
-                  </div>
-                </div>
-              </div>
-              <p className="mt-5 max-w-[470px] text-[15px] leading-8 text-slate-500">
-                {'N\u1ec1n t\u1ea3ng h\u1ea1 t\u1ea7ng \u0111\u1ea7u t\u01b0 to\u00e0n di\u1ec7n, k\u1ebft n\u1ed1i nh\u00e0 \u0111\u1ea7u t\u01b0 v\u1edbi c\u01a1 h\u1ed9i ph\u00e1t tri\u1ec3n b\u1ec1n v\u1eefng t\u1ea1i Th\u00e0nh ph\u1ed1 H\u1ed3 Ch\u00ed Minh.'}
-              </p>
-              <div className="mt-4 text-[15px] text-slate-500">
-                Powered by <span className="font-semibold" style={{ color: BRAND.orange }}>Arobid</span>
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[15px] font-semibold" style={{ color: BRAND.blue }}>{'Li\u00ean k\u1ebft'}</div>
-              <div className="mt-5 space-y-4 text-[15px] text-slate-500">
-                <div>{'Trang ch\u1ee7'}</div>
-                <div>{'D\u1ecbch v\u1ee5'}</div>
-                <div>{'Gi\u1edbi thi\u1ec7u'}</div>
-                <div>{'Li\u00ean h\u1ec7'}</div>
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[15px] font-semibold" style={{ color: BRAND.blue }}>{'Li\u00ean h\u1ec7'}</div>
-              <div className="mt-5 space-y-4 text-[15px] text-slate-500">
-                <div className="flex items-center gap-3">
-                  <MapPin size={16} />
-                  <span>{'86 L\u00ea Th\u00e1nh T\u00f4n, Q.1, TP.HCM'}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone size={16} />
-                  <span>1900 1234</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail size={16} />
-                  <span>invest@hcmc.gov.vn</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 border-t pt-8" style={{ borderColor: '#e5e7eb' }}>
-            <div className="flex flex-col gap-4 text-[15px] text-slate-500 md:flex-row md:items-center md:justify-between">
-              <div>{'\u00a9 2026 \u1ee6y ban Nh\u00e2n d\u00e2n Th\u00e0nh ph\u1ed1 H\u1ed3 Ch\u00ed Minh. All rights reserved.'}</div>
-              <div className="flex flex-wrap gap-6 md:justify-end">
-                <span>{'Ch\u00ednh s\u00e1ch b\u1ea3o m\u1eadt'}</span>
-                <span>{'\u0110i\u1ec1u kho\u1ea3n s\u1eed d\u1ee5ng'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <ExplorerFooter />
     </div>
   );
 }
+
 
