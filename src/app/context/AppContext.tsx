@@ -17,7 +17,7 @@ import {
   serviceRequests as baseServiceRequests,
   users as baseUsers,
 } from '../data/mockData';
-import { getLocalizedData, getLocalizedNotifications, Language } from '../utils/localization';
+import { getLocalizedData, getLocalizedNotifications, Language, translateText } from '../utils/localization';
 import { getProjectStageLabel, normalizeProjectStatus } from '../utils/projectStatus';
 
 export type UserRole = 'investor' | 'gov_operator' | 'agency' | 'admin' | 'executive';
@@ -78,6 +78,8 @@ export interface Notification {
 
 export interface AttachmentItem {
   fileName: string;
+  fileNameVi?: string;
+  fileNameEn?: string;
   fileUrl?: string;
   lastUploadDate?: string;
 }
@@ -105,13 +107,19 @@ export interface ProjectJob {
   id: string;
   projectId: string;
   title: string;
+  titleVi?: string;
+  titleEn?: string;
   description: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
   agencyId: string;
   userId: string;
   status: 'incomplete' | 'complete';
   dueDate: string;
   reminderDaysBefore: 5 | 10;
   note?: string;
+  noteVi?: string;
+  noteEn?: string;
   attachments?: AttachmentItem[];
 }
 
@@ -148,7 +156,7 @@ interface AppContextType {
   permits: Permit[];
   serviceRequests: ServiceRequest[];
   addNotification: (notification: Omit<Notification, 'id' | 'read' | 'time'> & { time?: string }) => void;
-  createProject: (project: Omit<Project, 'id' | 'followers' | 'dataCompleteness' | 'documents' | 'qa' | 'milestones' | 'highlights' | 'sector_tag_color' | 'image'> & Partial<Pick<Project, 'image' | 'mapImage' | 'sector_tag_color' | 'highlights'>>) => string;
+  createProject: (project: Omit<Project, 'id' | 'followers' | 'dataCompleteness' | 'qa' | 'milestones' | 'highlights' | 'sector_tag_color' | 'image'> & Partial<Pick<Project, 'image' | 'mapImage' | 'sector_tag_color' | 'highlights'>>) => string;
   updateProject: (projectId: string, changes: Partial<Project>) => void;
   publishProject: (projectId: string) => void;
   createOpportunity: (opportunity: Omit<Opportunity, 'id' | 'submittedAt' | 'updatedAt' | 'activities'>) => string;
@@ -296,6 +304,8 @@ function normalizeProjectJob(raw: ProjectJob | (Partial<ProjectJob> & { id: stri
       .filter((item) => item && item.fileName)
       .map((item) => ({
         fileName: item.fileName ?? '',
+        fileNameVi: item.fileNameVi,
+        fileNameEn: item.fileNameEn,
         fileUrl: item.fileUrl ?? '',
         lastUploadDate: item.lastUploadDate ?? '',
       })),
@@ -779,19 +789,33 @@ function cloneProjectJobs(): ProjectJob[] {
 
   const jobAgencyBySector: Record<string, string[]> = {
     Infrastructure: ['ag7', 'ag8', 'ag3'],
+    'Infrastructure & Urban': ['ag7', 'ag8', 'ag3'],
     Energy: ['ag5', 'ag9', 'ag8'],
+    'Renewable Energy': ['ag5', 'ag9', 'ag8'],
+    'Clean Energy & Environment': ['ag9', 'ag5', 'ag8'],
+    'Circular Economy': ['ag9', 'ag5', 'ag8'],
     Manufacturing: ['ag5', 'ag8', 'ag14'],
+    'Biotech & Life Sciences': ['ag16', 'ag14', 'ag3'],
     Tourism: ['ag13', 'ag7', 'ag8'],
+    'Tourism & Hospitality': ['ag13', 'ag7', 'ag8'],
     Technology: ['ag14', 'ag10', 'ag3'],
+    'High-Tech & Digital': ['ag14', 'ag10', 'ag3'],
+    'Financial Services': ['ag14', 'ag10', 'ag3'],
     Agriculture: ['ag6', 'ag9', 'ag5'],
+    AgriTech: ['ag6', 'ag9', 'ag5'],
     Healthcare: ['ag3', 'ag8', 'ag9'],
+    'Healthcare & Pharma': ['ag16', 'ag3', 'ag8'],
     Logistics: ['ag7', 'ag5', 'ag8'],
+    'Logistics & Supply Chain': ['ag7', 'ag5', 'ag8'],
     Education: ['ag15', 'ag3', 'ag10'],
+    'Education & Training': ['ag15', 'ag3', 'ag10'],
+    'Real Estate & Smart Cities': ['ag8', 'ag3', 'ag7'],
+    'Affordable Housing': ['ag8', 'ag3', 'ag9'],
   };
   const generatedJobs = baseProjects
-    .filter((project) => Number(project.id.slice(1)) >= 7)
+    .filter((project) => /^[sm]\d+$/i.test(project.id) || (/^p\d+$/i.test(project.id) && Number(project.id.slice(1)) >= 7))
     .flatMap((project, index) => {
-      const [leadAgencyId, coordinationAgencyId, technicalAgencyId] = jobAgencyBySector[project.sector] ?? ['ag6', 'ag17', 'ag13'];
+      const [leadAgencyId, coordinationAgencyId, technicalAgencyId] = jobAgencyBySector[project.sector] ?? ['ag3', 'ag8', 'ag10'];
       const jobBaseId = 20 + index * 3;
       const filePrefix = toKebabCase(project.name);
       return [
@@ -799,15 +823,23 @@ function cloneProjectJobs(): ProjectJob[] {
           id: `pj${jobBaseId}`,
           projectId: project.id,
           title: `Confirm ${project.sector.toLowerCase()} launch package`,
+          titleVi: `Xác nhận gói khởi động cho dự án ${project.nameVi ?? project.name}`,
+          titleEn: `Confirm ${project.sector.toLowerCase()} launch package`,
           description: `Confirm the investor-facing launch package, phase gates, and coordination dependencies for ${project.name}.`,
+          descriptionVi: `Xác nhận bộ hồ sơ công bố cho nhà đầu tư, các cột mốc triển khai và phụ thuộc điều phối của dự án ${project.nameVi ?? project.name}.`,
+          descriptionEn: `Confirm the investor-facing launch package, phase gates, and coordination dependencies for ${project.name}.`,
           agencyId: leadAgencyId,
           userId: `${leadAgencyId}-pic-1`,
           status: index % 5 === 0 ? 'complete' : 'incomplete',
           dueDate: toIsoDate(addDays(today, 4 + (index % 4) * 3)),
           reminderDaysBefore: 5,
           note: 'Mock job generated for project list and project detail consistency.',
+          noteVi: 'Đầu việc mock được tạo để giữ đồng nhất giữa danh sách dự án và trang chi tiết dự án.',
+          noteEn: 'Mock job generated for project list and project detail consistency.',
           attachments: [{
             fileName: `${filePrefix}-launch-package.pdf`,
+            fileNameVi: `goi-khoi-dong-${project.id}.pdf`,
+            fileNameEn: `${filePrefix}-launch-package.pdf`,
             fileUrl: '',
             lastUploadDate: toIsoDate(addDays(today, -(index + 1))),
           }],
@@ -816,15 +848,23 @@ function cloneProjectJobs(): ProjectJob[] {
           id: `pj${jobBaseId + 1}`,
           projectId: project.id,
           title: `Coordinate ${project.sector.toLowerCase()} stakeholder note`,
+          titleVi: `Điều phối ghi chú liên ngành cho dự án ${project.nameVi ?? project.name}`,
+          titleEn: `Coordinate ${project.sector.toLowerCase()} stakeholder note`,
           description: `Coordinate the cross-agency stakeholder note covering sequencing, approvals, and external communication for ${project.name}.`,
+          descriptionVi: `Điều phối ghi chú liên ngành về trình tự triển khai, phê duyệt và truyền thông đối ngoại cho dự án ${project.nameVi ?? project.name}.`,
+          descriptionEn: `Coordinate the cross-agency stakeholder note covering sequencing, approvals, and external communication for ${project.name}.`,
           agencyId: coordinationAgencyId,
           userId: `${coordinationAgencyId}-pic-1`,
           status: index % 4 === 1 ? 'complete' : 'incomplete',
           dueDate: toIsoDate(addDays(today, 9 + (index % 5) * 2)),
           reminderDaysBefore: 10,
           note: 'Generated mock coordination item for agency processing summaries.',
+          noteVi: 'Đầu việc điều phối mock được tạo để mô phỏng báo cáo xử lý của cơ quan phụ trách.',
+          noteEn: 'Generated mock coordination item for agency processing summaries.',
           attachments: [{
             fileName: `${filePrefix}-stakeholder-note.docx`,
+            fileNameVi: `ghi-chu-lien-nganh-${project.id}.docx`,
+            fileNameEn: `${filePrefix}-stakeholder-note.docx`,
             fileUrl: '',
             lastUploadDate: toIsoDate(addDays(today, -(index + 3))),
           }],
@@ -833,15 +873,23 @@ function cloneProjectJobs(): ProjectJob[] {
           id: `pj${jobBaseId + 2}`,
           projectId: project.id,
           title: `Publish ${project.sector.toLowerCase()} technical readiness memo`,
+          titleVi: `Công bố bản ghi nhớ sẵn sàng kỹ thuật cho dự án ${project.nameVi ?? project.name}`,
+          titleEn: `Publish ${project.sector.toLowerCase()} technical readiness memo`,
           description: `Publish the technical readiness memo covering utilities, land readiness, and implementation assumptions for ${project.name}.`,
+          descriptionVi: `Công bố bản ghi nhớ sẵn sàng kỹ thuật bao gồm hạ tầng tiện ích, hiện trạng đất và các giả định triển khai cho dự án ${project.nameVi ?? project.name}.`,
+          descriptionEn: `Publish the technical readiness memo covering utilities, land readiness, and implementation assumptions for ${project.name}.`,
           agencyId: technicalAgencyId,
           userId: `${technicalAgencyId}-pic-1`,
           status: index % 3 === 2 ? 'complete' : 'incomplete',
           dueDate: toIsoDate(addDays(today, 15 + (index % 6) * 2)),
           reminderDaysBefore: 10,
           note: 'Generated mock technical item so executive and agency pages keep the same processing baseline.',
+          noteVi: 'Đầu việc kỹ thuật mock được tạo để trang điều hành và cơ quan cùng dùng chung một mốc tiến độ xử lý.',
+          noteEn: 'Generated mock technical item so executive and agency pages keep the same processing baseline.',
           attachments: [{
             fileName: `${filePrefix}-technical-readiness.pdf`,
+            fileNameVi: `san-sang-ky-thuat-${project.id}.pdf`,
+            fileNameEn: `${filePrefix}-technical-readiness.pdf`,
             fileUrl: '',
             lastUploadDate: toIsoDate(addDays(today, -(index + 4))),
           }],
@@ -850,6 +898,161 @@ function cloneProjectJobs(): ProjectJob[] {
     });
 
   return [...baseJobs, ...generatedJobs];
+}
+
+function localizeAttachment(item: AttachmentItem, language: Language): AttachmentItem {
+  return {
+    ...item,
+    fileName: language === 'en'
+      ? (item.fileNameEn ?? item.fileName)
+      : (item.fileNameVi ?? translateText(item.fileName, language)),
+  };
+}
+
+const baseProjectJobVietnameseCopy: Record<string, {
+  titleVi: string;
+  descriptionVi: string;
+  noteVi?: string;
+  attachmentNamesVi?: string[];
+}> = {
+  pj1: {
+    titleVi: 'Xác nhận phương án điều phối giao thông',
+    descriptionVi: 'Xác nhận phương án phân luồng nút giao cuối cùng và lộ trình thi công tạm trước khi cung cấp cho nhà đầu tư.',
+    noteVi: 'Đang chờ xác nhận cuối cùng của cơ quan phụ trách về trình tự giao thông mặt tiền.',
+    attachmentNamesVi: ['ke-hoach-dieu-phoi-giao-thong.pdf'],
+  },
+  pj2: {
+    titleVi: 'Ban hành ghi chú xác nhận ranh giới đất',
+    descriptionVi: 'Ban hành ghi chú phối hợp đã ký xác nhận ranh giới khảo sát để đưa vào bộ hồ sơ nhà đầu tư.',
+    noteVi: 'Đã hoàn tất và lưu trong phòng dữ liệu dự án.',
+    attachmentNamesVi: ['ghi-chu-ranh-gioi-dat-da-ky.pdf'],
+  },
+  pj3: {
+    titleVi: 'Hoàn tất gói công việc đấu nối hạ tầng',
+    descriptionVi: 'Khóa vòng rà soát liên cơ quan về hạng mục đấu nối, phụ thuộc cấp điện và trình tự bàn giao.',
+    noteVi: 'Tình huống mock quá hạn dùng để mô phỏng cảnh báo xử lý dự án.',
+    attachmentNamesVi: ['goi-cong-viec-dau-noi-ha-tang.xlsx'],
+  },
+  pj4: {
+    titleVi: 'Công bố biên bản sẵn sàng phòng cháy chữa cháy',
+    descriptionVi: 'Công bố biên bản xác nhận các điều kiện phòng cháy chữa cháy đã sẵn sàng cho giai đoạn tiếp theo.',
+    noteVi: 'Trường hợp mock đã hoàn tất dùng để mô phỏng tiến độ xử lý.',
+    attachmentNamesVi: ['ban-giao-san-sang-phong-chay.pdf'],
+  },
+  pj5: {
+    titleVi: 'Phê duyệt phạm vi trao đổi dữ liệu digital twin',
+    descriptionVi: 'Thống nhất phạm vi API cuối cùng và quyền sở hữu dữ liệu tài sản cho gói tích hợp digital twin của thành phố.',
+    noteVi: 'Phần căn chỉnh kỹ thuật vẫn đang được xử lý cùng nhóm hệ thống giao thông.',
+    attachmentNamesVi: ['pham-vi-api-digital-twin.docx'],
+  },
+  pj6: {
+    titleVi: 'Bảo đảm hành lang logistics đường thủy tạm thời',
+    descriptionVi: 'Điều phối luồng tàu, cầu tạm và tuyến vận chuyển siêu trường siêu trọng cho gói giao hàng ngoài khơi.',
+    noteVi: 'Khung điều phối sắp tới đã được khóa lịch cho tuần sau, chờ thông báo giao thông cuối cùng.',
+    attachmentNamesVi: ['phuong-an-logistics-duong-thuy.pdf'],
+  },
+  pj7: {
+    titleVi: 'Khóa phụ lục đường cơ sở môi trường',
+    descriptionVi: 'Hoàn tất phụ lục đường cơ sở môi trường bao gồm cập nhật quan trắc rừng ngập mặn và đa dạng sinh học ven biển.',
+    noteVi: 'Đang được chuyên gia môi trường rà soát trước khi ký xác nhận.',
+    attachmentNamesVi: ['phu-luc-duong-co-so-moi-truong.pdf'],
+  },
+  pj8: {
+    titleVi: 'Ban hành checklist nhập khẩu máy móc',
+    descriptionVi: 'Cung cấp checklist dành cho nhà đầu tư về thiết bị sản xuất ưu tiên và xác minh mã HS.',
+    noteVi: 'Khung xử lý sắp tới đã được đồng bộ với lô mua sắm đầu tiên của nhà đầu tư.',
+    attachmentNamesVi: ['checklist-nhap-khau-may-moc.xlsx'],
+  },
+  pj9: {
+    titleVi: 'Hoàn tất rà soát tuyến đường nội bộ',
+    descriptionVi: 'Rà soát luồng xe tải, tiếp cận bến bốc dỡ và bán kính quay đầu khẩn cấp cho gói đường nội bộ.',
+    noteVi: 'Bị chậm do yêu cầu cập nhật bán kính quay đầu từ nhóm khách thuê mỏ neo.',
+    attachmentNamesVi: ['ra-soat-tuyen-duong-noi-bo.pdf'],
+  },
+  pj10: {
+    titleVi: 'Công bố ma trận bàn giao hạ tầng tiện ích',
+    descriptionVi: 'Hoàn thiện ma trận bàn giao điện, nước, viễn thông và xử lý nước thải theo từng phân khu.',
+    noteVi: 'Ma trận bàn giao hạ tầng tiện ích đã được công bố trong phòng dữ liệu chung của dự án.',
+    attachmentNamesVi: ['ma-tran-ban-giao-ha-tang.pdf'],
+  },
+  pj11: {
+    titleVi: 'Xác nhận ghi chú quyết định khoảng lùi bờ sông',
+    descriptionVi: 'Khóa ghi chú quyết định nội bộ về khoảng lùi bờ sông, dải cây xanh và giao diện quảng trường đi bộ công cộng.',
+    noteVi: 'Ghi chú quyết định sắp tới đã được xếp lịch cho phiên rà soát liên ngành kế tiếp.',
+    attachmentNamesVi: ['ghi-chu-khoang-lui-bo-song.docx'],
+  },
+  pj12: {
+    titleVi: 'Xử lý phương án điều chỉnh làn tiếp cận trung tâm hội nghị',
+    descriptionVi: 'Xử lý phương án giao thông điều chỉnh cho giờ cao điểm sự kiện và tách luồng khách sạn.',
+    noteVi: 'Đang chậm vì phương án thay thế cho làn tiếp cận vẫn đang được tính toán lại.',
+    attachmentNamesVi: ['dieu-chinh-lan-tiep-can-trung-tam-hoi-nghi.pdf'],
+  },
+  pj13: {
+    titleVi: 'Chuẩn bị bộ briefing cho đơn vị vận hành du lịch',
+    descriptionVi: 'Chuẩn bị bộ briefing cho nhà đầu tư và đơn vị vận hành về luồng khách, cơ cấu phòng và phân kỳ trung tâm hội nghị.',
+    noteVi: 'Bộ tài liệu đang được nhóm marketing điểm đến xử lý.',
+    attachmentNamesVi: ['bo-briefing-van-hanh-du-lich.pptx'],
+  },
+  pj14: {
+    titleVi: 'Thẩm định giả định tiện ích cho clean-room',
+    descriptionVi: 'Rà soát giả định về tiện ích cho clean-room, công suất điện dự phòng và phụ thuộc fit-out sớm của khách thuê.',
+    noteVi: 'Cần hoàn thành mốc thẩm định này trước khi rà soát mức sẵn sàng công bố.',
+    attachmentNamesVi: ['gia-dinh-tien-ich-clean-room.xlsx'],
+  },
+  pj15: {
+    titleVi: 'Tổng hợp ghi chú hợp tác đại học',
+    descriptionVi: 'Tổng hợp dự thảo ghi chú hợp tác với các trường đại học lân cận về nguồn nhân lực và mô hình phòng lab chung.',
+    noteVi: 'Vẫn đang xử lý nội bộ trước khi dự án có thể vượt qua giai đoạn draft.',
+    attachmentNamesVi: ['ghi-chu-hop-tac-dai-hoc.docx'],
+  },
+  pj16: {
+    titleVi: 'Hoàn tất ghi chú phân khu ươm tạo khởi nghiệp',
+    descriptionVi: 'Xác định các công năng ươm tạo được phép, phân bổ maker-space và ghi chú phân khu dịch vụ dùng chung.',
+    noteVi: 'Ghi chú phân khu đã hoàn tất để hỗ trợ gói công bố tiếp theo.',
+    attachmentNamesVi: ['ghi-chu-phan-khu-uom-tao-khoi-nghiep.pdf'],
+  },
+  pj17: {
+    titleVi: 'Cập nhật mô hình vận hành chuỗi lạnh',
+    descriptionVi: 'Làm mới mô hình vận hành cho kho lạnh, điểm kiểm định và điều phối giao hàng trong ngày.',
+    noteVi: 'Bị chậm sau khi giả định về sản lượng hàng hóa thay đổi trong bản nháp mới nhất.',
+    attachmentNamesVi: ['mo-hinh-van-hanh-chuoi-lanh.xlsx'],
+  },
+  pj18: {
+    titleVi: 'Chuẩn bị checklist truy xuất nguồn gốc nông sản xuất khẩu',
+    descriptionVi: 'Chuẩn bị checklist ban đầu cho tính sẵn sàng xuất khẩu, kiểm soát chất lượng và tiêu chuẩn đóng gói.',
+    noteVi: 'Việc phát hành checklist sắp tới gắn với vòng rà soát intake draft tiếp theo.',
+    attachmentNamesVi: ['checklist-truy-xuat-nong-san.pdf'],
+  },
+  pj19: {
+    titleVi: 'Rà soát phương án tiền xử lý nước thải',
+    descriptionVi: 'Rà soát phương án tiền xử lý nước thải cho hoạt động chế biến nông sản trước khi tham vấn bên ngoài.',
+    noteVi: 'Gói khái niệm vẫn đang được chuyên gia kỹ thuật xử lý.',
+    attachmentNamesVi: ['phuong-an-tien-xu-ly-nuoc-thai.pdf'],
+  },
+};
+
+function localizeProjectJob(job: ProjectJob, language: Language): ProjectJob {
+  const vietnameseCopy = baseProjectJobVietnameseCopy[job.id];
+  return {
+    ...job,
+    title: language === 'en'
+      ? (job.titleEn ?? job.title)
+      : (job.titleVi ?? vietnameseCopy?.titleVi ?? translateText(job.title, language)),
+    description: language === 'en'
+      ? (job.descriptionEn ?? job.description)
+      : (job.descriptionVi ?? vietnameseCopy?.descriptionVi ?? translateText(job.description, language)),
+    note: job.note
+      ? (language === 'en'
+        ? (job.noteEn ?? job.note)
+        : (job.noteVi ?? vietnameseCopy?.noteVi ?? translateText(job.note, language)))
+      : job.note,
+    attachments: job.attachments?.map((item, index) => {
+      if (language === 'vi' && !item.fileNameVi && vietnameseCopy?.attachmentNamesVi?.[index]) {
+        return localizeAttachment({ ...item, fileNameVi: vietnameseCopy.attachmentNamesVi[index] }, language);
+      }
+      return localizeAttachment(item, language);
+    }),
+  };
 }
 
 function cloneProjects() {
@@ -904,6 +1107,7 @@ function normalizeProjectRecord<T extends Pick<Project, 'status' | 'stage'> & Pa
   const normalizedStatus = normalizeProjectStatus(project.status, project.stage);
   return {
     ...project,
+    projectType: project.projectType ?? 'public',
     status: normalizedStatus,
     stage: getProjectStageLabel(normalizedStatus, project.stage),
   };
@@ -1054,8 +1258,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!saved) return cloneProjectJobs().map(normalizeProjectJob);
     const parsedJobs = JSON.parse(saved).map(normalizeProjectJob);
     const seedJobs = cloneProjectJobs().map(normalizeProjectJob);
-    const existingIds = new Set(parsedJobs.map((item) => item.id));
-    return [...parsedJobs, ...seedJobs.filter((item) => !existingIds.has(item.id))];
+    const parsedJobMap = new Map(parsedJobs.map((item) => [item.id, item]));
+    const mergedSeedJobs = seedJobs.map((seedJob) => ({
+      ...seedJob,
+      ...(parsedJobMap.get(seedJob.id) ?? {}),
+      attachments: (parsedJobMap.get(seedJob.id)?.attachments ?? seedJob.attachments)?.map((item) => ({ ...item })),
+    }));
+    const seedJobIds = new Set(seedJobs.map((item) => item.id));
+    const customJobs = parsedJobs.filter((item) => !seedJobIds.has(item.id));
+    return [...mergedSeedJobs, ...customJobs];
   });
   const [notifications, setNotifications] = useState<Notification[]>(getLocalizedNotifications('vi'));
 
@@ -1076,6 +1287,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const localizedData = useMemo(() => getLocalizedData(language), [language]);
+  const localizedProjectJobs = useMemo(
+    () => projectJobs.map((job) => localizeProjectJob(job, language)),
+    [projectJobs, language],
+  );
 
   const projects = useMemo(() => {
     return [
@@ -1383,10 +1598,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ownerAgencyId: project.ownerAgencyId ?? activeAgencyId ?? agencies[0]?.id,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0],
+      projectType: project.projectType ?? 'public',
       followers: 0,
       dataCompleteness: 0,
       highlights: project.highlights ?? [],
-      documents: [],
+      documents: project.documents?.map((document) => ({ ...document })) ?? [],
       qa: [],
       milestones: [],
       image: project.image ?? 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
@@ -1779,7 +1995,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         agencies,
         requiredDataAssignments,
         getProjectDataCompletenessSummary,
-        projectJobs,
+        projectJobs: localizedProjectJobs,
         getProjectProcessingSummary,
         issues,
         milestones,

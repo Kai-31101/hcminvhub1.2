@@ -78,6 +78,17 @@ const cleanTextMap: Record<string, string> = {
   "Current": "Hiện tại",
   "Level 2": "Cấp 2",
   "Executive Dashboard": "Bảng điều hành",
+  "Active Project Jobs": "Công việc dự án đang hoạt động",
+  "Upcoming Project Jobs": "Công việc dự án sắp đến hạn",
+  "Delayed Project Jobs": "Công việc dự án bị trễ",
+  "Projects by Location": "Dự án theo địa điểm",
+  "Projects by Type": "Dự án theo loại",
+  "Projects by Status": "Dự án theo trạng thái",
+  "Project Jobs by Status": "Công việc dự án theo trạng thái",
+  "Executive Project Portfolio": "Danh mục dự án điều hành",
+  "Suggested Executive Focus": "Trọng tâm điều hành đề xuất",
+  "Ready-to-advance projects": "Dự án sẵn sàng thúc đẩy",
+  "Active filter": "Bộ lọc đang áp dụng",
   "Analytics": "Phân tích",
   "Risk Monitor": "Theo dõi rủi ro",
   "Vietnam Investment": "Đầu tư Việt Nam",
@@ -1324,6 +1335,8 @@ const cleanTextMap: Record<string, string> = {
   "All Sectors": "Tất cả lĩnh vực",
   "Any Range": "Mọi mức vốn",
   "Project Type": "Loại dự án",
+  "Public": "Công",
+  "Private": "Tư Nhân",
   "Investment Support": "Hỗ trợ đầu tư",
   "Investment Size": "Quy mô đầu tư",
   "Investment Type": "Loại hình đầu tư",
@@ -1494,10 +1507,82 @@ function localizeAgencies(language: Language) {
   });
 }
 
+function localizeProjectDocuments(language: Language) {
+  return (documents: typeof projects[number]['documents']) => documents.map((document) => {
+    const localizedDocument = localizeDeep(document, language);
+    return {
+      ...localizedDocument,
+      name: language === 'en'
+        ? (document.nameEn ?? document.name)
+        : (document.nameVi ?? localizedDocument.name),
+    };
+  });
+}
+
+function localizeProjectQaItems(language: Language) {
+  return (items: typeof projects[number]['qa']) => items.map((item) => {
+    const localizedItem = localizeDeep(item, language);
+    return {
+      ...localizedItem,
+      question: language === 'en'
+        ? (item.questionEn ?? item.question)
+        : (item.questionVi ?? localizedItem.question),
+      askedBy: language === 'en'
+        ? (item.askedByEn ?? item.askedBy)
+        : (item.askedByVi ?? localizedItem.askedBy),
+      answer: item.answer
+        ? (language === 'en'
+          ? (item.answerEn ?? item.answer)
+          : (item.answerVi ?? localizedItem.answer))
+        : item.answer,
+    };
+  });
+}
+
+function localizeProjectMilestones(language: Language) {
+  return (items: typeof projects[number]['milestones']) => items.map((milestone) => {
+    const localizedMilestone = localizeDeep(milestone, language);
+    return {
+      ...localizedMilestone,
+      phase: language === 'en'
+        ? (milestone.phaseEn ?? milestone.phase)
+        : (milestone.phaseVi ?? localizedMilestone.phase),
+      description: language === 'en'
+        ? (milestone.descriptionEn ?? milestone.description)
+        : (milestone.descriptionVi ?? localizedMilestone.description),
+    };
+  });
+}
+
+function localizeProjects(language: Language) {
+  const localizeDocuments = localizeProjectDocuments(language);
+  const localizeQaItems = localizeProjectQaItems(language);
+  const localizeMilestones = localizeProjectMilestones(language);
+
+  return projects.map((project) => {
+    const localizedProject = localizeDeep(project, language);
+    return {
+      ...localizedProject,
+      name: language === 'en'
+        ? (project.nameEn ?? project.name)
+        : (project.nameVi ?? localizedProject.name),
+      description: language === 'en'
+        ? (project.descriptionEn ?? project.description)
+        : (project.descriptionVi ?? localizedProject.description),
+      highlights: language === 'en'
+        ? (project.highlightsEn ?? localizedProject.highlights)
+        : (project.highlightsVi ?? localizedProject.highlights),
+      documents: localizeDocuments(project.documents),
+      qa: localizeQaItems(project.qa),
+      milestones: localizeMilestones(project.milestones),
+    };
+  });
+}
+
 export function getLocalizedData(language: Language) {
   if (language === 'en') {
     return {
-      projects,
+      projects: localizeProjects(language),
       opportunities,
       permits,
       issues,
@@ -1514,7 +1599,7 @@ export function getLocalizedData(language: Language) {
   }
 
   return {
-    projects: localizeDeep(projects, language),
+    projects: localizeProjects(language),
     opportunities: localizeDeep(opportunities, language),
     permits: localizeDeep(permits, language),
     issues: localizeDeep(issues, language),

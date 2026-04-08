@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCMC Investment Map</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; height: 100vh; overflow: hidden; }
+
+  .app { display: flex; height: 100vh; }
+  .sidebar { display: none; flex-direction: column; width: 380px; border-right: 1px solid #e5e7eb; background: #fff; height: 100%; overflow: hidden; }
+  @media (min-width: 1024px) { .sidebar { display: flex; } }
+  .map-wrap { flex: 1; position: relative; }
+
+  .filters { padding: 16px; flex-shrink: 0; }
+  .filters h2 { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 12px; }
+  .filter-input { position: relative; margin-bottom: 10px; }
+  .filter-input input, .filter-input select {
+    width: 100%; padding: 7px 10px 7px 34px; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 13px; color: #374151; background: #fff; outline: none; appearance: none;
+  }
+  .filter-input select { padding-left: 10px; cursor: pointer; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; }
+  .filter-input input:focus, .filter-input select:focus { border-color: #F97316; box-shadow: 0 0 0 2px rgba(249,115,22,0.15); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
+  .search-icon svg { width: 14px; height: 14px; }
+
+  .toggle-group { display: flex; gap: 0; margin-bottom: 10px; }
+  .toggle-btn {
+    flex: 1; padding: 6px 0; text-align: center; font-size: 12px; font-weight: 500;
+    border: 1px solid #d1d5db; background: #fff; color: #374151; cursor: pointer; transition: all 0.15s;
+  }
+  .toggle-btn:first-child { border-radius: 6px 0 0 6px; }
+  .toggle-btn:last-child { border-radius: 0 6px 6px 0; }
+  .toggle-btn:not(:first-child) { border-left: none; }
+  .toggle-btn.active { background: #F97316; color: #fff; border-color: #F97316; }
+  .toggle-btn.active + .toggle-btn { border-left-color: #F97316; }
+
+  .reset-btn {
+    width: 100%; padding: 7px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+    font-size: 13px; color: #374151; cursor: pointer; transition: background 0.15s;
+  }
+  .reset-btn:hover { background: #f9fafb; }
+
+  .separator { height: 1px; background: #e5e7eb; }
+
+  .results-header { padding: 8px 16px; font-size: 12px; color: #6b7280; flex-shrink: 0; }
+  .project-list { flex: 1; overflow-y: auto; }
+  .project-item {
+    padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: background 0.15s;
+  }
+  .project-item:hover { background: #f9fafb; }
+  .project-item.selected { background: #f3f4f6; }
+  .project-item h3 {
+    font-size: 13px; font-weight: 500; color: #111827; margin-bottom: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+  .badge {
+    display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; line-height: 1.4;
+  }
+  .badge-sector { background: #fff7ed; color: #F97316; }
+  .project-item .meta { font-size: 12px; color: #6b7280; }
+
+  .map-controls { position: absolute; top: 16px; right: 16px; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
+  .ctrl-btn {
+    width: 32px; height: 32px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.15s;
+  }
+  .ctrl-btn:hover { background: #f9fafb; }
+  .ctrl-btn.active { background: #f3f4f6; border-color: #F97316; }
+  .ctrl-btn svg { width: 14px; height: 14px; color: #374151; }
+
+  .legend-wrap { position: absolute; bottom: 16px; right: 16px; z-index: 5; }
+  .legend-card {
+    display: none; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 8px; width: 200px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .legend-card.open { display: block; }
+  .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 12px; color: #6b7280; }
+  .legend-item:last-child { margin-bottom: 0; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-toggle {
+    padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+    font-size: 13px; color: #374151; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .legend-toggle:hover { background: #f9fafb; }
+
+  .maplibregl-popup-content { padding: 0 !important; background: transparent !important; box-shadow: none !important; }
+  .maplibregl-popup-tip { border-top-color: #fff !important; }
+  .popup-card {
+    background: #fff; border-radius: 8px; padding: 16px; width: 300px; position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #e5e7eb;
+  }
+  .popup-close {
+    position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer;
+    opacity: 0.5; padding: 4px; border-radius: 4px; line-height: 0;
+  }
+  .popup-close:hover { opacity: 1; background: #f3f4f6; }
+  .popup-close svg { width: 14px; height: 14px; }
+  .popup-card h3 { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; padding-right: 24px; margin-bottom: 8px; }
+  .popup-card .badges { margin-bottom: 8px; }
+  .popup-card .info { font-size: 12px; color: #6b7280; line-height: 1.6; }
+  .popup-card .info .investment { font-weight: 500; color: #111827; }
+  .popup-card .detail-link {
+    display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 500;
+    color: #F97316; text-decoration: none; border-bottom: 1px dashed #F97316; cursor: pointer;
+  }
+  .popup-card .detail-link:hover { color: #ea580c; border-color: #ea580c; }
+
+  .cluster-marker {
+    display: flex; align-items: center; justify-content: center; border-radius: 50%;
+    background: #F97316; color: #fff; font-weight: 600; font-size: 12px;
+    border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .cluster-marker:hover { transform: scale(1.1); }
+
+  .point-marker {
+    width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer; transition: transform 0.2s;
+  }
+  .point-marker:hover { transform: scale(1.3); }
+  .point-marker.selected { transform: scale(1.4); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar" id="sidebar">
+    <div class="filters">
+      <h2>Filters</h2>
+      <div class="filter-input">
+        <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+        <input type="text" id="searchInput" placeholder="Search projects...">
+      </div>
+      <div class="filter-input">
+        <select id="sectorFilter"><option value="">Sector</option></select>
+      </div>
+      <div class="filter-input">
+        <select id="locationFilter"><option value="">Location</option></select>
+      </div>
+      <div class="filter-input">
+        <select id="sizeFilter">
+          <option value="">Investment Size</option>
+          <option value="under-100m">Under $100M</option>
+          <option value="100-500m">$100M - $500M</option>
+          <option value="500m-1b">$500M - $1B</option>
+          <option value="over-1b">Over $1B</option>
+        </select>
+      </div>
+      <div class="toggle-group" id="ownerToggle">
+        <button class="toggle-btn active" data-value="">All</button>
+        <button class="toggle-btn" data-value="GOVERNMENT">Gov</button>
+        <button class="toggle-btn" data-value="PRIVATE">Private</button>
+      </div>
+      <button class="reset-btn" id="resetFilters">Reset Filters</button>
+    </div>
+    <div class="separator"></div>
+    <div class="results-header" id="resultsHeader">0 projects</div>
+    <div class="project-list" id="projectList"></div>
+  </div>
+
+  <div class="map-wrap">
+    <div id="map" style="width:100%;height:100%;"></div>
+
+    <div class="map-controls">
+      <button class="ctrl-btn" id="resetViewBtn" title="Reset View">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+      <button class="ctrl-btn active" id="toggle3DBtn" title="Toggle 3D Buildings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg>
+      </button>
+      <button class="ctrl-btn" id="fullscreenBtn" title="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+    </div>
+
+    <div class="legend-wrap">
+      <div class="legend-card" id="legendCard"></div>
+      <button class="legend-toggle" id="legendToggle">
+        Legend
+        <svg id="legendChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="m18 15-6-6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+var STATUS_COLORS = {
+  PUBLISHED: '#22c55e',
+  ATTRACTING_INTEREST: '#3b82f6',
+  IN_PROCESS: '#f59e0b',
+  APPROVED: '#a855f7',
+  EXECUTING: '#6366f1',
+  COMPLETED: '#71717a',
+  PENDING_APPROVAL: '#94a3b8',
+  DRAFT: '#94a3b8',
+};
+var STATUS_LABELS = {
+  PUBLISHED: 'Published',
+  ATTRACTING_INTEREST: 'Attracting Interest',
+  IN_PROCESS: 'In Process',
+  APPROVED: 'Approved',
+  EXECUTING: 'Executing',
+  COMPLETED: 'Completed',
+  PENDING_APPROVAL: 'Pending Approval',
+  DRAFT: 'Draft',
+};
+var currentLanguage = 'en';
+
+function projectDisplayName(project) {
+  return currentLanguage === 'vi' && project.nameVi ? project.nameVi : project.name;
+}
+
+function detailLinkLabel() {
+  return currentLanguage === 'vi' ? 'Xem chi tiết →' : 'View Details →';
+}
+
+function projectCountLabel(count) {
+  return currentLanguage === 'vi' ? count + ' dự án' : count + ' projects';
+}
+
+function locationFilterLabel() {
+  return currentLanguage === 'vi' ? 'Vị trí' : 'Location';
+}
+
+function getProjectLocation(project) {
+  return project.location || project.district || '';
+}
+
+var PROJECTS = [
+  { id: 's1', slug: 'metro-line-2-integration-hub', name: 'Metro Line 2 Integration Hub', nameVi: 'Trung tam Ket noi Metro Tuyen 2', sector: 'Infrastructure & Urban', district: 'Thu Duc', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 350000000, investmentMaxUsd: 520000000, lat: 10.8456, lng: 106.7720, isPriority: true },
+  { id: 's2', slug: 'thu-thiem-smart-city-center', name: 'Thu Thiem Smart City Center', nameVi: 'Trung tam Thanh pho Thong minh Thu Thiem', sector: 'Real Estate & Smart Cities', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 1200000000, investmentMaxUsd: 2500000000, lat: 10.7865, lng: 106.7312, isPriority: true },
+  { id: 's3', slug: 'can-gio-deep-water-port', name: 'Can Gio Deep Water Port', nameVi: 'Cang nuoc sau Can Gio', sector: 'Logistics & Supply Chain', district: 'Can Gio', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 5500000000, investmentMaxUsd: 6000000000, lat: 10.4112, lng: 106.9530, isPriority: true },
+  { id: 's4', slug: 'thu-duc-international-hospital', name: 'Thu Duc International Hospital', nameVi: 'Benh vien Quoc te Thu Duc', sector: 'Healthcare & Pharma', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 280000000, investmentMaxUsd: 450000000, lat: 10.8520, lng: 106.7580, isPriority: false },
+  { id: 's5', slug: 'shtp-data-center-campus', name: 'SHTP Data Center Campus', nameVi: 'Trung tam Du lieu SHTP', sector: 'High-Tech & Digital', district: 'Thu Duc', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 600000000, investmentMaxUsd: 900000000, lat: 10.8600, lng: 106.8010, isPriority: false },
+  { id: 's6', slug: 'nha-be-eco-township', name: 'Nha Be Eco-Township', nameVi: 'Khu Do thi Sinh thai Nha Be', sector: 'Affordable Housing', district: 'Nha Be', status: 'IN_PROCESS', ownerType: 'GOVERNMENT', investmentMinUsd: 750000000, investmentMaxUsd: 1100000000, lat: 10.6830, lng: 106.7250, isPriority: false },
+  { id: 's7', slug: 'can-gio-floating-solar-farm', name: 'Can Gio Floating Solar Farm', nameVi: 'Nha may Dien mat troi noi Can Gio', sector: 'Renewable Energy', district: 'Can Gio', status: 'APPROVED', ownerType: 'GOVERNMENT', investmentMinUsd: 180000000, investmentMaxUsd: 250000000, lat: 10.4350, lng: 106.8820, isPriority: false },
+  { id: 's8', slug: 'hiep-phuoc-logistics-hub', name: 'Hiep Phuoc Logistics Hub', nameVi: 'Trung tam Logistics Hiep Phuoc', sector: 'Logistics & Supply Chain', district: 'Nha Be', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 200000000, investmentMaxUsd: 320000000, lat: 10.6310, lng: 106.7690, isPriority: false },
+  { id: 's9', slug: 'd7-international-stem-academy', name: 'District 7 International STEM Academy', nameVi: 'Truong Quoc te STEM Quan 7', sector: 'Education & Training', district: 'District 7', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 85000000, investmentMaxUsd: 120000000, lat: 10.7340, lng: 106.7210, isPriority: false },
+  { id: 's10', slug: 'binh-chanh-green-industrial-park', name: 'Binh Chanh Green Industrial Park', nameVi: 'Khu Cong nghiep Xanh Binh Chanh', sector: 'Clean Energy & Environment', district: 'Binh Chanh', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 450000000, investmentMaxUsd: 680000000, lat: 10.6540, lng: 106.6070, isPriority: false },
+  { id: 's11', slug: 'd1-fintech-tower', name: 'District 1 Fintech Tower', nameVi: 'To hop Fintech Quan 1', sector: 'Financial Services', district: 'District 1', status: 'PENDING_APPROVAL', ownerType: 'PRIVATE', investmentMinUsd: 320000000, investmentMaxUsd: 480000000, lat: 10.7738, lng: 106.7030, isPriority: false },
+  { id: 's12', slug: 'shtp-semiconductor-foundry', name: 'SHTP Semiconductor Foundry', nameVi: 'Nha may Ban dan SHTP', sector: 'High-Tech & Digital', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 2000000000, investmentMaxUsd: 3500000000, lat: 10.8580, lng: 106.8050, isPriority: false },
+  { id: 's13', slug: 'can-gio-eco-tourism-resort', name: 'Can Gio Eco-Tourism Resort', nameVi: 'Khu du lich sinh thai Can Gio', sector: 'Tourism & Hospitality', district: 'Can Gio', status: 'PUBLISHED', ownerType: 'PRIVATE', investmentMinUsd: 150000000, investmentMaxUsd: 220000000, lat: 10.4720, lng: 106.8910, isPriority: false },
+  { id: 's14', slug: 'da-phuoc-waste-processing', name: 'Da Phuoc Integrated Waste Processing Center', nameVi: 'Trung tam Xu ly chat thai ran Da Phuoc', sector: 'Circular Economy', district: 'Binh Chanh', status: 'IN_PROCESS', ownerType: 'GOVERNMENT', investmentMinUsd: 550000000, investmentMaxUsd: 750000000, lat: 10.6280, lng: 106.6340, isPriority: false },
+  { id: 's15', slug: 'quang-trung-software-city-3', name: 'Quang Trung Software City Phase 3', nameVi: 'Phan mem Quang Trung Phase 3', sector: 'High-Tech & Digital', district: 'District 12', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 180000000, investmentMaxUsd: 280000000, lat: 10.8530, lng: 106.6360, isPriority: false },
+  { id: 's16', slug: 'd12-biopharma-park', name: 'District 12 Biopharma Manufacturing Park', nameVi: 'Benh vien Duoc pham Sinh hoc Quan 12', sector: 'Biotech & Life Sciences', district: 'District 12', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 400000000, investmentMaxUsd: 650000000, lat: 10.8660, lng: 106.6480, isPriority: false },
+  { id: 's17', slug: 'nguyen-huu-canh-flyover', name: 'Nguyen Huu Canh Flyover Expansion', nameVi: 'Cau vuot Nguyen Huu Canh mo rong', sector: 'Infrastructure & Urban', district: 'Binh Thanh', status: 'APPROVED', ownerType: 'GOVERNMENT', investmentMinUsd: 420000000, investmentMaxUsd: 580000000, lat: 10.7910, lng: 106.7130, isPriority: false },
+  { id: 's18', slug: 'cho-lon-cultural-center', name: 'Cho Lon Cultural & Commercial Center', nameVi: 'Trung tam Thuong mai & Van hoa Cho Lon', sector: 'Tourism & Hospitality', district: 'District 5', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 220000000, investmentMaxUsd: 350000000, lat: 10.7530, lng: 106.6580, isPriority: false },
+  { id: 's19', slug: 'thu-duc-water-treatment-3', name: 'Thu Duc Water Treatment Plant 3', nameVi: 'Nha may Nuoc sach Thu Duc 3', sector: 'Infrastructure & Urban', district: 'Thu Duc', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 380000000, investmentMaxUsd: 520000000, lat: 10.8750, lng: 106.7850, isPriority: false },
+  { id: 's20', slug: 'hoc-mon-worker-housing', name: 'Hoc Mon Worker Housing Complex', nameVi: 'Khu Nha o Cong nhan Hoc Mon', sector: 'Affordable Housing', district: 'Hoc Mon', status: 'IN_PROCESS', ownerType: 'GOVERNMENT', investmentMinUsd: 300000000, investmentMaxUsd: 420000000, lat: 10.8830, lng: 106.5920, isPriority: false },
+  { id: 's21', slug: 'cu-chi-high-tech-agriculture', name: 'Cu Chi High-Tech Agriculture Center', nameVi: 'Trung tam Nong nghiep Cong nghe cao Cu Chi', sector: 'AgriTech', district: 'Cu Chi', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 120000000, investmentMaxUsd: 180000000, lat: 10.9730, lng: 106.4930, isPriority: false },
+  { id: 'm1', slug: 'd1-fintech-hub', name: 'District 1 Fintech Innovation Hub', nameVi: 'Trung tam Doi moi Fintech Quan 1', sector: 'High-Tech & Digital', district: 'District 1', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 5000000, investmentMaxUsd: 15000000, lat: 10.776, lng: 106.700, isPriority: false },
+  { id: 'm2', slug: 'd1-heritage-hotel', name: 'Saigon Heritage Hotel & Convention Center', nameVi: 'Khach san Di san Sai Gon', sector: 'Tourism & Hospitality', district: 'District 1', status: 'ATTRACTING_INTEREST', ownerType: 'PRIVATE', investmentMinUsd: 30000000, investmentMaxUsd: 60000000, lat: 10.773, lng: 106.703, isPriority: false },
+  { id: 'm3', slug: 'shtp-lot3', name: 'SHTP Lot 3 — High-Tech Manufacturing', nameVi: 'Lo 3 SHTP — San xuat Cong nghe cao', sector: 'High-Tech & Digital', district: 'Thu Duc', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 20000000, investmentMaxUsd: 50000000, lat: 10.845, lng: 106.795, isPriority: false },
+  { id: 'm4', slug: 'shtp-biotech', name: 'SHTP Biotech Research Campus', nameVi: 'Khu nghien cuu Sinh hoc SHTP', sector: 'Healthcare & Pharma', district: 'Thu Duc', status: 'APPROVED', ownerType: 'GOVERNMENT', investmentMinUsd: 15000000, investmentMaxUsd: 40000000, lat: 10.848, lng: 106.790, isPriority: false },
+  { id: 'm5', slug: 'thu-duc-ai-center', name: 'Thu Duc AI & Data Center', nameVi: 'Trung tam AI & Du lieu Thu Duc', sector: 'High-Tech & Digital', district: 'Thu Duc', status: 'EXECUTING', ownerType: 'PRIVATE', investmentMinUsd: 50000000, investmentMaxUsd: 100000000, lat: 10.842, lng: 106.800, isPriority: false },
+  { id: 'm6', slug: 'shtp-semiconductor', name: 'SHTP Semiconductor Assembly Plant', nameVi: 'Nha may Lap rap Ban dan SHTP', sector: 'Manufacturing', district: 'Thu Duc', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 80000000, investmentMaxUsd: 200000000, lat: 10.850, lng: 106.798, isPriority: false },
+  { id: 'm7', slug: 'thu-thiem-mixed', name: 'Thu Thiem New Urban Area — Mixed-Use', nameVi: 'Khu Do thi moi Thu Thiem — Da nang', sector: 'Infrastructure & Urban', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 100000000, investmentMaxUsd: 500000000, lat: 10.790, lng: 106.740, isPriority: true },
+  { id: 'm8', slug: 'd7-hospital', name: 'District 7 International Hospital Complex', nameVi: 'To hop Benh vien Quoc te Quan 7', sector: 'Healthcare & Pharma', district: 'District 7', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 50000000, investmentMaxUsd: 100000000, lat: 10.730, lng: 106.720, isPriority: false },
+  { id: 'm9', slug: 'phu-my-hung-school', name: 'Phu My Hung International School Campus', nameVi: 'Khu hoc tap Quoc te Phu My Hung', sector: 'Education & Training', district: 'District 7', status: 'IN_PROCESS', ownerType: 'PRIVATE', investmentMinUsd: 10000000, investmentMaxUsd: 25000000, lat: 10.727, lng: 106.718, isPriority: false },
+  { id: 'm10', slug: 'd7-smart-office', name: 'District 7 Smart Office Park', nameVi: 'Khu Van phong Thong minh Quan 7', sector: 'Real Estate & Smart Cities', district: 'District 7', status: 'PUBLISHED', ownerType: 'PRIVATE', investmentMinUsd: 40000000, investmentMaxUsd: 80000000, lat: 10.733, lng: 106.725, isPriority: false },
+  { id: 'm11', slug: 'd2-logistics', name: 'Cat Lai Logistics & Warehousing Hub', nameVi: 'Trung tam Logistics Cat Lai', sector: 'Logistics & Supply Chain', district: 'District 2', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 30000000, investmentMaxUsd: 70000000, lat: 10.790, lng: 106.755, isPriority: false },
+  { id: 'm12', slug: 'd2-riverside', name: 'Thao Dien Riverside Residential', nameVi: 'Khu dan cu Thao Dien ven song', sector: 'Real Estate & Smart Cities', district: 'District 2', status: 'COMPLETED', ownerType: 'PRIVATE', investmentMinUsd: 20000000, investmentMaxUsd: 50000000, lat: 10.802, lng: 106.735, isPriority: false },
+  { id: 'm13', slug: 'd12-industrial', name: 'District 12 Light Industrial Park', nameVi: 'Khu Cong nghiep nhe Quan 12', sector: 'Manufacturing', district: 'District 12', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 15000000, investmentMaxUsd: 35000000, lat: 10.865, lng: 106.650, isPriority: false },
+  { id: 'm14', slug: 'd12-water', name: 'District 12 Water Treatment Plant', nameVi: 'Nha may Xu ly nuoc Quan 12', sector: 'Infrastructure & Urban', district: 'District 12', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 25000000, investmentMaxUsd: 60000000, lat: 10.870, lng: 106.645, isPriority: false },
+  { id: 'm15', slug: 'binh-tan-food', name: 'Binh Tan Food Processing Zone', nameVi: 'Khu Che bien Thuc pham Binh Tan', sector: 'Manufacturing', district: 'Binh Tan', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 10000000, investmentMaxUsd: 30000000, lat: 10.750, lng: 106.600, isPriority: false },
+  { id: 'm16', slug: 'binh-tan-housing', name: 'Binh Tan Affordable Housing Project', nameVi: 'Du an Nha o Binh dan Binh Tan', sector: 'Affordable Housing', district: 'Binh Tan', status: 'IN_PROCESS', ownerType: 'GOVERNMENT', investmentMinUsd: 40000000, investmentMaxUsd: 90000000, lat: 10.755, lng: 106.605, isPriority: false },
+  { id: 'm17', slug: 'tan-binh-textile', name: 'Tan Binh Textile & Garment Hub', nameVi: 'Trung tam Det may Tan Binh', sector: 'Manufacturing', district: 'Tan Binh', status: 'COMPLETED', ownerType: 'PRIVATE', investmentMinUsd: 8000000, investmentMaxUsd: 20000000, lat: 10.805, lng: 106.660, isPriority: false },
+  { id: 'm18', slug: 'cu-chi-agritech', name: 'Cu Chi Agri-Tech Processing Zone', nameVi: 'Khu Che bien Nong nghiep Cong nghe cao Cu Chi', sector: 'AgriTech', district: 'Cu Chi', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 10000000, investmentMaxUsd: 30000000, lat: 11.020, lng: 106.510, isPriority: false },
+  { id: 'm19', slug: 'cu-chi-solar', name: 'Cu Chi Solar Farm & Energy Park', nameVi: 'Trang trai Dien mat troi Cu Chi', sector: 'Renewable Energy', district: 'Cu Chi', status: 'APPROVED', ownerType: 'GOVERNMENT', investmentMinUsd: 60000000, investmentMaxUsd: 120000000, lat: 11.025, lng: 106.515, isPriority: false },
+  { id: 'm20', slug: 'can-gio-eco-resort', name: 'Can Gio Eco-Tourism Resort & Marina', nameVi: 'Khu nghi duong sinh thai Can Gio', sector: 'Tourism & Hospitality', district: 'Can Gio', status: 'PUBLISHED', ownerType: 'PRIVATE', investmentMinUsd: 30000000, investmentMaxUsd: 80000000, lat: 10.410, lng: 106.950, isPriority: false },
+  { id: 'm21', slug: 'can-gio-port', name: 'Can Gio International Transshipment Port', nameVi: 'Cang Trung chuyen Quoc te Can Gio', sector: 'Logistics & Supply Chain', district: 'Can Gio', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 500000000, investmentMaxUsd: 1000000000, lat: 10.415, lng: 106.955, isPriority: true },
+  { id: 'm22', slug: 'vsip-iii', name: 'VSIP III — Advanced Manufacturing Park', nameVi: 'VSIP III — Khu San xuat Tien tien', sector: 'Manufacturing', district: 'Binh Duong', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 50000000, investmentMaxUsd: 150000000, lat: 11.005, lng: 106.650, isPriority: false },
+  { id: 'm23', slug: 'binh-duong-smart-city', name: 'Binh Duong Smart City — Education Campus', nameVi: 'Thanh pho Thong minh Binh Duong — Khu Giao duc', sector: 'Education & Training', district: 'Binh Duong', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 15000000, investmentMaxUsd: 40000000, lat: 11.010, lng: 106.655, isPriority: false },
+  { id: 'm24', slug: 'binh-duong-pharma', name: 'Binh Duong Pharmaceutical Plant', nameVi: 'Nha may Duoc pham Binh Duong', sector: 'Healthcare & Pharma', district: 'Binh Duong', status: 'APPROVED', ownerType: 'PRIVATE', investmentMinUsd: 20000000, investmentMaxUsd: 50000000, lat: 11.000, lng: 106.645, isPriority: false },
+  { id: 'm25', slug: 'binh-duong-logistics', name: 'Binh Duong Logistics Gateway', nameVi: 'Cong Logistics Binh Duong', sector: 'Logistics & Supply Chain', district: 'Binh Duong', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 35000000, investmentMaxUsd: 80000000, lat: 11.008, lng: 106.660, isPriority: false },
+  { id: 'm26', slug: 'phu-my-port', name: 'Phu My Industrial Port Expansion', nameVi: 'Mo rong Cang Cong nghiep Phu My', sector: 'Infrastructure & Urban', district: 'Ba Ria-Vung Tau', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 80000000, investmentMaxUsd: 200000000, lat: 10.345, lng: 107.085, isPriority: false },
+  { id: 'm27', slug: 'brvt-lng', name: 'Ba Ria LNG Power Plant', nameVi: 'Nha may Dien LNG Ba Ria', sector: 'Renewable Energy', district: 'Ba Ria-Vung Tau', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 500000000, investmentMaxUsd: 1000000000, lat: 10.350, lng: 107.090, isPriority: true },
+  { id: 'm28', slug: 'vung-tau-resort', name: 'Vung Tau Beach Resort & Casino Complex', nameVi: 'Khu nghi duong & Casino Bai bien Vung Tau', sector: 'Tourism & Hospitality', district: 'Ba Ria-Vung Tau', status: 'IN_PROCESS', ownerType: 'PRIVATE', investmentMinUsd: 100000000, investmentMaxUsd: 300000000, lat: 10.340, lng: 107.080, isPriority: false },
+  { id: 'm29', slug: 'brvt-petrochem', name: 'Long Son Petrochemical Complex Phase 2', nameVi: 'To hop Hoa dau Long Son Giai doan 2', sector: 'Renewable Energy', district: 'Ba Ria-Vung Tau', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 1000000000, investmentMaxUsd: 2000000000, lat: 10.355, lng: 107.095, isPriority: true },
+  { id: 'm30', slug: 'nha-be-waterfront', name: 'Nha Be Waterfront Residential & Retail', nameVi: 'Khu dan cu & Thuong mai ven song Nha Be', sector: 'Real Estate & Smart Cities', district: 'Nha Be', status: 'PUBLISHED', ownerType: 'PRIVATE', investmentMinUsd: 40000000, investmentMaxUsd: 90000000, lat: 10.685, lng: 106.700, isPriority: false },
+];
+
+// ── Helpers ────────────────────────────────────────────────────
+function formatUsd(n) {
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(0) + 'M';
+  return '$' + (n / 1e3).toFixed(0) + 'K';
+}
+function investmentRange(p) {
+  if (!p.investmentMinUsd && !p.investmentMaxUsd) return 'TBD';
+  if (p.investmentMaxUsd >= 1e10) return formatUsd(p.investmentMinUsd) + '+';
+  return formatUsd(p.investmentMinUsd) + ' \u2013 ' + formatUsd(p.investmentMaxUsd);
+}
+
+function createEl(tag, className, textContent) {
+  var el = document.createElement(tag);
+  if (className) el.className = className;
+  if (textContent !== undefined) el.textContent = textContent;
+  return el;
+}
+
+function createBadge(text, bgColor, textColor) {
+  var badge = createEl('span', 'badge');
+  badge.textContent = text;
+  badge.style.backgroundColor = bgColor;
+  badge.style.color = textColor;
+  return badge;
+}
+
+function createSvg(paths, viewBox) {
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', viewBox || '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.style.width = '14px';
+  svg.style.height = '14px';
+  paths.forEach(function(d) {
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  });
+  return svg;
+}
+
+// ── State ─────────────────────────────────────────────────────
+var map, clusterIndex, currentPopup, selectedId = null, show3D = true;
+var markerObjects = [];
+var filteredProjects = PROJECTS.slice();
+var activeOwnerType = '';
+
+var INITIAL_VIEW = { center: [106.700, 10.780], zoom: 11, pitch: 0, bearing: 0 };
+
+// ── Populate filters ──────────────────────────────────────────
+function populateFilters() {
+  var sectors = []; var locations = [];
+  var sectorSel = document.getElementById('sectorFilter');
+  var locationSel = document.getElementById('locationFilter');
+
+  sectorSel.innerHTML = '<option value="">Sector</option>';
+  locationSel.innerHTML = '<option value="">' + locationFilterLabel() + '</option>';
+
+  PROJECTS.forEach(function(p) {
+    if (sectors.indexOf(p.sector) === -1) sectors.push(p.sector);
+    var location = getProjectLocation(p);
+    if (location && locations.indexOf(location) === -1) locations.push(location);
+  });
+  sectors.sort(); locations.sort();
+  sectors.forEach(function(s) { var o = createEl('option'); o.value = s; o.textContent = s; sectorSel.appendChild(o); });
+  locations.forEach(function(location) { var o = createEl('option'); o.value = location; o.textContent = location; locationSel.appendChild(o); });
+}
+
+// ── Legend ─────────────────────────────────────────────────────
+function buildLegend() {
+  var card = document.getElementById('legendCard');
+  var statuses = ['PUBLISHED','ATTRACTING_INTEREST','IN_PROCESS','APPROVED','EXECUTING','COMPLETED','PENDING_APPROVAL'];
+  statuses.forEach(function(status) {
+    var item = createEl('div', 'legend-item');
+    var dot = createEl('span', 'legend-dot');
+    dot.style.backgroundColor = STATUS_COLORS[status];
+    var label = createEl('span', null, STATUS_LABELS[status]);
+    item.appendChild(dot);
+    item.appendChild(label);
+    card.appendChild(item);
+  });
+}
+
+// ── Filter logic ──────────────────────────────────────────────
+function applyFilters() {
+  var search = document.getElementById('searchInput').value.toLowerCase();
+  var sector = document.getElementById('sectorFilter').value;
+  var location = document.getElementById('locationFilter').value;
+  var size = document.getElementById('sizeFilter').value;
+
+  filteredProjects = PROJECTS.filter(function(p) {
+    if (search && p.name.toLowerCase().indexOf(search) === -1 && p.nameVi.toLowerCase().indexOf(search) === -1) return false;
+    if (sector && p.sector !== sector) return false;
+    if (location && getProjectLocation(p) !== location) return false;
+    if (activeOwnerType && p.ownerType !== activeOwnerType) return false;
+    if (size) {
+      var max = p.investmentMaxUsd || 0;
+      if (size === 'under-100m' && max >= 100000000) return false;
+      if (size === '100-500m' && (max < 100000000 || max >= 500000000)) return false;
+      if (size === '500m-1b' && (max < 500000000 || max >= 1000000000)) return false;
+      if (size === 'over-1b' && max < 1000000000) return false;
+    }
+    return true;
+  });
+
+  renderProjectList();
+  updateMarkers();
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('sectorFilter').value = '';
+  document.getElementById('locationFilter').value = '';
+  document.getElementById('sizeFilter').value = '';
+  activeOwnerType = '';
+  var btns = document.querySelectorAll('#ownerToggle .toggle-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', btns[i].getAttribute('data-value') === '');
+  }
+  applyFilters();
+}
+
+// ── Project list ──────────────────────────────────────────────
+function renderProjectList() {
+  var list = document.getElementById('projectList');
+  document.getElementById('resultsHeader').textContent = projectCountLabel(filteredProjects.length);
+
+  while (list.firstChild) list.removeChild(list.firstChild);
+
+  filteredProjects.forEach(function(p) {
+    var item = createEl('div', 'project-item' + (p.id === selectedId ? ' selected' : ''));
+    item.setAttribute('data-id', p.id);
+
+    var h3 = createEl('h3', null, projectDisplayName(p));
+    item.appendChild(h3);
+
+    var badges = createEl('div', 'badges');
+    badges.appendChild(createBadge(p.sector, '#fff7ed', '#F97316'));
+    badges.appendChild(createBadge(STATUS_LABELS[p.status], STATUS_COLORS[p.status] + '18', STATUS_COLORS[p.status]));
+    item.appendChild(badges);
+
+    var meta = createEl('div', 'meta', getProjectLocation(p) + ' \u00b7 ' + investmentRange(p));
+    item.appendChild(meta);
+
+    item.addEventListener('click', (function(proj) {
+      return function() { flyToProject(proj); };
+    })(p));
+
+    list.appendChild(item);
+  });
+}
+
+function scrollToSelected(id) {
+  var item = document.querySelector('.project-item[data-id="' + id + '"]');
+  if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Clustering ────────────────────────────────────────────────
+function buildClusterIndex() {
+  var points = filteredProjects.map(function(p) {
+    return {
+      type: 'Feature',
+      properties: p,
+      geometry: { type: 'Point', coordinates: [p.lng, p.lat] }
+    };
+  });
+  clusterIndex = new Supercluster({ radius: 60, maxZoom: 16 });
+  clusterIndex.load(points);
+}
+
+// ── Markers ───────────────────────────────────────────────────
+function clearMarkers() {
+  markerObjects.forEach(function(m) { m.remove(); });
+  markerObjects = [];
+}
+
+function updateMarkers() {
+  clearMarkers();
+  buildClusterIndex();
+
+  var bounds = map.getBounds();
+  var bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
+  var zoom = Math.floor(map.getZoom());
+  var clusters = clusterIndex.getClusters(bbox, zoom);
+
+  clusters.forEach(function(feature) {
+    var coords = feature.geometry.coordinates;
+    var lng = coords[0], lat = coords[1];
+    var props = feature.properties;
+
+    if (props.cluster) {
+      var count = props.point_count;
+      var size = count < 10 ? 32 : count < 50 ? 40 : 48;
+      var el = createEl('div', 'cluster-marker', String(count));
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+      el.addEventListener('click', (function(cid, cLng, cLat) {
+        return function(e) {
+          e.stopPropagation();
+          var expansionZoom = Math.min(clusterIndex.getClusterExpansionZoom(cid), 20);
+          map.easeTo({ center: [cLng, cLat], zoom: expansionZoom, duration: 500 });
+        };
+      })(props.cluster_id, lng, lat));
+      var marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+      markerObjects.push(marker);
+    } else {
+      var el = createEl('div', 'point-marker' + (props.id === selectedId ? ' selected' : ''));
+      el.style.backgroundColor = STATUS_COLORS[props.status] || '#94a3b8';
+      el.addEventListener('click', (function(proj) {
+        return function(e) {
+          e.stopPropagation();
+          flyToProject(proj);
+        };
+      })(props));
+      var marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+      markerObjects.push(marker);
+    }
+  });
+}
+
+// ── Popup ─────────────────────────────────────────────────────
+function showPopup(project) {
+  if (currentPopup) currentPopup.remove();
+
+  var card = createEl('div', 'popup-card');
+
+  // Close button
+  var closeBtn = createEl('button', 'popup-close');
+  closeBtn.appendChild(createSvg(['M18 6 6 18', 'm6 6 12 12']));
+  closeBtn.addEventListener('click', function() { closePopup(); });
+  card.appendChild(closeBtn);
+
+  // Title
+  card.appendChild(createEl('h3', null, projectDisplayName(project)));
+
+  // Badges
+  var badges = createEl('div', 'badges');
+  badges.appendChild(createBadge(project.sector, '#fff7ed', '#F97316'));
+  badges.appendChild(createBadge(STATUS_LABELS[project.status], STATUS_COLORS[project.status] + '18', STATUS_COLORS[project.status]));
+  card.appendChild(badges);
+
+  // Info
+  var info = createEl('div', 'info');
+  info.appendChild(createEl('div', null, getProjectLocation(project)));
+  var inv = createEl('div', 'investment', investmentRange(project));
+  info.appendChild(inv);
+  info.appendChild(createEl('div', null, project.ownerType === 'GOVERNMENT' ? 'Government' : 'Private'));
+  card.appendChild(info);
+
+  // Detail link
+  var link = createEl('a', 'detail-link', detailLinkLabel());
+  link.href = '#';
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'HCMINVESTMENT_MAP_VIEW_PROJECT', projectId: project.id }, window.location.origin);
+    }
+  });
+  card.appendChild(link);
+
+  // Wrap in container
+  var container = document.createElement('div');
+  container.appendChild(card);
+
+  currentPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, maxWidth: '320px', offset: [0, -12], anchor: 'bottom' })
+    .setLngLat([project.lng, project.lat])
+    .setDOMContent(container)
+    .addTo(map);
+}
+
+function closePopup() {
+  if (currentPopup) { currentPopup.remove(); currentPopup = null; }
+  selectedId = null;
+  updateSelectedState();
+}
+
+// ── FlyTo ─────────────────────────────────────────────────────
+function flyToProject(project) {
+  if (currentPopup) { currentPopup.remove(); currentPopup = null; }
+  selectedId = project.id;
+  updateSelectedState();
+  scrollToSelected(project.id);
+
+  map.flyTo({
+    center: [project.lng, project.lat],
+    zoom: 16,
+    pitch: 60,
+    bearing: -30,
+    duration: 2500,
+  });
+
+  setTimeout(function() {
+    showPopup(project);
+    updateMarkers();
+  }, 2600);
+}
+
+function updateSelectedState() {
+  var items = document.querySelectorAll('.project-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.toggle('selected', items[i].getAttribute('data-id') === selectedId);
+  }
+}
+
+// ── Reset view ────────────────────────────────────────────────
+function resetView() {
+  closePopup();
+  map.flyTo({ center: INITIAL_VIEW.center, zoom: INITIAL_VIEW.zoom, pitch: 0, bearing: 0, duration: 2000 });
+}
+
+function fitMapToProjects() {
+  if (!map || !PROJECTS.length) return;
+
+  if (PROJECTS.length === 1) {
+    map.flyTo({
+      center: [PROJECTS[0].lng, PROJECTS[0].lat],
+      zoom: 13,
+      pitch: 20,
+      bearing: 0,
+      duration: 900,
+    });
+    return;
+  }
+
+  var bounds = new maplibregl.LngLatBounds();
+  PROJECTS.forEach(function(project) {
+    bounds.extend([project.lng, project.lat]);
+  });
+  map.fitBounds(bounds, { padding: 48, duration: 900, maxZoom: 11.8 });
+}
+
+function applyExternalProjects(projects, language) {
+  PROJECTS = (projects || []).filter(function(project) {
+    return project && typeof project.lat === 'number' && typeof project.lng === 'number';
+  });
+  currentLanguage = language === 'vi' ? 'vi' : 'en';
+  closePopup();
+  document.getElementById('searchInput').value = '';
+  document.getElementById('sizeFilter').value = '';
+  selectedId = null;
+  activeOwnerType = '';
+  var toggleBtns = document.querySelectorAll('#ownerToggle .toggle-btn');
+  for (var i = 0; i < toggleBtns.length; i++) {
+    toggleBtns[i].classList.toggle('active', toggleBtns[i].getAttribute('data-value') === '');
+  }
+  populateFilters();
+  filteredProjects = PROJECTS.slice();
+  renderProjectList();
+  if (map && map.loaded()) {
+    updateMarkers();
+    fitMapToProjects();
+  }
+}
+
+// ── 3D Buildings ──────────────────────────────────────────────
+function toggle3D() {
+  show3D = !show3D;
+  document.getElementById('toggle3DBtn').classList.toggle('active', show3D);
+  if (map.getLayer('3d-buildings')) {
+    map.setLayoutProperty('3d-buildings', 'visibility', show3D ? 'visible' : 'none');
+  }
+}
+
+function add3DBuildings() {
+  if (map.getLayer('3d-buildings')) return;
+  var layers = map.getStyle().layers;
+  var labelLayerId;
+  for (var i = 0; i < layers.length; i++) {
+    if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
+      labelLayerId = layers[i].id;
+      break;
+    }
+  }
+  map.addLayer({
+    id: '3d-buildings',
+    source: 'openmaptiles',
+    'source-layer': 'building',
+    type: 'fill-extrusion',
+    minzoom: 14,
+    paint: {
+      'fill-extrusion-color': '#d4d4d8',
+      'fill-extrusion-height': ['get', 'render_height'],
+      'fill-extrusion-base': ['get', 'render_min_height'],
+      'fill-extrusion-opacity': 0.7,
+    },
+  }, labelLayerId);
+}
+
+// ── Fullscreen ────────────────────────────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// ── Legend toggle ──────────────────────────────────────────────
+function toggleLegend() {
+  var card = document.getElementById('legendCard');
+  var chevron = document.getElementById('legendChevron');
+  var open = card.classList.toggle('open');
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  populateFilters();
+  buildLegend();
+
+  map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: INITIAL_VIEW.center,
+    zoom: INITIAL_VIEW.zoom,
+    pitch: INITIAL_VIEW.pitch,
+    bearing: INITIAL_VIEW.bearing,
+    attributionControl: true,
+  });
+
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), 'top-left');
+
+  map.on('load', function() {
+    add3DBuildings();
+    updateMarkers();
+    renderProjectList();
+    fitMapToProjects();
+  });
+
+  map.on('moveend', updateMarkers);
+  map.on('click', closePopup);
+
+  document.getElementById('searchInput').addEventListener('input', applyFilters);
+  document.getElementById('sectorFilter').addEventListener('change', applyFilters);
+  document.getElementById('locationFilter').addEventListener('change', applyFilters);
+  document.getElementById('sizeFilter').addEventListener('change', applyFilters);
+  document.getElementById('resetFilters').addEventListener('click', resetFilters);
+
+  var toggleBtns = document.querySelectorAll('#ownerToggle .toggle-btn');
+  for (var i = 0; i < toggleBtns.length; i++) {
+    toggleBtns[i].addEventListener('click', function() {
+      for (var j = 0; j < toggleBtns.length; j++) toggleBtns[j].classList.remove('active');
+      this.classList.add('active');
+      activeOwnerType = this.getAttribute('data-value');
+      applyFilters();
+    });
+  }
+
+  document.getElementById('resetViewBtn').addEventListener('click', resetView);
+  document.getElementById('toggle3DBtn').addEventListener('click', toggle3D);
+  document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+  document.getElementById('legendToggle').addEventListener('click', toggleLegend);
+
+  window.addEventListener('message', function(event) {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'HCMINVESTMENT_MAP_SYNC' || !Array.isArray(event.data.projects)) return;
+    applyExternalProjects(event.data.projects, event.data.language);
+  });
+});
+</script>
+</body>
+</html>

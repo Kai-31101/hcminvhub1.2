@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowLeft, Check, ChevronDown, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { getDemoUserIdForRole, ProjectJob, useApp } from '../../context/AppContext';
+import { Document } from '../../data/mockData';
 import { administrativeLocationOptions, getAdministrativeLocationLabel } from '../../data/administrativeLocations';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
+import { getBundledAttachmentUrl } from '../../utils/attachments';
 import { translateText } from '../../utils/localization';
 import { normalizeProjectStatus, PROJECT_STAGE_OPTIONS } from '../../utils/projectStatus';
 import designVietnamMap from '../../assets/design-vietnam-map.png';
@@ -21,6 +23,7 @@ const EDIT_TABS: Array<{ id: EditTab; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'location-land', label: 'Location & Land' },
   { id: 'investment-details', label: 'Investment Details' },
+  { id: 'documents', label: 'Documents' },
   { id: 'planning-infrastructure', label: 'Planning & Infrastructure' },
 ];
 
@@ -48,6 +51,28 @@ function filesToAttachments(files: FileList | null) {
     fileName: file.name,
     lastUploadDate: uploadedAt,
   }));
+}
+
+function formatDocumentSize(bytes: number) {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function filesToDocuments(files: FileList | null) {
+  const uploadedAt = new Date().toISOString().split('T')[0];
+
+  return Array.from(files ?? []).map((file, index): Document => {
+    const extension = file.name.includes('.') ? file.name.split('.').pop()?.toUpperCase() ?? '' : '';
+    return {
+      id: `doc-${Date.now()}-${index}`,
+      name: file.name,
+      fileUrl: getBundledAttachmentUrl(file.name),
+      type: extension || file.type || 'FILE',
+      size: formatDocumentSize(file.size),
+      uploadedAt,
+    };
+  });
 }
 
 function fileToDataUrl(file: File) {
@@ -101,6 +126,7 @@ export default function ProjectEditPage() {
   const [form, setForm] = useState(() => ({
     name: project?.name ?? '',
     sector: project?.sector ?? 'Infrastructure',
+    projectType: project?.projectType ?? 'public',
     province: project?.province ?? 'Ho Chi Minh City',
     location: project?.location ?? 'ho-chi-minh-city',
     budget: String(project?.budget ?? 0),
@@ -125,6 +151,7 @@ export default function ProjectEditPage() {
     attachmentListText: '',
   });
   const [draftProjectJobs, setDraftProjectJobs] = useState<EditableProjectJob[]>([]);
+  const [editableDocuments, setEditableDocuments] = useState<Document[]>(project?.documents ?? []);
   const [isStageMenuOpen, setIsStageMenuOpen] = useState(false);
   const [openJobStatusMenuId, setOpenJobStatusMenuId] = useState<string | null>(null);
   const [isNewJobStatusMenuOpen, setIsNewJobStatusMenuOpen] = useState(false);
@@ -139,15 +166,17 @@ export default function ProjectEditPage() {
     id: 'new',
     name: form.name || 'New Project Draft',
     stage: form.stage || 'Draft',
+    projectType: form.projectType || 'public',
     image: form.image || 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     mapImage: form.mapImage || designVietnamMap,
-    documents: [],
+    documents: editableDocuments,
     createdByUserId: getDemoUserIdForRole(role),
     publishedAt: '',
   };
   const projectAssignments = isCreateMode ? [] : requiredDataAssignments.filter((item) => item.projectId === activeProject.id);
   const projectJobItems = isCreateMode ? [] : projectJobs.filter((item) => item.projectId === activeProject.id);
   const editableProjectJobs = isCreateMode ? draftProjectJobs : projectJobItems;
+  const hasUploadedDocuments = editableDocuments.length > 0;
   const hasProjectJobAttachments = editableProjectJobs.some((item) => (item.attachments ?? []).length > 0);
   const draftCompletedJobCount = draftProjectJobs.filter((item) => item.status === 'complete').length;
   const processingSummary = isCreateMode
@@ -194,6 +223,7 @@ export default function ProjectEditPage() {
     setForm({
       name: project?.name ?? '',
       sector: project?.sector ?? 'Infrastructure',
+      projectType: project?.projectType ?? 'public',
       province: project?.province ?? 'Ho Chi Minh City',
       location: project?.location ?? 'ho-chi-minh-city',
       budget: String(project?.budget ?? 0),
@@ -207,6 +237,7 @@ export default function ProjectEditPage() {
       mapImage: project?.mapImage ?? designVietnamMap,
     });
     setDraftProjectJobs([]);
+    setEditableDocuments(project?.documents ?? []);
     setSaveFeedback(null);
   }, [project, isCreateMode]);
 
@@ -215,7 +246,7 @@ export default function ProjectEditPage() {
     projectAssignments.some((item) => item.status !== 'complete') ? t('Complete all required data items before final publication review.') : null,
     !editableProjectJobs.length ? t('Define at least one project job to establish the delivery process.') : null,
     editableProjectJobs.some((item) => item.status !== 'complete') ? t('Close outstanding project jobs to reach full processing readiness.') : null,
-    !hasProjectJobAttachments ? t('Upload at least one supporting document.') : null,
+    !(hasProjectJobAttachments || hasUploadedDocuments) ? t('Upload at least one supporting document.') : null,
   ].filter(Boolean) as string[];
 
   async function handleImageUpload(field: 'image' | 'mapImage', files: FileList | null) {
@@ -251,6 +282,16 @@ export default function ProjectEditPage() {
     deleteProjectJob(jobId);
   }
 
+  function handleProjectDocumentUpload(files: FileList | null) {
+    const nextDocuments = filesToDocuments(files);
+    if (!nextDocuments.length) return;
+    setEditableDocuments((current) => [...current, ...nextDocuments]);
+  }
+
+  function deleteProjectDocument(documentId: string) {
+    setEditableDocuments((current) => current.filter((item) => item.id !== documentId));
+  }
+
   function handleSave(event: React.FormEvent) {
     event.preventDefault();
     const nextStatus = normalizeProjectStatus(form.stage, form.stage);
@@ -259,6 +300,7 @@ export default function ProjectEditPage() {
       const projectId = createProject({
         name: nextName,
         sector: form.sector,
+        projectType: form.projectType,
         location: form.location,
         province: form.province,
         budget: Number(form.budget || 0),
@@ -271,6 +313,7 @@ export default function ProjectEditPage() {
         returnRate: form.returnRate.trim() || 'TBD',
         image: form.image,
         mapImage: form.mapImage,
+        documents: editableDocuments,
         jobs: 0,
       });
       draftProjectJobs.forEach((job) => {
@@ -309,6 +352,7 @@ export default function ProjectEditPage() {
     updateProject(activeProject.id, {
       ...activeProject,
       ...form,
+      documents: editableDocuments,
       budget: Number(form.budget || 0),
       minInvestment: Number(form.minInvestment || 0),
       status: nextStatus,
@@ -525,6 +569,13 @@ export default function ProjectEditPage() {
                         </select>
                       </label>
                       <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Type')}</span>
+                        <select value={form.projectType} onChange={(event) => handleChange('projectType', event.target.value)} className="app-input">
+                          <option value="public">{t('Public')}</option>
+                          <option value="private">{t('Private')}</option>
+                        </select>
+                      </label>
+                      <label className="space-y-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Stage')}</span>
                         <select value={form.stage} onChange={(event) => handleChange('stage', event.target.value)} className="app-input">
                           {PROJECT_STAGE_OPTIONS.map((stage) => (
@@ -621,6 +672,51 @@ export default function ProjectEditPage() {
               )}
 
               {activeTab === 'documents' && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{t('Document Upload')}</div>
+                      <div className="mt-1 text-sm text-slate-500">{t('Upload required files or simulate the intake package.')}</div>
+                    </div>
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+                      <Upload size={14} />
+                      {t('Upload')}
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(event) => {
+                          handleProjectDocumentUpload(event.target.files);
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {editableDocuments.length > 0 ? editableDocuments.map((document) => (
+                    <div key={document.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[4px] border border-slate-200 bg-slate-50 px-4 py-4">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900">{document.name}</div>
+                        <div className="mt-1 text-xs text-slate-500">{document.type} • {document.size} • {document.uploadedAt}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteProjectDocument(document.id)}
+                        className="inline-flex items-center gap-2 rounded-md border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50"
+                      >
+                        <Trash2 size={14} />
+                        {t('Remove')}
+                      </button>
+                    </div>
+                  )) : (
+                    <div className="rounded-[4px] border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+                      {t('No documents are available yet.')}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {false && (
                 <div className="space-y-3">
                   {activeProject.documents.length > 0 ? activeProject.documents.map((document) => (
                     <div key={document.id} className="rounded-[4px] border border-slate-200 bg-slate-50 px-4 py-4">

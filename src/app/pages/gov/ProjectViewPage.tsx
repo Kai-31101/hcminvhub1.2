@@ -51,7 +51,7 @@ export default function ProjectViewPage() {
     { id: 'phase-3', phase: 'Phase III', description: 'Digital infrastructure and IoT network integration', dueDate: 'Q1 2027', status: 'pending' },
   ]);
   const quickResources = [
-    ...(project.documents ?? []).slice(0, 2).map((document) => ({ id: document.id, label: document.name, action: () => downloadAttachment({ fileName: document.name, lastUploadDate: document.uploadedAt }) })),
+    ...(project.documents ?? []).slice(0, 2).map((document) => ({ id: document.id, label: document.name, action: () => downloadAttachment({ fileName: document.name, fileUrl: document.fileUrl, lastUploadDate: document.uploadedAt }) })),
     { id: 'resource-map', label: t('Master Plan Layout'), action: () => window.open(project.mapImage ?? project.image, '_blank', 'noopener,noreferrer') },
     { id: 'resource-summary', label: t('Project Summary Sheet'), action: () => window.open(`${workspaceBasePath}/projects/${project.id}/edit`, '_self') },
   ].slice(0, 3);
@@ -236,7 +236,7 @@ export default function ProjectViewPage() {
                   <button
                     key={document.id}
                     type="button"
-                    onClick={() => downloadAttachment({ fileName: document.name, lastUploadDate: document.uploadedAt })}
+                    onClick={() => downloadAttachment({ fileName: document.name, fileUrl: document.fileUrl, lastUploadDate: document.uploadedAt })}
                     className="flex w-full items-center justify-between rounded-[2px] border border-[rgba(224,192,177,0.12)] bg-[#f7f9fb] px-5 py-4 text-left"
                   >
                     <div>

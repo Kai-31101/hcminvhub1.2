@@ -6,9 +6,9 @@ import { translateText } from '../utils/localization';
 import {
   LayoutDashboard, Search, FileText, ClipboardList,
   Settings, Users, Building2, Bell, ChevronDown, LogOut, Menu, X,
-  FolderOpen, BarChart3, Wrench, Shield, MapPin, Package,
+  FolderOpen, Wrench, MapPin, Package,
   HardHat, Milestone, Globe, ChevronRight,
-  Home, Activity,
+  Home, Activity, Heart,
 } from 'lucide-react';
 
 interface NavItem {
@@ -23,6 +23,7 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
     label: 'Investor Portal',
     items: [
       { label: 'Project Explorer', path: '/investor/explorer', icon: <Search size={18} /> },
+      { label: 'My Watchlist', path: '/investor/watchlist', icon: <Heart size={18} /> },
       { label: 'Execution Workspace', path: '/investor/execution', icon: <Activity size={18} /> },
     ],
   },
@@ -50,8 +51,6 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
     label: 'Executive View',
     items: [
       { label: 'Executive Dashboard', path: '/executive/dashboard', icon: <LayoutDashboard size={18} /> },
-      { label: 'Analytics', path: '/executive/analytics', icon: <BarChart3 size={18} /> },
-      { label: 'Risk Monitor', path: '/executive/risks', icon: <Shield size={18} /> },
     ],
   },
 };

@@ -4,6 +4,7 @@ import { ArrowRight, Headset, Landmark, Map, MapPin, Search, Send, Star, Trendin
 import { useApp } from '../../context/AppContext';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
+import { InvestmentMapModal } from '../../components/InvestmentMapModal';
 import { Input } from '../../components/ui/input';
 import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -90,6 +91,7 @@ export default function ExplorerPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isPaginationMode, setIsPaginationMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isInvestmentMapOpen, setIsInvestmentMapOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ExplorerModal>(null);
   const [interestForm, setInterestForm] = useState({
     ...initialInterestForm,
@@ -460,7 +462,7 @@ export default function ExplorerPage() {
 
               <button
                 type="button"
-                onClick={() => heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                onClick={() => setIsInvestmentMapOpen(true)}
                 className="inline-flex h-[60px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
               >
                 <Map size={18} />
@@ -1073,6 +1075,14 @@ export default function ExplorerPage() {
           )}
         </ExplorerActionModal>
       )}
+      <InvestmentMapModal
+        open={isInvestmentMapOpen}
+        onOpenChange={setIsInvestmentMapOpen}
+        projects={filteredProjects}
+        language={language}
+        title={t('Investment Opportunity Map')}
+        description={t('Explore the projects currently matching your explorer filters in the interactive map workspace.')}
+      />
     </div>
   );
 }

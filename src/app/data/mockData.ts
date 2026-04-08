@@ -8,6 +8,9 @@ export interface Project {
   createdAt?: string;
   updatedAt?: string;
   name: string;
+  nameVi?: string;
+  nameEn?: string;
+  projectType: 'public' | 'private';
   sector: string;
   location: string;
   province: string;
@@ -16,9 +19,13 @@ export interface Project {
   status: ProjectStatus;
   stage: string;
   description: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
   image: string;
   mapImage?: string;
   highlights: string[];
+  highlightsVi?: string[];
+  highlightsEn?: string[];
   returnRate: string;
   timeline: string;
   landArea: string;
@@ -35,6 +42,9 @@ export interface Project {
 export interface Document {
   id: string;
   name: string;
+  nameVi?: string;
+  nameEn?: string;
+  fileUrl?: string;
   type: string;
   size: string;
   uploadedAt: string;
@@ -43,9 +53,15 @@ export interface Document {
 export interface QAItem {
   id: string;
   question: string;
+  questionVi?: string;
+  questionEn?: string;
   askedBy: string;
+  askedByVi?: string;
+  askedByEn?: string;
   askedAt: string;
   answer?: string;
+  answerVi?: string;
+  answerEn?: string;
   answeredAt?: string;
 }
 
@@ -118,7 +134,11 @@ export interface Milestone {
   projectId?: string;
   projectName?: string;
   phase: string;
+  phaseVi?: string;
+  phaseEn?: string;
   description: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
   dueDate: string;
   completedDate?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'delayed';
@@ -220,6 +240,123 @@ const sectorTagColorBySector: Record<string, string> = {
   Logistics: 'bg-orange-100 text-orange-700',
   Education: 'bg-indigo-100 text-indigo-700',
 };
+
+type ImportedProjectSeed = {
+  id: string;
+  slug: string;
+  name: string;
+  nameVi: string;
+  sector: string;
+  district: string;
+  status: string;
+  ownerType: 'GOVERNMENT' | 'PRIVATE';
+  investmentMinUsd: number;
+  investmentMaxUsd: number;
+  isPriority: boolean;
+};
+
+function mapImportedProjectStatus(status: string): ProjectStatus {
+  switch (status) {
+    case 'PUBLISHED':
+    case 'ATTRACTING_INTEREST':
+      return 'published';
+    case 'IN_PROCESS':
+    case 'APPROVED':
+    case 'EXECUTING':
+      return 'processing';
+    case 'COMPLETED':
+      return 'completed';
+    case 'PENDING_APPROVAL':
+    default:
+      return 'draft';
+  }
+}
+
+function mapImportedProjectLocation(district: string) {
+  switch (district) {
+    case 'Thu Duc':
+      return administrativeLocationMasterData.thuDucWard;
+    case 'Can Gio':
+      return administrativeLocationMasterData.canGioCommune;
+    case 'Nha Be':
+      return administrativeLocationMasterData.hiepPhuocCommune;
+    case 'District 7':
+      return administrativeLocationMasterData.phuThuanWard;
+    case 'Binh Chanh':
+      return administrativeLocationMasterData.binhChanhCommune;
+    case 'District 1':
+      return administrativeLocationMasterData.saiGonWard;
+    case 'District 12':
+      return administrativeLocationMasterData.tangNhonPhuWard;
+    case 'Binh Thanh':
+      return administrativeLocationMasterData.tanDinhWard;
+    case 'District 5':
+      return administrativeLocationMasterData.binhPhuWard;
+    case 'Hoc Mon':
+      return administrativeLocationMasterData.dongThanhCommune;
+    case 'Cu Chi':
+      return administrativeLocationMasterData.thaiMyCommune;
+    case 'District 2':
+      return administrativeLocationMasterData.anKhanhWard;
+    case 'Binh Duong':
+      return administrativeLocationMasterData.tangNhonPhuWard;
+    case 'Ba Ria-Vung Tau':
+      return administrativeLocationMasterData.canGioCommune;
+    case 'Tan Binh':
+      return administrativeLocationMasterData.tayThanhWard;
+    default:
+      return administrativeLocationMasterData.thuDucWard;
+  }
+}
+
+function mapImportedProjectProvince(district: string) {
+  switch (district) {
+    case 'Binh Duong':
+      return 'Binh Duong';
+    case 'Ba Ria-Vung Tau':
+      return 'Ba Ria - Vung Tau';
+    default:
+      return 'Ho Chi Minh City';
+  }
+}
+
+function mapImportedProjectOwnerAgencyId(sector: string) {
+  if (sector.includes('Infrastructure')) return 'ag7';
+  if (sector.includes('Logistics')) return 'ag5';
+  if (sector.includes('Healthcare') || sector.includes('Biotech')) return 'ag16';
+  if (sector.includes('High-Tech') || sector.includes('Digital') || sector.includes('Financial')) return 'ag14';
+  if (sector.includes('Real Estate') || sector.includes('Housing')) return 'ag8';
+  if (sector.includes('Renewable') || sector.includes('Clean Energy') || sector.includes('Circular')) return 'ag9';
+  if (sector.includes('Education')) return 'ag15';
+  if (sector.includes('Tourism')) return 'ag13';
+  if (sector.includes('AgriTech')) return 'ag6';
+  if (sector.includes('Manufacturing')) return 'ag5';
+  return 'ag3';
+}
+
+function mapImportedSectorColor(sector: string) {
+  if (sector.includes('Infrastructure')) return sectorTagColorBySector.Infrastructure;
+  if (sector.includes('Logistics')) return sectorTagColorBySector.Logistics;
+  if (sector.includes('Healthcare') || sector.includes('Biotech')) return sectorTagColorBySector.Healthcare;
+  if (sector.includes('High-Tech') || sector.includes('Digital') || sector.includes('Financial')) return sectorTagColorBySector.Technology;
+  if (sector.includes('Real Estate') || sector.includes('Housing')) return 'bg-slate-100 text-slate-700';
+  if (sector.includes('Renewable') || sector.includes('Clean Energy') || sector.includes('Circular')) return sectorTagColorBySector.Energy;
+  if (sector.includes('Education')) return sectorTagColorBySector.Education;
+  if (sector.includes('Tourism')) return sectorTagColorBySector.Tourism;
+  if (sector.includes('AgriTech')) return sectorTagColorBySector.Agriculture;
+  if (sector.includes('Manufacturing')) return sectorTagColorBySector.Manufacturing;
+  return 'bg-slate-100 text-slate-700';
+}
+
+function buildImportedProjectReturnRate(sector: string) {
+  if (sector.includes('Infrastructure') || sector.includes('Logistics')) return '10-13% IRR';
+  if (sector.includes('High-Tech') || sector.includes('Digital') || sector.includes('Financial')) return '13-17% IRR';
+  if (sector.includes('Healthcare') || sector.includes('Biotech')) return '11-14% IRR';
+  if (sector.includes('Tourism') || sector.includes('Real Estate') || sector.includes('Housing')) return '12-15% IRR';
+  if (sector.includes('Renewable') || sector.includes('Clean Energy') || sector.includes('Circular')) return '10-12% IRR';
+  if (sector.includes('AgriTech') || sector.includes('Education')) return '9-12% IRR';
+  return '10-14% IRR';
+}
 
 type GeneratedProjectSeed = Omit<Project, 'stage' | 'image' | 'sector_tag_color' | 'documents' | 'qa' | 'milestones'> & {
   documentName: string;
@@ -536,6 +673,7 @@ const additionalMockProjects: Project[] = generatedProjectSeeds.map((seed, index
   updatedAt: seed.updatedAt,
   publishedAt: seed.publishedAt,
   name: seed.name,
+  projectType: 'public',
   sector: seed.sector,
   location: seed.location,
   province: seed.province,
@@ -582,7 +720,127 @@ const additionalMockProjects: Project[] = generatedProjectSeeds.map((seed, index
   ],
 }));
 
-export const projects: Project[] = [
+const importedExternalProjectSeeds: ImportedProjectSeed[] = [
+  { id: 's1', slug: 'metro-line-2-integration-hub', name: 'Metro Line 2 Integration Hub', nameVi: 'Trung tâm kết nối Metro tuyến 2', sector: 'Infrastructure & Urban', district: 'Thu Duc', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 350000000, investmentMaxUsd: 520000000, isPriority: true },
+  { id: 's2', slug: 'thu-thiem-smart-city-center', name: 'Thu Thiem Smart City Center', nameVi: 'Trung tâm thành phố thông minh Thủ Thiêm', sector: 'Real Estate & Smart Cities', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 1200000000, investmentMaxUsd: 2500000000, isPriority: true },
+  { id: 's3', slug: 'can-gio-deep-water-port', name: 'Can Gio Deep Water Port', nameVi: 'Cảng nước sâu Cần Giờ', sector: 'Logistics & Supply Chain', district: 'Can Gio', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 5500000000, investmentMaxUsd: 6000000000, isPriority: true },
+  { id: 's7', slug: 'can-gio-floating-solar-farm', name: 'Can Gio Floating Solar Farm', nameVi: 'Nhà máy điện mặt trời nổi Cần Giờ', sector: 'Renewable Energy', district: 'Can Gio', status: 'APPROVED', ownerType: 'GOVERNMENT', investmentMinUsd: 180000000, investmentMaxUsd: 250000000, isPriority: false },
+  { id: 's8', slug: 'hiep-phuoc-logistics-hub', name: 'Hiep Phuoc Logistics Hub', nameVi: 'Trung tâm logistics Hiệp Phước', sector: 'Logistics & Supply Chain', district: 'Nha Be', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 200000000, investmentMaxUsd: 320000000, isPriority: false },
+  { id: 's10', slug: 'binh-chanh-green-industrial-park', name: 'Binh Chanh Green Industrial Park', nameVi: 'Khu công nghiệp xanh Bình Chánh', sector: 'Clean Energy & Environment', district: 'Binh Chanh', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 450000000, investmentMaxUsd: 680000000, isPriority: false },
+  { id: 's12', slug: 'shtp-semiconductor-foundry', name: 'SHTP Semiconductor Foundry', nameVi: 'Nhà máy bán dẫn SHTP', sector: 'High-Tech & Digital', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 2000000000, investmentMaxUsd: 3500000000, isPriority: false },
+  { id: 's16', slug: 'd12-biopharma-park', name: 'District 12 Biopharma Manufacturing Park', nameVi: 'Khu sản xuất dược sinh học Quận 12', sector: 'Biotech & Life Sciences', district: 'District 12', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 400000000, investmentMaxUsd: 650000000, isPriority: false },
+  { id: 's19', slug: 'thu-duc-water-treatment-3', name: 'Thu Duc Water Treatment Plant 3', nameVi: 'Nhà máy nước sạch Thủ Đức 3', sector: 'Infrastructure & Urban', district: 'Thu Duc', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 380000000, investmentMaxUsd: 520000000, isPriority: false },
+  { id: 's21', slug: 'cu-chi-high-tech-agriculture', name: 'Cu Chi High-Tech Agriculture Center', nameVi: 'Trung tâm nông nghiệp công nghệ cao Củ Chi', sector: 'AgriTech', district: 'Cu Chi', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 120000000, investmentMaxUsd: 180000000, isPriority: false },
+  { id: 'm7', slug: 'thu-thiem-mixed', name: 'Thu Thiem New Urban Area — Mixed-Use', nameVi: 'Khu Do thi moi Thu Thiem — Da nang', sector: 'Infrastructure & Urban', district: 'Thu Duc', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 100000000, investmentMaxUsd: 500000000, isPriority: true },
+  { id: 'm8', slug: 'd7-hospital', name: 'District 7 International Hospital Complex', nameVi: 'Tổ hợp bệnh viện quốc tế Quận 7', sector: 'Healthcare & Pharma', district: 'District 7', status: 'PUBLISHED', ownerType: 'GOVERNMENT', investmentMinUsd: 50000000, investmentMaxUsd: 100000000, isPriority: false },
+  { id: 'm21', slug: 'can-gio-port', name: 'Can Gio International Transshipment Port', nameVi: 'Cảng trung chuyển quốc tế Cần Giờ', sector: 'Logistics & Supply Chain', district: 'Can Gio', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 500000000, investmentMaxUsd: 1000000000, isPriority: true },
+  { id: 'm27', slug: 'brvt-lng', name: 'Ba Ria LNG Power Plant', nameVi: 'Nha may Dien LNG Ba Ria', sector: 'Renewable Energy', district: 'Ba Ria-Vung Tau', status: 'ATTRACTING_INTEREST', ownerType: 'GOVERNMENT', investmentMinUsd: 500000000, investmentMaxUsd: 1000000000, isPriority: true },
+  { id: 'm29', slug: 'brvt-petrochem', name: 'Long Son Petrochemical Complex Phase 2', nameVi: 'To hop Hoa dau Long Son Giai doan 2', sector: 'Renewable Energy', district: 'Ba Ria-Vung Tau', status: 'EXECUTING', ownerType: 'GOVERNMENT', investmentMinUsd: 1000000000, investmentMaxUsd: 2000000000, isPriority: true },
+  { id: 'm30', slug: 'nha-be-waterfront', name: 'Nha Be Waterfront Residential & Retail', nameVi: 'Khu dan cu & Thuong mai ven song Nha Be', sector: 'Real Estate & Smart Cities', district: 'Nha Be', status: 'PUBLISHED', ownerType: 'PRIVATE', investmentMinUsd: 40000000, investmentMaxUsd: 90000000, isPriority: false },
+];
+
+const importedExternalMockProjects: Project[] = importedExternalProjectSeeds.map((seed, index) => {
+  const normalizedStatus = mapImportedProjectStatus(seed.status);
+  const createdAt = `2024-04-${String((index % 20) + 1).padStart(2, '0')}`;
+  const updatedAt = `2024-05-${String((index % 20) + 1).padStart(2, '0')}`;
+  const publishedAt = normalizedStatus === 'draft' ? '' : updatedAt;
+  const minInvestment = Math.max(5, Math.round(seed.investmentMinUsd / 1_000_000));
+  const budget = Math.max(minInvestment, Math.round(seed.investmentMaxUsd / 1_000_000));
+
+  return {
+    id: seed.id,
+    createdByUserId: index % 2 === 0 ? 'u1' : 'u2',
+    ownerAgencyId: mapImportedProjectOwnerAgencyId(seed.sector),
+    createdAt,
+    updatedAt,
+    publishedAt,
+    name: seed.name,
+    nameVi: seed.nameVi,
+    nameEn: seed.name,
+    projectType: seed.ownerType === 'PRIVATE' ? 'private' : 'public',
+    sector: seed.sector,
+    location: mapImportedProjectLocation(seed.district),
+    province: mapImportedProjectProvince(seed.district),
+    budget,
+    minInvestment,
+    status: normalizedStatus,
+    stage: getProjectStageLabel(normalizedStatus),
+    description: `${seed.name} is an imported mock project normalized into the current HCMInvHub data model. The source pipeline labels this opportunity under ${seed.sector} in ${seed.district}, and the mock record keeps the original project ID while aligning ownership and location to the app's existing master-data rules.`,
+    descriptionVi: `${seed.nameVi} là dự án mock được nhập từ nguồn dữ liệu bên ngoài và chuẩn hóa theo mô hình dữ liệu hiện tại của HCMInvHub. Hồ sơ này giữ nguyên mã dự án gốc, đồng thời đồng bộ cơ quan phụ trách và địa bàn theo master data hiện có của hệ thống.`,
+    descriptionEn: `${seed.name} is an imported mock project normalized into the current HCMInvHub data model. The source pipeline labels this opportunity under ${seed.sector} in ${seed.district}, and the mock record keeps the original project ID while aligning ownership and location to the app's existing master-data rules.`,
+    image: generatedProjectImagePool[(index + 3) % generatedProjectImagePool.length],
+    highlights: [
+      seed.nameVi,
+      seed.ownerType === 'PRIVATE' ? 'Private-led source pipeline' : 'Government-led source pipeline',
+      seed.isPriority ? 'Priority shortlist project' : 'Expanded mock portfolio project',
+      `${minInvestment}-${budget}M USD investment band`,
+    ],
+    highlightsVi: [
+      seed.nameVi,
+      seed.ownerType === 'PRIVATE' ? 'Nguồn dữ liệu do khối tư nhân dẫn dắt' : 'Nguồn dữ liệu do khối nhà nước dẫn dắt',
+      seed.isPriority ? 'Dự án thuộc danh sách ưu tiên' : 'Dự án thuộc danh mục mock mở rộng',
+      `Biên độ vốn đầu tư ${minInvestment}-${budget} triệu USD`,
+    ],
+    highlightsEn: [
+      seed.nameVi,
+      seed.ownerType === 'PRIVATE' ? 'Private-led source pipeline' : 'Government-led source pipeline',
+      seed.isPriority ? 'Priority shortlist project' : 'Expanded mock portfolio project',
+      `${minInvestment}-${budget}M USD investment band`,
+    ],
+    returnRate: buildImportedProjectReturnRate(seed.sector),
+    timeline: seed.isPriority ? '2025-2033' : '2025-2030',
+    landArea: `${Math.max(18, Math.round(budget / 8))} ha`,
+    jobs: Math.max(1200, Math.round(budget * 22)),
+    followers: 90 + index * 13,
+    dataCompleteness: seed.isPriority ? 88 : 74,
+    sector_tag_color: mapImportedSectorColor(seed.sector),
+    documents: [
+      {
+        id: `d-${seed.id}-1`,
+        name: `${seed.slug}-investment-brief.pdf`,
+        nameVi: `Hồ sơ đầu tư ${seed.nameVi}.pdf`,
+        nameEn: `${seed.slug}-investment-brief.pdf`,
+        type: 'PDF',
+        size: `${(2.4 + (index % 5) * 0.6).toFixed(1)} MB`,
+        uploadedAt: updatedAt,
+      },
+    ],
+    qa: [
+      {
+        id: `q-${seed.id}-1`,
+        question: `What is the current coordination status for ${seed.name}?`,
+        questionVi: `Tình trạng điều phối hiện tại của dự án ${seed.nameVi} là gì?`,
+        questionEn: `What is the current coordination status for ${seed.name}?`,
+        askedBy: seed.ownerType === 'PRIVATE' ? 'Private Capital Desk' : 'Investor Relations Desk',
+        askedByVi: seed.ownerType === 'PRIVATE' ? 'Bộ phận hỗ trợ vốn tư nhân' : 'Bộ phận quan hệ nhà đầu tư',
+        askedByEn: seed.ownerType === 'PRIVATE' ? 'Private Capital Desk' : 'Investor Relations Desk',
+        askedAt: updatedAt,
+        answer: `This mock record indicates that ${seed.name} is aligned for ${seed.status.toLowerCase().replace(/_/g, ' ')} review and has been normalized to the current execution workspace structure.`,
+        answerVi: `Hồ sơ mock này cho thấy dự án ${seed.nameVi} đang được căn chỉnh cho trạng thái ${seed.status.toLowerCase().replace(/_/g, ' ')} và đã được chuẩn hóa theo cấu trúc không gian triển khai hiện tại.`,
+        answerEn: `This mock record indicates that ${seed.name} is aligned for ${seed.status.toLowerCase().replace(/_/g, ' ')} review and has been normalized to the current execution workspace structure.`,
+        answeredAt: updatedAt,
+      },
+    ],
+    milestones: [
+      {
+        id: `m-${seed.id}-1`,
+        projectId: seed.id,
+        projectName: seed.name,
+        phase: 'Phase 1',
+        phaseVi: 'Giai đoạn 1',
+        phaseEn: 'Phase 1',
+        description: 'Imported mock pipeline normalization and launch planning',
+        descriptionVi: 'Chuẩn hóa dữ liệu mock nhập khẩu và lập kế hoạch khởi động',
+        descriptionEn: 'Imported mock pipeline normalization and launch planning',
+        dueDate: seed.isPriority ? '2025-09-30' : '2025-12-31',
+        status: normalizedStatus === 'completed' ? 'completed' : normalizedStatus === 'processing' ? 'in_progress' : 'pending',
+        progress: normalizedStatus === 'completed' ? 100 : normalizedStatus === 'processing' ? 42 : 0,
+      },
+    ],
+  };
+});
+
+const baseProjectRecords = [
   {
     id: 'p1',
     createdByUserId: 'u1',
@@ -794,7 +1052,13 @@ export const projects: Project[] = [
     milestones: [],
   },
   ...additionalMockProjects,
+  ...importedExternalMockProjects,
 ];
+
+export const projects: Project[] = baseProjectRecords.map((project) => ({
+  projectType: 'public',
+  ...project,
+}));
 
 export const opportunities: Opportunity[] = [
   {
@@ -1063,22 +1327,22 @@ function buildAgencyOfficers(agencyId: string, shortName: string, agencyIndex: n
 }
 
 const agencySeed: Array<{ id: string; nameVi: string; nameEn: string }> = [
-  { id: 'ag1', nameVi: 'S? N?i v?', nameEn: 'Department of Home Affairs' },
-  { id: 'ag2', nameVi: 'S? Tu ph�p', nameEn: 'Department of Justice' },
-  { id: 'ag3', nameVi: 'S? K? ho?ch v� �?u tu', nameEn: 'Department of Planning and Investment' },
-  { id: 'ag4', nameVi: 'S? T�i ch�nh', nameEn: 'Department of Finance' },
-  { id: 'ag5', nameVi: 'S? C�ng Thuong', nameEn: 'Department of Industry and Trade' },
-  { id: 'ag6', nameVi: 'S? N�ng nghi?p v� Ph�t tri?n n�ng th�n', nameEn: 'Department of Agriculture and Rural Development' },
-  { id: 'ag7', nameVi: 'S? Giao th�ng V?n t?i', nameEn: 'Department of Transport' },
-  { id: 'ag8', nameVi: 'S? X�y d?ng', nameEn: 'Department of Construction' },
-  { id: 'ag9', nameVi: 'S? T�i nguy�n v� M�i tru?ng', nameEn: 'Department of Natural Resources and Environment' },
-  { id: 'ag10', nameVi: 'S? Th�ng tin v� Truy?n th�ng', nameEn: 'Department of Information and Communications' },
-  { id: 'ag11', nameVi: 'S? Lao d?ng � Thuong binh v� X� h?i', nameEn: 'Department of Labor, War Invalids and Social Affairs' },
-  { id: 'ag12', nameVi: 'S? Van h�a v� Th? thao', nameEn: 'Department of Culture and Sports' },
-  { id: 'ag13', nameVi: 'S? Du l?ch', nameEn: 'Department of Tourism' },
-  { id: 'ag14', nameVi: 'S? Khoa h?c v� C�ng ngh?', nameEn: 'Department of Science and Technology' },
-  { id: 'ag15', nameVi: 'S? Gi�o d?c v� ��o t?o', nameEn: 'Department of Education and Training' },
-  { id: 'ag16', nameVi: 'S? Y t?', nameEn: 'Department of Medication' },
+  { id: 'ag1', nameVi: 'Sở Nội vụ', nameEn: 'Department of Home Affairs' },
+  { id: 'ag2', nameVi: 'Sở Tư pháp', nameEn: 'Department of Justice' },
+  { id: 'ag3', nameVi: 'Sở Kế hoạch và Đầu tư', nameEn: 'Department of Planning and Investment' },
+  { id: 'ag4', nameVi: 'Sở Tài chính', nameEn: 'Department of Finance' },
+  { id: 'ag5', nameVi: 'Sở Công Thương', nameEn: 'Department of Industry and Trade' },
+  { id: 'ag6', nameVi: 'Sở Nông nghiệp và Phát triển nông thôn', nameEn: 'Department of Agriculture and Rural Development' },
+  { id: 'ag7', nameVi: 'Sở Giao thông Vận tải', nameEn: 'Department of Transport' },
+  { id: 'ag8', nameVi: 'Sở Xây dựng', nameEn: 'Department of Construction' },
+  { id: 'ag9', nameVi: 'Sở Tài nguyên và Môi trường', nameEn: 'Department of Natural Resources and Environment' },
+  { id: 'ag10', nameVi: 'Sở Thông tin và Truyền thông', nameEn: 'Department of Information and Communications' },
+  { id: 'ag11', nameVi: 'Sở Lao động - Thương binh và Xã hội', nameEn: 'Department of Labor, War Invalids and Social Affairs' },
+  { id: 'ag12', nameVi: 'Sở Văn hóa và Thể thao', nameEn: 'Department of Culture and Sports' },
+  { id: 'ag13', nameVi: 'Sở Du lịch', nameEn: 'Department of Tourism' },
+  { id: 'ag14', nameVi: 'Sở Khoa học và Công nghệ', nameEn: 'Department of Science and Technology' },
+  { id: 'ag15', nameVi: 'Sở Giáo dục và Đào tạo', nameEn: 'Department of Education and Training' },
+  { id: 'ag16', nameVi: 'Sở Y tế', nameEn: 'Department of Medication' },
 ];
 
 export const agencies: Agency[] = agencySeed.map(({ id, nameVi, nameEn }, agencyIndex) => {

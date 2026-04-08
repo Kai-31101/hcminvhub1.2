@@ -10,6 +10,7 @@ import ExplorerPage from './pages/investor/ExplorerPage';
 import ProjectDetailPage from './pages/investor/ProjectDetailPage';
 import IntakeFormPage from './pages/investor/IntakeFormPage';
 import InvestorExecutionListPage from './pages/investor/InvestorExecutionListPage';
+import InvestorJoinedExecutionPage from './pages/investor/InvestorJoinedExecutionPage';
 import ExecutionWorkspacePage from './pages/investor/ExecutionWorkspacePage';
 
 // Gov Operator
@@ -22,8 +23,6 @@ import AdminPage from './pages/admin/AdminPage';
 
 // Executive
 import ExecutiveDashboardPage from './pages/executive/ExecutiveDashboardPage';
-import ExecutiveAnalyticsPage from './pages/executive/ExecutiveAnalyticsPage';
-import ExecutiveRiskMonitorPage from './pages/executive/ExecutiveRiskMonitorPage';
 
 function ProtectedLayout({ children, defaultRole }: { children: React.ReactNode; defaultRole: UserRole }) {
   const { role, setRole } = useApp();
@@ -66,7 +65,7 @@ export const router = createHashRouter([
   },
   {
     path: '/investor/execution',
-    element: <ProtectedLayout defaultRole="investor"><InvestorExecutionListPage /></ProtectedLayout>,
+    element: <ProtectedLayout defaultRole="investor"><InvestorJoinedExecutionPage /></ProtectedLayout>,
   },
   {
     path: '/investor/execution/:id',
@@ -78,7 +77,7 @@ export const router = createHashRouter([
   },
   {
     path: '/investor/watchlist',
-    element: <Navigate to="/investor/explorer" replace />,
+    element: <ProtectedLayout defaultRole="investor"><InvestorExecutionListPage /></ProtectedLayout>,
   },
   {
     path: '/investor/opportunities',
@@ -198,11 +197,11 @@ export const router = createHashRouter([
   },
   {
     path: '/executive/analytics',
-    element: <ProtectedLayout defaultRole="executive"><ExecutiveAnalyticsPage /></ProtectedLayout>,
+    element: <Navigate to="/executive/dashboard" replace />,
   },
   {
     path: '/executive/risks',
-    element: <ProtectedLayout defaultRole="executive"><ExecutiveRiskMonitorPage /></ProtectedLayout>,
+    element: <Navigate to="/executive/dashboard" replace />,
   },
 
   // Fallback

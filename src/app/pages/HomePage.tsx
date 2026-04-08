@@ -8,6 +8,7 @@ import { ExplorerFooter } from '../components/ExplorerFooter';
 import { ExplorerActionModal } from '../components/ExplorerActionModal';
 import { PublicPortalHeader } from '../components/PublicPortalHeader';
 import { ClearableSelectField } from '../components/ui/clearable-select-field';
+import { InvestmentMapModal } from '../components/InvestmentMapModal';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
@@ -156,6 +157,7 @@ export default function HomePage() {
   const [fastTrackNotice, setFastTrackNotice] = useState<string | null>(null);
   const [supportNotice, setSupportNotice] = useState<string | null>(null);
   const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
+  const [isInvestmentMapOpen, setIsInvestmentMapOpen] = useState(false);
   const [submissionDialog, setSubmissionDialog] = useState<'fast_track' | 'support' | null>(null);
   const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: 'Vietnam', sector: '', locationNeed: 'Ho Chi Minh City', investmentSize: '', investmentType: '', notes: '' });
   const [supportForm, setSupportForm] = useState<SupportDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', projectId: homeProjects[0]?.id ?? 'p1', topic: t('Project clarification and next-step coordination'), message: '', urgent: false });
@@ -167,7 +169,7 @@ export default function HomePage() {
         .join(' ')
         .toLowerCase();
       const district = getProjectAdministrativeLocation(project);
-      const projectType = 'public';
+      const projectType = project.projectType ?? DEFAULT_PROJECT_TYPE;
 
       let investmentRangeMatch = true;
       if (selectedInvestmentRange === '0-100') investmentRangeMatch = project.budget < 100;
@@ -272,8 +274,7 @@ export default function HomePage() {
   }
 
   function openHeroMapView() {
-    enterInteractiveHero();
-    heroSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setIsInvestmentMapOpen(true);
   }
 
   function resetExplorerFilters() {
@@ -1101,6 +1102,14 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      <InvestmentMapModal
+        open={isInvestmentMapOpen}
+        onOpenChange={setIsInvestmentMapOpen}
+        projects={filteredProjects}
+        language={language}
+        title={t('Investment Opportunity Map')}
+        description={t('Explore the projects currently matching your filters in the interactive map workspace.')}
+      />
       <ExplorerFooter />
     </div>
   );

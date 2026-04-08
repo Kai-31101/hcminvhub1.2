@@ -1,19 +1,46 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Calendar, CheckCircle2, Download, MapPin, Send, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Building2,
+  Calendar,
+  CalendarDays,
+  ChevronRight,
+  Download,
+  FileText,
+  Landmark,
+  MapPin,
+  Send,
+} from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router';
+import { ProjectPlanningInfrastructureSection } from '../../components/ProjectPlanningInfrastructureSection';
+import { ExplorerActionModal } from '../../components/ExplorerActionModal';
+import { StatusPill } from '../../components/ui/status-pill';
+import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { useApp } from '../../context/AppContext';
 import { getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
-import { ExplorerActionModal } from '../../components/ExplorerActionModal';
-import { ClearableSelectField } from '../../components/ui/clearable-select-field';
-import { DataRow } from '../../components/ui/data-row';
-import { StatusPill } from '../../components/ui/status-pill';
 import { downloadAttachment } from '../../utils/attachments';
+import {
+  getMockFollowedProjects,
+  getMockJoinedProjects,
+  getOrderedInvestorExecutionProjects,
+} from '../../utils/investorExecutionMockScenario';
 import { translateText } from '../../utils/localization';
 import { formatFollowerCount, getProjectFollowerCount } from '../../utils/projectFollowers';
 import { getProjectStageLabel, getProjectStatusTone } from '../../utils/projectStatus';
+import designVietnamMap from '../../assets/design-vietnam-map.png';
 
 type DetailAction = 'question' | 'meeting';
 type MeetingType = '' | 'Online' | 'Onsite';
+type DetailTab = 'overview' | 'location-land' | 'investment-details' | 'planning-infrastructure' | 'documents' | 'activity';
+
+const tabs: Array<{ id: DetailTab; label: string }> = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'location-land', label: 'Location & Land' },
+  { id: 'investment-details', label: 'Investment Details' },
+  { id: 'planning-infrastructure', label: 'Planning & Infrastructure' },
+  { id: 'documents', label: 'Documents' },
+  { id: 'activity', label: 'Activity' },
+];
 
 const initialQuestionForm = {
   question: '',
@@ -29,34 +56,13 @@ const initialMeetingForm = {
   assignedAgency: '',
 };
 
-function getJobStatusMeta(status: string, t: (value: string) => string) {
-  const normalizedStatus = status === 'complete' || status === 'completed' ? 'complete' : 'incomplete';
-  return normalizedStatus === 'complete'
-    ? { tone: 'success' as const, label: t('Completed') }
-    : { tone: 'info' as const, label: t('Processing') };
-}
-
-function getDueDateMeta(status: string, dueDate: string, t: (value: string) => string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dueDate);
-  target.setHours(0, 0, 0, 0);
-  const daysUntilDue = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (status === 'complete' || status === 'completed') {
-    return { tone: 'success' as const, label: `${t('Due date')}: ${dueDate}` };
-  }
-  if (daysUntilDue < 0) return { tone: 'danger' as const, label: `${t('Due date')}: ${dueDate} • ${t('Overdue')} ${Math.abs(daysUntilDue)} ${t('days')}` };
-  if (daysUntilDue === 5 || daysUntilDue === 10) return { tone: 'warning' as const, label: `${t('Due date')}: ${dueDate} • ${t('Due in')} ${daysUntilDue} ${t('days')}` };
-  return { tone: 'default' as const, label: `${t('Due date')}: ${dueDate}` };
-}
-
 export default function ExecutionWorkspacePage() {
   const { id } = useParams();
   const {
     language,
     projects,
+    watchlist,
     agencies,
-    users,
     projectJobs,
     getProjectProcessingSummary,
     activeInvestorCompany,
@@ -65,43 +71,82 @@ export default function ExecutionWorkspacePage() {
     updateProject,
   } = useApp();
   const t = (value: string) => translateText(value, language);
+  const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [activeAction, setActiveAction] = useState<DetailAction | null>(null);
   const [actionStep, setActionStep] = useState<'form' | 'success'>('form');
   const [submittedReference, setSubmittedReference] = useState('');
   const [questionForm, setQuestionForm] = useState(initialQuestionForm);
   const [meetingForm, setMeetingForm] = useState(initialMeetingForm);
 
-  const joinedOpportunities = useMemo(
-    () => opportunities.filter((item) => item.investorCompany === activeInvestorCompany),
-    [activeInvestorCompany, opportunities],
-  );
-  const joinedProjectIds = Array.from(new Set(joinedOpportunities.map((item) => item.projectId)));
-  const project = projects.find((item) => item.id === id);
+  const orderedProjects = useMemo(() => getOrderedInvestorExecutionProjects(projects, watchlist), [projects, watchlist]);
+  const followedProjects = useMemo(() => getMockFollowedProjects(orderedProjects), [orderedProjects]);
+  const joinedProjects = useMemo(() => getMockJoinedProjects(followedProjects), [followedProjects]);
+  const followedProjectIds = useMemo(() => new Set(followedProjects.map((item) => item.id)), [followedProjects]);
+  const joinedProjectIds = useMemo(() => new Set(joinedProjects.map((item) => item.id)), [joinedProjects]);
+  const project = followedProjects.find((item) => item.id === id) ?? projects.find((item) => item.id === id);
 
-  if (!project) {
+  if (!project || !followedProjectIds.has(project.id)) {
     return <Navigate to="/investor/execution" replace />;
   }
 
-  if (!joinedProjectIds.includes(project.id)) {
-    return <Navigate to="/investor/execution" replace />;
-  }
-
-  const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
-  const overviewRows = [
-    ['Name', project.name],
-    ['Sector', project.sector],
-    ['Province', project.province],
-    ['Location', locationLabel],
-    ['Budget (USD M)', String(project.budget)],
-    ['Minimum Investment (USD M)', String(project.minInvestment)],
-    ['Timeline', project.timeline],
-    ['Expected IRR', project.returnRate],
-    ['Land Area', project.landArea],
-    ['Project Stage', getProjectStageLabel(project.status, project.stage)],
-  ];
   const projectJobItems = projectJobs.filter((item) => item.projectId === project.id);
-  const followerCount = getProjectFollowerCount(project);
   const processingSummary = getProjectProcessingSummary(project.id);
+  const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
+  const followerCount = getProjectFollowerCount(project);
+  const ownerAgency = agencies.find((agency) => agency.id === project.ownerAgencyId) ?? agencies[0];
+  const ownerAgencyLabel = language === 'vi'
+    ? ownerAgency?.nameVi ?? ownerAgency?.name ?? t('Project owner pending')
+    : ownerAgency?.nameEn ?? ownerAgency?.name ?? t('Project owner pending');
+  const isJoinedProject = joinedProjectIds.has(project.id);
+  const summaryParagraphs = t(project.description).split(/\n+/).map((item) => item.trim()).filter(Boolean);
+  const milestoneRows = project.milestones?.length
+    ? project.milestones.slice(0, 3)
+    : [
+        {
+          id: `${project.id}-phase-1`,
+          phase: 'Phase I',
+          description: 'Site preparation and authority coordination package',
+          dueDate: project.timeline || 'Q4 2026',
+          status: 'in_progress' as const,
+          progress: 45,
+        },
+        {
+          id: `${project.id}-phase-2`,
+          phase: 'Phase II',
+          description: 'Capital structuring and investor onboarding milestone',
+          dueDate: 'Q2 2027',
+          status: 'pending' as const,
+          progress: 0,
+        },
+        {
+          id: `${project.id}-phase-3`,
+          phase: 'Phase III',
+          description: 'Construction mobilization and delivery readiness',
+          dueDate: 'Q4 2027',
+          status: 'pending' as const,
+          progress: 0,
+        },
+      ];
+  const quickResources = [
+    ...(project.documents ?? [])
+      .slice(0, 2)
+      .map((document) => ({
+        id: document.id,
+        label: document.name,
+        action: () => downloadAttachment({ fileName: document.name, fileUrl: document.fileUrl, lastUploadDate: document.uploadedAt }),
+      })),
+    {
+      id: 'resource-map',
+      label: t('Location Map'),
+      action: () => window.open(project.mapImage ?? project.image, '_blank', 'noopener,noreferrer'),
+    },
+    {
+      id: 'resource-brief',
+      label: t('Project Brief'),
+      action: () => window.open(project.image, '_blank', 'noopener,noreferrer'),
+    },
+  ].slice(0, 3);
+
   const agencyOptions = useMemo(
     () => Array.from(new Set(['Department of Planning and Investment', 'Investor Operations Team', ...agencies.map((agency) => agency.name)])),
     [agencies],
@@ -127,7 +172,7 @@ export default function ExecutionWorkspacePage() {
   }
 
   function handleQuestionSubmit() {
-    if (!project || !questionForm.question.trim()) return;
+    if (!questionForm.question.trim()) return;
 
     const questionText = questionForm.question.trim();
     const issueId = createIssue({
@@ -160,7 +205,7 @@ export default function ExecutionWorkspacePage() {
   }
 
   function handleMeetingSubmit() {
-    if (!project || !meetingForm.preferredDate || !meetingForm.preferredTime || !meetingForm.agenda.trim()) return;
+    if (!meetingForm.preferredDate || !meetingForm.preferredTime || !meetingForm.agenda.trim()) return;
 
     const requestId = createServiceRequest({
       serviceId: 'meeting-request',
@@ -186,153 +231,328 @@ export default function ExecutionWorkspacePage() {
     setActionStep('success');
   }
 
-  return (
-    <div className="page-shell space-y-6">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-        <Link to="/investor/execution" className="inline-flex items-center gap-1 text-slate-600 hover:text-sky-700">
-          <ArrowLeft size={14} />
-          {t('Joined Projects')}
-        </Link>
+  const renderOverview = () => (
+    <div className="space-y-8">
+      <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_332px]">
+        <div className="min-w-0 space-y-6">
+          <div>
+            <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-[#191c1e]">{t('Project Summary')}</h2>
+            <div className="mt-5 space-y-5 text-[16px] leading-[1.65] text-[#584237]">
+              {(summaryParagraphs.length ? summaryParagraphs : [t(project.description)]).slice(0, 2).map((paragraph, index) => (
+                <p key={`${project.id}-summary-${index}`}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[4px] bg-[#f2f4f6] p-6">
+            <div className="text-[14px] font-semibold uppercase tracking-[0.1em] text-[#455f87]">{t('Execution Highlights')}</div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {[
+                ['Land Area', project.landArea, 'text-[#191c1e]'],
+                ['Construction Period', project.timeline, 'text-[#191c1e]'],
+                ['Processing Readiness', `${processingSummary.percentage}%`, 'text-[#006398]'],
+                ['Project Jobs', `${projectJobItems.length}`, 'text-[#191c1e]'],
+              ].map(([label, value, tone]) => (
+                <div key={label} className="rounded-[2px] bg-white p-4">
+                  <div className="text-[10px] uppercase tracking-[0.08em] text-[#455f87]">{t(label)}</div>
+                  <div className={`mt-2 text-[18px] font-medium ${tone}`}>{t(value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[4px] border border-[rgba(224,192,177,0.14)] bg-[#fff8f3] p-6">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9d4300]">{t('Execution Relationship')}</div>
+            <div className="mt-3 text-sm leading-7 text-[#6a4634]">
+              {isJoinedProject
+                ? t('This project belongs to both the followed portfolio and the joined-project execution scope in the investor mock scenario.')
+                : t('This project is tracked inside the followed portfolio mock scope and remains available for monitoring before the investor formally joins execution.')}
+            </div>
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-4">
+          <div className="overflow-hidden rounded-[4px] border border-[rgba(224,192,177,0.14)] bg-white">
+            <img src={project.image} alt={t(project.name)} className="h-[220px] w-full object-cover" />
+            <div className="px-4 py-3 text-[11px] uppercase tracking-[0.08em] text-[#8c7164]">{t('Project Visual')}</div>
+          </div>
+          <div className="overflow-hidden rounded-[4px] border border-[rgba(224,192,177,0.14)] bg-white">
+            <img src={project.mapImage ?? designVietnamMap} alt={t('Location map')} className="h-[138px] w-full object-cover" />
+          </div>
+        </div>
       </div>
 
-      <section className="section-panel overflow-hidden p-0">
-        <div className="relative h-80">
-          <img src={project.image} alt={t(project.name)} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0c2d4a]/92 via-[#0c2d4a]/64 to-[#0c2d4a]/18" />
-          <div className="absolute left-6 top-6 z-10 rounded-none border border-white/60 bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9d4300] shadow-sm">
-            {formatFollowerCount(followerCount)} {t('followers')}
+      <div>
+        <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-[#191c1e]">{t('Investment Milestones')}</h2>
+        <div className="mt-5 overflow-x-auto rounded-[4px] border border-[rgba(224,192,177,0.12)] bg-white">
+          <div className="min-w-[700px]">
+            <div className="grid grid-cols-[120px_minmax(280px,1fr)_140px_130px] bg-[#eceef0] text-[10px] uppercase tracking-[0.08em] text-[#584237]">
+              <div className="px-5 py-3">{t('Phase')}</div>
+              <div className="px-5 py-3">{t('Milestone Description')}</div>
+              <div className="px-5 py-3">{t('Target Date')}</div>
+              <div className="px-5 py-3 text-center">{t('Status')}</div>
+            </div>
+            {milestoneRows.map((milestone, index) => (
+              <div
+                key={milestone.id}
+                className={`grid min-h-[76px] grid-cols-[120px_minmax(280px,1fr)_140px_130px] border-t border-[rgba(224,192,177,0.08)] text-[14px] ${
+                  index % 2 === 0 ? 'bg-[#f7f9fb]' : 'bg-[#f2f4f6]'
+                }`}
+              >
+                <div className="px-5 py-4 font-semibold leading-7 text-[#191c1e]">{t(milestone.phase)}</div>
+                <div className="px-5 py-4 leading-7 text-[#584237]">{t(milestone.description)}</div>
+                <div className="px-5 py-4 leading-7 text-[#191c1e]">{milestone.dueDate}</div>
+                <div className="flex items-center justify-center px-5 py-4">
+                  <span
+                    className={`inline-flex min-w-[96px] items-center justify-center whitespace-nowrap rounded-[14px] px-3 py-2 text-center text-[10px] uppercase leading-none tracking-[0.06em] ${
+                      milestone.status === 'in_progress' || milestone.status === 'completed'
+                        ? 'bg-[#b5d0fd] text-[#3e5980]'
+                        : 'bg-[#e0e3e5] text-[#584237]'
+                    }`}
+                  >
+                    {t(milestone.status === 'in_progress' || milestone.status === 'completed' ? 'In Progress' : 'Planned')}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="absolute inset-x-0 bottom-0 p-6 lg:p-8">
-            <div className="mb-3 flex flex-wrap gap-2">
-              <StatusPill tone="info">{t(project.sector)}</StatusPill>
-              <StatusPill tone="default">{t(project.province)}</StatusPill>
-              <StatusPill tone={getProjectStatusTone(project.status, project.stage)}>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMetricGrid = (items: Array<[string, string]>, cols: string) => (
+    <section className="rounded-[4px] bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+      <div className={`mt-0 grid gap-4 ${cols}`}>
+        {items.map(([label, value]) => (
+          <div key={label} className="rounded-[2px] bg-[#f7f9fb] p-5">
+            <div className="text-[10px] uppercase tracking-[0.08em] text-[#455f87]">{t(label)}</div>
+            <div className="mt-2 text-[20px] font-medium text-[#191c1e]">{t(value)}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  return (
+    <div className="page-shell pb-10">
+      <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-10">
+          <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.05em] text-[#455f87]">
+            <Link to="/investor/execution" className="inline-flex items-center gap-1 hover:text-[#9d4300]">
+              <ArrowLeft size={14} />
+              {t('Execution Workspace')}
+            </Link>
+            <ChevronRight size={12} />
+            <span>{t('Projects')}</span>
+            <ChevronRight size={12} />
+            <span className="text-[#9d4300]">{t(project.name)}</span>
+          </div>
+
+          <section className="space-y-6">
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-[12px] bg-[#ffdbca] px-3 py-1 text-[10px] uppercase tracking-[0.06em] text-[#341100]">
                 {t(getProjectStageLabel(project.status, project.stage))}
-              </StatusPill>
+              </span>
+              <span className="rounded-[12px] bg-[#d5e3ff] px-3 py-1 text-[10px] uppercase tracking-[0.06em] text-[#001c3b]">{t(project.province)}</span>
+              <span className="rounded-[12px] bg-[#e0e3e5] px-3 py-1 text-[10px] uppercase tracking-[0.06em] text-[#584237]">{t(project.sector)}</span>
+              <span className={`rounded-[12px] px-3 py-1 text-[10px] uppercase tracking-[0.06em] ${isJoinedProject ? 'bg-[#d7f5e8] text-[#195c3c]' : 'bg-[#fff1e7] text-[#9d4300]'}`}>
+                {isJoinedProject ? t('Joined Project') : t('Followed Project')}
+              </span>
             </div>
-            <h1 className="max-w-4xl text-white" style={{ fontSize: 'var(--text-3xl)' }}>
-              {t(project.name)}
-            </h1>
-            <div className="mt-2 flex items-center gap-2 text-sm text-blue-100">
-              <MapPin size={14} />
-              {locationLabel}
+
+            <h1 className="max-w-5xl text-[48px] leading-[1] tracking-[-0.04em] text-[#191c1e]">{t(project.name)}</h1>
+
+            <div className="flex flex-wrap items-center gap-6 pt-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[2px] bg-[#e0e3e5] text-[#455f87]"><Building2 size={18} /></div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.08em] text-[#455f87]">{t('Project Owner')}</div>
+                  <div className="text-[14px] text-[#191c1e]">{ownerAgencyLabel}</div>
+                </div>
+              </div>
+
+              <div className="h-8 w-px bg-[rgba(224,192,177,0.3)]" />
+
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[2px] bg-[#e0e3e5] text-[#455f87]"><Landmark size={18} /></div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.08em] text-[#455f87]">{t('Total Investment')}</div>
+                  <div className="text-[14px] font-medium text-[#9d4300]">${project.budget}M USD</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-[#455f87]">
+                <MapPin size={14} />
+                {locationLabel}
+              </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-3">
+          </section>
+
+          <section>
+            <div className="flex flex-nowrap gap-8 overflow-x-auto border-b border-[rgba(224,192,177,0.2)]">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`border-b-2 pb-[18px] pt-[2px] text-[14px] transition-colors ${
+                    activeTab === tab.id ? 'border-[#9d4300] text-[#9d4300]' : 'border-transparent text-[#455f87] hover:text-[#9d4300]'
+                  }`}
+                >
+                  {t(tab.label)}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'location-land' && renderMetricGrid([
+            ['Province', project.province],
+            ['Location', locationLabel],
+            ['Land Area', project.landArea],
+            ['Project Stage', project.stage],
+          ], 'lg:grid-cols-2')}
+          {activeTab === 'investment-details' && renderMetricGrid([
+            ['Total Investment', `$${project.budget}M USD`],
+            ['Minimum Investment', `$${project.minInvestment}M USD`],
+            ['Expected IRR', project.returnRate],
+            ['Construction Period', project.timeline],
+            ['Followers', `${formatFollowerCount(followerCount)} ${t('followers')}`],
+            ['Processing Readiness', `${processingSummary.percentage}%`],
+          ], 'lg:grid-cols-3')}
+          {activeTab === 'planning-infrastructure' && (
+            <ProjectPlanningInfrastructureSection
+              project={project}
+              projectJobs={projectJobItems}
+              agencies={agencies}
+              processingSummary={processingSummary}
+              t={t}
+            />
+          )}
+          {activeTab === 'documents' && (
+            <section className="rounded-[4px] bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <h2 className="text-[20px] font-semibold text-[#191c1e]">{t('Documents')}</h2>
+              <div className="mt-6 space-y-3">
+                {project.documents.length > 0 ? project.documents.map((document) => (
+                  <button
+                    key={document.id}
+                    type="button"
+                    onClick={() => downloadAttachment({ fileName: document.name, fileUrl: document.fileUrl, lastUploadDate: document.uploadedAt })}
+                    className="flex w-full items-center justify-between rounded-[2px] border border-[rgba(224,192,177,0.12)] bg-[#f7f9fb] px-5 py-4 text-left"
+                  >
+                    <div>
+                      <div className="text-[14px] font-medium text-[#191c1e]">{t(document.name)}</div>
+                      <div className="mt-1 text-[12px] text-[#584237]">{document.type} | {document.size}</div>
+                    </div>
+                    <Download size={16} className="text-[#9d4300]" />
+                  </button>
+                )) : (
+                  <div className="rounded-[2px] border border-dashed border-[rgba(224,192,177,0.2)] px-4 py-10 text-center text-sm text-slate-500">
+                    {t('No documents are available yet.')}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+          {activeTab === 'activity' && (
+            <section className="rounded-[4px] bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <h2 className="text-[20px] font-semibold text-[#191c1e]">{t('Activity')}</h2>
+              <div className="mt-6 space-y-4">
+                {project.qa.length > 0 ? project.qa.map((item) => (
+                  <div key={item.id} className="rounded-[2px] border border-[rgba(224,192,177,0.12)] bg-[#f7f9fb] p-5">
+                    <div className="text-[14px] font-medium text-[#191c1e]">{t(item.question)}</div>
+                    <div className="mt-2 text-[12px] text-[#584237]">{item.askedBy} | {item.askedAt}</div>
+                    {item.answer ? <div className="mt-3 text-sm leading-7 text-[#455f87]">{t(item.answer)}</div> : null}
+                  </div>
+                )) : (
+                  <div className="rounded-[2px] border border-dashed border-[rgba(224,192,177,0.2)] px-4 py-10 text-center text-sm text-slate-500">
+                    {t('No activity has been recorded for this project yet.')}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <aside className="space-y-4">
+          <div className="rounded-[4px] border-b-2 border-[rgba(224,192,177,0.2)] bg-white px-8 py-8 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <div className="text-[10px] uppercase tracking-[0.08em] text-[#455f87]">{t('Processing Readiness')}</div>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-[12px] bg-[#eceef0]">
+                <div className="h-full bg-[#9d4300]" style={{ width: `${Math.max(processingSummary.percentage, 10)}%` }} />
+              </div>
+              <div className="text-[14px] font-medium text-[#191c1e]">{processingSummary.percentage}%</div>
+            </div>
+
+            <div className="mt-6 space-y-3">
               <button
                 type="button"
                 onClick={() => openActionModal('meeting')}
-                className="rounded-md border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[2px] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-4 py-4 text-[14px] font-semibold text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]"
               >
+                <Calendar size={16} />
                 {t('Request Meeting')}
               </button>
               <button
                 type="button"
                 onClick={() => openActionModal('question')}
-                className="rounded-md border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[2px] border border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] px-4 py-4 text-[14px] font-semibold text-[#455f87] transition-colors hover:bg-[#fff1e7] hover:text-[#9d4300]"
               >
+                <Send size={16} />
                 {t('Ask Question')}
               </button>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <div className="space-y-6">
-        <section className="section-panel p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="section-heading mb-0">{t('Overview')}</h2>
-            <StatusPill tone="info">{t('Standard project record')}</StatusPill>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {overviewRows.map(([label, value]) => (
-              <DataRow key={label} className={label === 'Name' || label === 'Location' ? 'md:col-span-2' : ''}>
-                <div className="text-sm text-slate-500">{t(label)}</div>
-                <div className="text-sm font-semibold text-slate-900">{t(value)}</div>
-              </DataRow>
-            ))}
-            <div className="rounded-xl border border-border bg-slate-50 p-4 md:col-span-2">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Description')}</div>
-              <div className="text-sm leading-7 text-slate-700">{t(project.description)}</div>
+            <div className="mt-5 space-y-3">
+              {[
+                ['Followers', `${formatFollowerCount(followerCount)} ${t('followers')}`, Building2],
+                ['Updated', project.updatedAt ?? project.createdAt ?? '-', CalendarDays],
+                ['Documents', `${project.documents.length}`, FileText],
+              ].map(([label, value, Icon]) => (
+                <div key={label} className="flex items-center gap-3 rounded-[2px] bg-[#e6e8ea] px-4 py-4 text-left text-[13px] font-medium text-[#3e5980]">
+                  <Icon size={14} />
+                  <div className="flex-1">
+                    <div className="text-[11px] uppercase tracking-[0.08em] text-[#455f87]">{t(label)}</div>
+                    <div className="mt-1 text-[13px] text-[#191c1e]">{String(value)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 border-t border-[rgba(224,192,177,0.1)] pt-5">
+              <div className="text-[11px] uppercase tracking-[0.08em] text-[#8c7164]">{t('Execution Scope')}</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <StatusPill tone={getProjectStatusTone(project.status, project.stage)}>
+                  {t(getProjectStageLabel(project.status, project.stage))}
+                </StatusPill>
+                <StatusPill tone={isJoinedProject ? 'success' : 'warning'}>
+                  {isJoinedProject ? t('Joined Project') : t('Followed Project')}
+                </StatusPill>
+              </div>
             </div>
           </div>
-        </section>
 
-        <section className="section-panel p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="section-heading mb-0">{t('Project Jobs')}</h2>
-            <StatusPill tone={processingSummary.completed === processingSummary.total && processingSummary.total > 0 ? 'success' : 'info'}>
-              {processingSummary.completed}/{processingSummary.total}
-            </StatusPill>
+          <div className="rounded-[4px] bg-[#455f87] p-6">
+            <div className="text-[12px] uppercase tracking-[0.1em] text-[#ffdbca]">{t('Quick Resources')}</div>
+            <div className="mt-4 space-y-3">
+              {quickResources.map((resource) => (
+                <button
+                  key={resource.id}
+                  type="button"
+                  onClick={resource.action}
+                  className="flex w-full items-center gap-3 text-left text-[12px] text-white"
+                >
+                  <Download size={12} />
+                  <span className="flex-1">{t(resource.label)}</span>
+                  <ChevronRight size={12} />
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            {projectJobItems.length > 0 ? (
-              projectJobItems.map((job) => {
-                const agency = agencies.find((item) => item.id === job.agencyId);
-                const statusMeta = getJobStatusMeta(job.status, t);
-                const dueDateMeta = getDueDateMeta(job.status, job.dueDate, t);
-                return (
-                  <div key={job.id} className="rounded-xl border border-border bg-white p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-slate-900">{t(job.title)}</div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <StatusPill tone={statusMeta.tone}>{statusMeta.label}</StatusPill>
-                            <StatusPill tone={dueDateMeta.tone}>{dueDateMeta.label}</StatusPill>
-                          </div>
-                        </div>
-                        <div className="mt-1 text-sm text-slate-600">{t(job.description)}</div>
-                        <div className="mt-2 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
-                          <div>{t('Coordinating Unit')}: {agency?.name ?? '-'}</div>
-                        </div>
-                        {job.note ? (
-                          <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                            {t(job.note)}
-                          </div>
-                        ) : null}
-                        <div className="mt-3">
-                          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                            {t('Attachment list')}
-                          </div>
-                          <div className="space-y-2">
-                            {(job.attachments ?? []).length > 0 ? (
-                                (job.attachments ?? []).map((file) => (
-                                  <div
-                                    key={`${file.fileName}-${file.lastUploadDate ?? ''}`}
-                                    className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600"
-                                  >
-                                    <div className="flex min-w-0 items-center gap-3">
-                                      <button
-                                        type="button"
-                                        onClick={() => downloadAttachment(file)}
-                                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-[rgba(224,192,177,0.18)] bg-white text-[#9d4300] transition-colors hover:bg-[#fff1e7]"
-                                        aria-label={`${t('Download')} ${t(file.fileName)}`}
-                                      >
-                                        <Download size={14} />
-                                      </button>
-                                      <span className="truncate">{t(file.fileName)}</span>
-                                    </div>
-                                    <span className="shrink-0">{file.lastUploadDate || '-'}</span>
-                                  </div>
-                                ))
-                            ) : (
-                              <div className="text-xs text-slate-500">-</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
-                {t('No project jobs have been defined for this project yet.')}
-              </div>
-            )}
-          </div>
-        </section>
+        </aside>
       </div>
+
       {activeAction && (
         <ExplorerActionModal
           onClose={closeActionModal}

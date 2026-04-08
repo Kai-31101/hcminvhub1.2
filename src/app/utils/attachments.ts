@@ -1,5 +1,9 @@
 import { AttachmentItem } from '../context/AppContext';
 
+const bundledAttachmentUrls: Record<string, string> = {
+  'TM QHPK THI TRAN BEN DAU.pdf': '/documents/TM%20QHPK%20THI%20TRAN%20BEN%20DAU.pdf',
+};
+
 function triggerBrowserDownload(url: string, fileName: string) {
   const link = document.createElement('a');
   link.href = url;
@@ -9,9 +13,15 @@ function triggerBrowserDownload(url: string, fileName: string) {
   document.body.removeChild(link);
 }
 
+export function getBundledAttachmentUrl(fileName: string) {
+  return bundledAttachmentUrls[fileName];
+}
+
 export function downloadAttachment(file: AttachmentItem) {
-  if (file.fileUrl) {
-    triggerBrowserDownload(file.fileUrl, file.fileName);
+  const resolvedUrl = file.fileUrl ?? getBundledAttachmentUrl(file.fileName);
+
+  if (resolvedUrl) {
+    triggerBrowserDownload(resolvedUrl, file.fileName);
     return;
   }
 
