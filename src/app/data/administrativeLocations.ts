@@ -169,6 +169,26 @@ export const administrativeLocationOptions = [
   'Phường Thới Hòa',
 ] as const;
 
+export const administrativeLocationMasterData = {
+  saiGonWard: 'Phường Sài Gòn',
+  tanDinhWard: 'Phường Tân Định',
+  binhPhuWard: 'Phường Bình Phú',
+  tanThuanWard: 'Phường Tân Thuận',
+  phuThuanWard: 'Phường Phú Thuận',
+  tayThanhWard: 'Phường Tây Thạnh',
+  phuThoHoaWard: 'Phường Phú Thọ Hòa',
+  thuDucWard: 'Phường Thủ Đức',
+  tangNhonPhuWard: 'Phường Tăng Nhơn Phú',
+  anKhanhWard: 'Phường An Khánh',
+  canGioCommune: 'Xã Cần Giờ',
+  thanhAnCommune: 'Xã Thanh An',
+  thaiMyCommune: 'Xã Thái Mỹ',
+  binhChanhCommune: 'Xã Bình Chánh',
+  nhuanDucCommune: 'Xã Nhuận Đức',
+  dongThanhCommune: 'Xã Đông Thạnh',
+  hiepPhuocCommune: 'Xã Hiệp Phước',
+} as const;
+
 function stripVietnameseDiacritics(value: string) {
   return value
     .normalize('NFD')
@@ -194,15 +214,16 @@ export function getAdministrativeLocationLabel(value: string, language: 'en' | '
 }
 
 const projectAdministrativeLocationById: Record<string, string> = {
-  p1: 'Phường Thủ Đức',
-  p2: 'Xã Cần Giờ',
-  p3: 'Xã Thái Mỹ',
-  p4: 'Phường An Khánh',
-  p5: 'Phường Tăng Nhơn Phú',
-  p6: 'Xã Nhuận Đức',
+  p1: administrativeLocationMasterData.thuDucWard,
+  p2: administrativeLocationMasterData.canGioCommune,
+  p3: administrativeLocationMasterData.thaiMyCommune,
+  p4: administrativeLocationMasterData.anKhanhWard,
+  p5: administrativeLocationMasterData.tangNhonPhuWard,
+  p6: administrativeLocationMasterData.nhuanDucCommune,
 };
 
 export function getProjectAdministrativeLocation(project: { id: string; location?: string }) {
   const locationFromProject = project.location?.split(',')[0]?.trim();
   return locationFromProject || projectAdministrativeLocationById[project.id] || '';
 }
+

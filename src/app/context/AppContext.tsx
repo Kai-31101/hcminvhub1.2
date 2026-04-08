@@ -41,8 +41,8 @@ export function getDemoUserIdForRole(role: UserRole | null): string {
 
 function getDefaultActiveUserId(role: UserRole | null, activeAgency?: Agency | null): string {
   if (role === 'gov_operator') {
-    const firstJob = cloneProjectJobs()[0];
-    return firstJob ? `${firstJob.agencyId}:${firstJob.userId}` : getDemoUserIdForRole(role);
+    const firstGovUser = cloneUsers().find((user) => user.role === 'Government Operator' && user.status === 'active');
+    return firstGovUser?.id ?? getDemoUserIdForRole(role);
   }
   if (role === 'agency') {
     const firstOfficerId = activeAgency?.peopleInCharge?.[0]?.id;
@@ -53,6 +53,13 @@ function getDefaultActiveUserId(role: UserRole | null, activeAgency?: Agency | n
 
 function getProjectWorkspaceBasePath(role: UserRole | null) {
   return role === 'agency' ? '/agency/projects' : '/gov/projects';
+}
+
+function getUserIdFromActiveWorkspaceUser(activeUserId: string, role: UserRole | null) {
+  if ((role === 'gov_operator' || role === 'agency') && activeUserId.includes(':')) {
+    return activeUserId.split(':')[1] ?? activeUserId;
+  }
+  return activeUserId;
 }
 
 function getOpportunityWorkspaceBasePath(role: UserRole | null) {
@@ -141,7 +148,7 @@ interface AppContextType {
   permits: Permit[];
   serviceRequests: ServiceRequest[];
   addNotification: (notification: Omit<Notification, 'id' | 'read' | 'time'> & { time?: string }) => void;
-  createProject: (project: Omit<Project, 'id' | 'followers' | 'dataCompleteness' | 'documents' | 'qa' | 'milestones' | 'highlights' | 'sector_tag_color' | 'image'> & Partial<Pick<Project, 'image' | 'sector_tag_color' | 'highlights'>>) => string;
+  createProject: (project: Omit<Project, 'id' | 'followers' | 'dataCompleteness' | 'documents' | 'qa' | 'milestones' | 'highlights' | 'sector_tag_color' | 'image'> & Partial<Pick<Project, 'image' | 'mapImage' | 'sector_tag_color' | 'highlights'>>) => string;
   updateProject: (projectId: string, changes: Partial<Project>) => void;
   publishProject: (projectId: string) => void;
   createOpportunity: (opportunity: Omit<Opportunity, 'id' | 'submittedAt' | 'updatedAt' | 'activities'>) => string;
@@ -240,7 +247,15 @@ function toKebabCase(value: string) {
 }
 
 function getNormalizedAgencyOwnership(agencyId: string, userId: string) {
-  const migratedAgencyId = agencyId === 'ag1' && userId === 'u3' ? 'ag6' : agencyId;
+  const legacyAgencyIdMap: Record<string, string> = {
+    ag17: 'ag8',
+    ag18: 'ag11',
+    ag20: 'ag14',
+    ag21: 'ag5',
+    ag35: 'ag13',
+    ag52: 'ag6',
+  };
+  const migratedAgencyId = legacyAgencyIdMap[agencyId] ?? (agencyId === 'ag1' && userId === 'u3' ? 'ag3' : agencyId);
   const migratedUserId = /^u[34]$/.test(userId) && /^ag\d+$/.test(migratedAgencyId) ? `${migratedAgencyId}-pic-1` : userId;
   return { agencyId: migratedAgencyId, userId: migratedUserId };
 }
@@ -317,8 +332,8 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       id: 'r1',
       projectId: 'p1',
       fieldName: 'Traffic impact assessment',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag7',
+      userId: 'ag7-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 10)),
       reminderDaysBefore: 10,
@@ -334,7 +349,7 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       projectId: 'p1',
       fieldName: 'Land boundary legal review',
       agencyId: 'ag2',
-      userId: 'u4',
+      userId: 'ag2-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 5)),
       reminderDaysBefore: 5,
@@ -349,8 +364,8 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       id: 'r3',
       projectId: 'p2',
       fieldName: 'Grid connection confirmation',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag5',
+      userId: 'ag5-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -3)),
       reminderDaysBefore: 5,
@@ -365,8 +380,8 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
       id: 'r4',
       projectId: 'p2',
       fieldName: 'Fire safety pre-clearance memo',
-      agencyId: 'ag2',
-      userId: 'u4',
+      agencyId: 'ag8',
+      userId: 'ag8-pic-1',
       status: 'complete',
       dueDate: toIsoDate(addDays(today, 14)),
       reminderDaysBefore: 10,
@@ -380,15 +395,15 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
   ];
 
   const agencyBySector: Record<string, string[]> = {
-    Infrastructure: ['ag17', 'ag5'],
-    Energy: ['ag13', 'ag6'],
-    Manufacturing: ['ag2', 'ag21'],
-    Tourism: ['ag3', 'ag35'],
-    Technology: ['ag7', 'ag20'],
-    Agriculture: ['ag10', 'ag52'],
-    Healthcare: ['ag18', 'ag6'],
-    Logistics: ['ag5', 'ag2'],
-    Education: ['ag4', 'ag6'],
+    Infrastructure: ['ag7', 'ag8'],
+    Energy: ['ag5', 'ag9'],
+    Manufacturing: ['ag5', 'ag8'],
+    Tourism: ['ag13', 'ag8'],
+    Technology: ['ag14', 'ag10'],
+    Agriculture: ['ag6', 'ag9'],
+    Healthcare: ['ag3', 'ag8'],
+    Logistics: ['ag7', 'ag5'],
+    Education: ['ag15', 'ag3'],
   };
   const generatedAssignments = baseProjects
     .filter((project) => Number(project.id.slice(1)) >= 7)
@@ -442,8 +457,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p1',
       title: 'Confirm traffic management interface',
       description: 'Validate final intersection phasing and construction detour routing before investor circulation.',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag7',
+      userId: 'ag7-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 10)),
       reminderDaysBefore: 10,
@@ -459,8 +474,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p1',
       title: 'Issue land-boundary confirmation note',
       description: 'Issue the signed coordination note confirming surveyed land boundaries for the investor pack.',
-      agencyId: 'ag2',
-      userId: 'u4',
+      agencyId: 'ag9',
+      userId: 'ag9-pic-1',
       status: 'complete',
       dueDate: toIsoDate(addDays(today, 5)),
       reminderDaysBefore: 5,
@@ -476,8 +491,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p2',
       title: 'Finalize interconnection work package',
       description: 'Close the agency review on interconnection works, energization dependencies, and handover sequencing.',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag5',
+      userId: 'ag5-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -4)),
       reminderDaysBefore: 10,
@@ -493,8 +508,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p2',
       title: 'Publish fire-safety readiness handoff',
       description: 'Publish the readiness handoff confirming fire-safety preconditions are cleared for the next phase.',
-      agencyId: 'ag2',
-      userId: 'u4',
+      agencyId: 'ag8',
+      userId: 'ag8-pic-1',
       status: 'complete',
       dueDate: toIsoDate(addDays(today, 8)),
       reminderDaysBefore: 5,
@@ -510,8 +525,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p1',
       title: 'Approve digital twin data exchange scope',
       description: 'Align final API boundaries and asset-data ownership for the city digital twin integration package.',
-      agencyId: 'ag5',
-      userId: 'u3',
+      agencyId: 'ag10',
+      userId: 'ag10-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 18)),
       reminderDaysBefore: 10,
@@ -527,8 +542,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p2',
       title: 'Secure temporary marine logistics corridor',
       description: 'Coordinate vessel access, temporary berthing, and oversized equipment routing for offshore delivery packages.',
-      agencyId: 'ag5',
-      userId: 'u3',
+      agencyId: 'ag7',
+      userId: 'ag7-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 5)),
       reminderDaysBefore: 5,
@@ -544,8 +559,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p2',
       title: 'Close environmental baseline addendum',
       description: 'Finalize the baseline addendum covering updated mangrove and coastal biodiversity observations.',
-      agencyId: 'ag2',
-      userId: 'u4',
+      agencyId: 'ag9',
+      userId: 'ag9-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 16)),
       reminderDaysBefore: 10,
@@ -561,8 +576,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p3',
       title: 'Issue customs machinery import checklist',
       description: 'Provide the investor-facing checklist for priority production equipment and HS-code verification.',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag5',
+      userId: 'ag5-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 10)),
       reminderDaysBefore: 10,
@@ -578,8 +593,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p3',
       title: 'Complete internal road alignment review',
       description: 'Review truck circulation, loading-bay access, and emergency turnaround geometry for the internal road package.',
-      agencyId: 'ag5',
-      userId: 'u3',
+      agencyId: 'ag7',
+      userId: 'ag7-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -6)),
       reminderDaysBefore: 5,
@@ -595,8 +610,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p3',
       title: 'Publish utilities handover matrix',
       description: 'Finalize the handover matrix for power, water, telecom, and wastewater connections by sub-zone.',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag8',
+      userId: 'ag8-pic-1',
       status: 'complete',
       dueDate: toIsoDate(addDays(today, 12)),
       reminderDaysBefore: 10,
@@ -612,8 +627,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p4',
       title: 'Confirm waterfront setback decision note',
       description: 'Close the internal decision note on waterfront setbacks, landscape buffer, and public promenade interface.',
-      agencyId: 'ag3',
-      userId: 'u4',
+      agencyId: 'ag13',
+      userId: 'ag13-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 5)),
       reminderDaysBefore: 5,
@@ -629,8 +644,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p4',
       title: 'Resolve convention center access lane revision',
       description: 'Resolve the revised vehicular access plan for peak event turnover and hotel guest separation.',
-      agencyId: 'ag5',
-      userId: 'u3',
+      agencyId: 'ag7',
+      userId: 'ag7-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -2)),
       reminderDaysBefore: 10,
@@ -646,8 +661,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p4',
       title: 'Prepare hospitality operator briefing pack',
       description: 'Prepare the investor and operator briefing pack covering visitor flow, room mix, and convention phasing.',
-      agencyId: 'ag3',
-      userId: 'u4',
+      agencyId: 'ag13',
+      userId: 'ag13-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 21)),
       reminderDaysBefore: 10,
@@ -663,8 +678,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p5',
       title: 'Validate clean-room utility assumptions',
       description: 'Review clean-room utility assumptions, backup power capacity, and early tenant fit-out dependencies.',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag14',
+      userId: 'ag14-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 10)),
       reminderDaysBefore: 10,
@@ -680,8 +695,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p5',
       title: 'Compile university partnership note',
       description: 'Compile the draft partnership note with nearby universities on talent pipeline and joint lab programming.',
-      agencyId: 'ag4',
-      userId: 'u4',
+      agencyId: 'ag15',
+      userId: 'ag15-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 24)),
       reminderDaysBefore: 10,
@@ -697,8 +712,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p5',
       title: 'Finalize startup incubation zoning note',
       description: 'Define the permitted incubation uses, maker-space allocation, and shared-services zoning note.',
-      agencyId: 'ag6',
-      userId: 'ag6-pic-1',
+      agencyId: 'ag3',
+      userId: 'ag3-pic-1',
       status: 'complete',
       dueDate: toIsoDate(addDays(today, 14)),
       reminderDaysBefore: 10,
@@ -714,8 +729,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p6',
       title: 'Update cold-chain operating model',
       description: 'Refresh the operating model for cold storage, inspection points, and same-day regional dispatch.',
-      agencyId: 'ag2',
-      userId: 'u4',
+      agencyId: 'ag6',
+      userId: 'ag6-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, -8)),
       reminderDaysBefore: 5,
@@ -748,8 +763,8 @@ function cloneProjectJobs(): ProjectJob[] {
       projectId: 'p6',
       title: 'Review wastewater pre-treatment concept',
       description: 'Review the pre-treatment concept for agro-processing discharge before external consultation.',
-      agencyId: 'ag2',
-      userId: 'u4',
+      agencyId: 'ag9',
+      userId: 'ag9-pic-1',
       status: 'incomplete',
       dueDate: toIsoDate(addDays(today, 17)),
       reminderDaysBefore: 10,
@@ -763,15 +778,15 @@ function cloneProjectJobs(): ProjectJob[] {
   ];
 
   const jobAgencyBySector: Record<string, string[]> = {
-    Infrastructure: ['ag17', 'ag5', 'ag6'],
-    Energy: ['ag13', 'ag6', 'ag17'],
-    Manufacturing: ['ag2', 'ag21', 'ag17'],
-    Tourism: ['ag3', 'ag35', 'ag17'],
-    Technology: ['ag7', 'ag20', 'ag6'],
-    Agriculture: ['ag10', 'ag52', 'ag13'],
-    Healthcare: ['ag18', 'ag6', 'ag17'],
-    Logistics: ['ag5', 'ag2', 'ag17'],
-    Education: ['ag4', 'ag6', 'ag17'],
+    Infrastructure: ['ag7', 'ag8', 'ag3'],
+    Energy: ['ag5', 'ag9', 'ag8'],
+    Manufacturing: ['ag5', 'ag8', 'ag14'],
+    Tourism: ['ag13', 'ag7', 'ag8'],
+    Technology: ['ag14', 'ag10', 'ag3'],
+    Agriculture: ['ag6', 'ag9', 'ag5'],
+    Healthcare: ['ag3', 'ag8', 'ag9'],
+    Logistics: ['ag7', 'ag5', 'ag8'],
+    Education: ['ag15', 'ag3', 'ag10'],
   };
   const generatedJobs = baseProjects
     .filter((project) => Number(project.id.slice(1)) >= 7)
@@ -1151,13 +1166,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const availableRoleUserIds = useMemo(() => {
     if (role === 'gov_operator') {
-      return Array.from(new Set(projectJobs.map((job) => `${job.agencyId}:${job.userId}`)));
+      return users
+        .filter((user) => user.role === 'Government Operator' && user.status === 'active')
+        .map((user) => user.id);
     }
     if (role === 'agency') {
       return activeAgency?.peopleInCharge?.map((person) => `${activeAgency.id}:${person.id}`) ?? [];
     }
     return [getDemoUserIdForRole(role)];
-  }, [activeAgency, projectJobs, role]);
+  }, [activeAgency, role, users]);
 
   const generatedRequiredDataNotifications = useMemo(() => {
     return requiredDataAssignments.flatMap((assignment) => {
@@ -1362,7 +1379,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const projectId = `p${Date.now()}`;
     const createdProject: Project = normalizeProjectRecord({
       id: projectId,
-      createdByUserId: getDemoUserIdForRole(role),
+      createdByUserId: getUserIdFromActiveWorkspaceUser(activeUserId, role) || getDemoUserIdForRole(role),
+      ownerAgencyId: project.ownerAgencyId ?? activeAgencyId ?? agencies[0]?.id,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0],
       followers: 0,

@@ -149,14 +149,16 @@ export function ProjectCard({
               </button>
             )}
             <div className="flex items-center gap-3">
-              <Link
-                to={`${workspaceBasePath}/projects/${project.id}/edit`}
-                className="inline-flex items-center gap-1 rounded-none border border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] px-3 py-2 text-xs font-semibold text-[#455f87] transition-colors hover:bg-[#fff1e7] hover:text-[#9d4300]"
-                title={translate('Edit')}
-              >
-                <Edit size={13} />
-                {translate('Edit')}
-              </Link>
+              {canManageProjects && (
+                <Link
+                  to={`${workspaceBasePath}/projects/${project.id}/edit`}
+                  className="inline-flex items-center gap-1 rounded-none border border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] px-3 py-2 text-xs font-semibold text-[#455f87] transition-colors hover:bg-[#fff1e7] hover:text-[#9d4300]"
+                  title={translate('Edit')}
+                >
+                  <Edit size={13} />
+                  {translate('Edit')}
+                </Link>
+              )}
               <Link
                 to={viewHref ?? `${workspaceBasePath}/projects/${project.id}`}
                 className="inline-flex items-center gap-1 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-4 py-2 text-xs font-semibold text-white shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]"

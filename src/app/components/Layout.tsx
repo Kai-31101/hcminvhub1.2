@@ -93,41 +93,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const nav = navConfig[role];
   const t = (value: string) => translateText(value, language);
-  const primaryProjectAssignmentKeys = Array.from(
-    new Set(
-      projects
-        .map((project) => {
-          const projectJobItems = projectJobs.filter((job) => job.projectId === project.id);
-          const primaryJob = projectJobItems.find((job) => job.status !== 'complete') ?? projectJobItems[0];
-          return primaryJob ? `${primaryJob.agencyId}:${primaryJob.userId}` : null;
-        })
-        .filter((value): value is string => Boolean(value)),
-    ),
-  );
   const availableUserOptions = role === 'gov_operator'
-    ? primaryProjectAssignmentKeys
-        .map((assignmentKey) => {
-          const [agencyId, userId] = assignmentKey.split(':');
-          const agency = agencies.find((item) => item.id === agencyId || item.peopleInCharge?.some((person) => person.id === userId));
-          const person = agency?.peopleInCharge?.find((item) => item.id === userId);
-          const fallbackUser = users.find((item) => item.id === userId);
-          const displayName = person?.name ?? fallbackUser?.name ?? userId;
-          const organization = agency?.name ?? fallbackUser?.organization ?? '';
-
-          return {
-            id: assignmentKey,
-            name: displayName,
-            org: organization,
-            avatar: displayName
-              .split(/\s+/)
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0]?.toUpperCase() ?? '')
-              .join(''),
-            color: 'bg-blue-600',
-          };
-        })
-        .filter((option) => option.org || option.name)
+    ? users
+        .filter((option) => option.role === 'Government Operator' && option.status === 'active')
+        .map((option) => ({
+          id: option.id,
+          name: option.name,
+          org: option.organization,
+          avatar: option.name
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase() ?? '')
+            .join(''),
+          color: 'bg-blue-600',
+        }))
     : role === 'agency' && activeAgency
       ? (activeAgency.peopleInCharge ?? []).map((person) => ({
           id: `${activeAgency.id}:${person.id}`,

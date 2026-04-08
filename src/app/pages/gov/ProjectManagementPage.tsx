@@ -65,7 +65,7 @@ function ManagementKpiCard({ labelLines, value, tone, support, onClick, isActive
 export default function ProjectManagementPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projects, agencies, users, opportunities, issues, serviceRequests, createProject, publishProject, requiredDataAssignments, getProjectDataCompletenessSummary, projectJobs, getProjectProcessingSummary, addNotification, language, role, activeUserId } = useApp();
+  const { projects, agencies, users, opportunities, issues, serviceRequests, publishProject, requiredDataAssignments, getProjectDataCompletenessSummary, projectJobs, getProjectProcessingSummary, addNotification, language, role, activeUserId } = useApp();
   const t = (value: string) => translateText(value, language);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -80,16 +80,15 @@ export default function ProjectManagementPage() {
   const canManageProjects = role !== 'agency';
   const isAgencyWorkspace = role === 'agency';
   const isRequestManagementRoute = isAgencyWorkspace && location.pathname === '/agency/request-management';
+  const currentGovCreatorId = role === 'gov_operator' && activeUserId.includes(':')
+    ? activeUserId.split(':')[1] ?? activeUserId
+    : activeUserId;
   const visibleProjects = useMemo(() => {
     if (role === 'gov_operator') {
-      return projects.filter((project) => {
-        const projectJobItems = projectJobs.filter((job) => job.projectId === project.id);
-        const primaryJob = projectJobItems.find((job) => job.status !== 'complete') ?? projectJobItems[0];
-        return primaryJob ? `${primaryJob.agencyId}:${primaryJob.userId}` === activeUserId : false;
-      });
+      return projects.filter((project) => project.createdByUserId === currentGovCreatorId);
     }
     return projects;
-  }, [activeUserId, projectJobs, projects, role]);
+  }, [currentGovCreatorId, projects, role]);
 
   function getProjectJobAlertSummary(projectId: string) {
     const today = new Date();
@@ -131,7 +130,8 @@ export default function ProjectManagementPage() {
             return [project.id, undefined];
           }
 
-          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
+          const agency = agencies.find((item) => item.id === primaryJob.agencyId);
+
           const user = users.find((item) => item.id === primaryJob.userId);
 
           return [
@@ -358,23 +358,8 @@ export default function ProjectManagementPage() {
   }, [issues, opportunities, requestSearch, serviceRequests, t, users]);
   const visibleRequestItems = showAllRequests ? requestItems : requestItems.slice(0, DEFAULT_LIST_COUNT);
 
-  const handleCreateProject = () => {
-    const projectId = createProject({
-      name: 'Dự án mới',
-      sector: 'Infrastructure',
-      location: 'Ho Chi Minh City',
-      province: 'Ho Chi Minh City',
-      budget: 0,
-      minInvestment: 0,
-      status: 'draft',
-      stage: 'Draft',
-      description: 'Mô tả chi tiết dự án',
-      timeline: 'TBD',
-      landArea: 'TBD',
-      returnRate: 'TBD',
-      jobs: 0,
-    });
-    navigate(`${workspaceBasePath}/projects/${projectId}/edit`);
+  const handleCreateDraftProject = () => {
+    navigate(`${workspaceBasePath}/projects/new/edit`);
   };
 
   const handleStartContact = (request: (typeof requestItems)[number]) => {
@@ -434,8 +419,8 @@ export default function ProjectManagementPage() {
         </div>
         {canManageProjects && !isRequestManagementRoute && (
           <button
-            onClick={handleCreateProject}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]"
+            onClick={handleCreateDraftProject}
+            className="inline-flex items-center gap-2 bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]"
           >
             <Plus size={16} />
             {t('Create Project')}
@@ -717,7 +702,6 @@ export default function ProjectManagementPage() {
           </div>
         </>
       )}
-
     </div>
   );
 }

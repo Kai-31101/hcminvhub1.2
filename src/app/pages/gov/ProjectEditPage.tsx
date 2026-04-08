@@ -1,17 +1,27 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowLeft, Check, ChevronDown, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { getDemoUserIdForRole, ProjectJob, useApp } from '../../context/AppContext';
+import { administrativeLocationOptions, getAdministrativeLocationLabel } from '../../data/administrativeLocations';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 import { translateText } from '../../utils/localization';
 import { normalizeProjectStatus, PROJECT_STAGE_OPTIONS } from '../../utils/projectStatus';
+import designVietnamMap from '../../assets/design-vietnam-map.png';
 
 type EditableStatus = 'incomplete' | 'complete';
 type ReminderDays = 5 | 10;
+type EditTab = 'overview' | 'location-land' | 'investment-details' | 'planning-infrastructure' | 'documents' | 'activity';
+type EditableProjectJob = ProjectJob;
 const PROJECT_JOB_STATUS_OPTIONS: Array<{ value: EditableStatus; label: 'Processing' | 'Completed' }> = [
   { value: 'incomplete', label: 'Processing' },
   { value: 'complete', label: 'Completed' },
+];
+const EDIT_TABS: Array<{ id: EditTab; label: string }> = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'location-land', label: 'Location & Land' },
+  { id: 'investment-details', label: 'Investment Details' },
+  { id: 'planning-infrastructure', label: 'Planning & Infrastructure' },
 ];
 
 function serializeAttachments(attachments?: Array<{ fileName: string; lastUploadDate?: string }>) {
@@ -40,6 +50,15 @@ function filesToAttachments(files: FileList | null) {
   }));
 }
 
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 function getAlertMeta(
   item: Pick<ProjectJob, 'status' | 'dueDate'>,
   t: (value: string) => string,
@@ -61,7 +80,9 @@ export default function ProjectEditPage() {
   const [searchParams] = useSearchParams();
   const {
     projects,
+    createProject,
     updateProject,
+    addNotification,
     language,
     agencies,
     requiredDataAssignments,
@@ -75,19 +96,22 @@ export default function ProjectEditPage() {
   const t = (value: string) => translateText(value, language);
   const project = useMemo(() => projects.find((item) => item.id === id), [id, projects]);
   const workspaceBasePath = role === 'agency' ? '/agency' : '/gov';
-  const canAccessProject = project && role !== 'agency' && (role !== 'gov_operator' || project.createdByUserId === getDemoUserIdForRole(role));
+  const isCreateMode = !id || id === 'new';
+  const canAccessProject = isCreateMode || Boolean(project && role !== 'agency' && (role !== 'gov_operator' || project.createdByUserId === getDemoUserIdForRole(role)));
   const [form, setForm] = useState(() => ({
     name: project?.name ?? '',
-    sector: project?.sector ?? '',
-    province: project?.province ?? '',
-    location: project?.location ?? '',
-    budget: String(project?.budget ?? ''),
-    minInvestment: String(project?.minInvestment ?? ''),
-    timeline: project?.timeline ?? '',
-    returnRate: project?.returnRate ?? '',
-    landArea: project?.landArea ?? '',
-    stage: project?.stage ?? '',
+    sector: project?.sector ?? 'Infrastructure',
+    province: project?.province ?? 'Ho Chi Minh City',
+    location: project?.location ?? 'ho-chi-minh-city',
+    budget: String(project?.budget ?? 0),
+    minInvestment: String(project?.minInvestment ?? 0),
+    timeline: project?.timeline ?? 'TBD',
+    returnRate: project?.returnRate ?? 'TBD',
+    landArea: project?.landArea ?? 'TBD',
+    stage: project?.stage ?? 'Draft',
     description: project?.description ?? '',
+    image: project?.image ?? 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    mapImage: project?.mapImage ?? designVietnamMap,
   }));
   const [newJob, setNewJob] = useState({
     title: '',
@@ -100,20 +124,57 @@ export default function ProjectEditPage() {
     note: '',
     attachmentListText: '',
   });
+  const [draftProjectJobs, setDraftProjectJobs] = useState<EditableProjectJob[]>([]);
   const [isStageMenuOpen, setIsStageMenuOpen] = useState(false);
   const [openJobStatusMenuId, setOpenJobStatusMenuId] = useState<string | null>(null);
   const [isNewJobStatusMenuOpen, setIsNewJobStatusMenuOpen] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<EditTab>('overview');
 
-  if (!project || !canAccessProject) {
+  if (!canAccessProject) {
     return <Navigate to={`${workspaceBasePath}/projects`} replace />;
   }
 
-  const activeProject = project;
-  const projectAssignments = requiredDataAssignments.filter((item) => item.projectId === activeProject.id);
-  const projectJobItems = projectJobs.filter((item) => item.projectId === activeProject.id);
-  const processingSummary = getProjectProcessingSummary(activeProject.id);
+  const activeProject = project ?? {
+    id: 'new',
+    name: form.name || 'New Project Draft',
+    stage: form.stage || 'Draft',
+    image: form.image || 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    mapImage: form.mapImage || designVietnamMap,
+    documents: [],
+    createdByUserId: getDemoUserIdForRole(role),
+    publishedAt: '',
+  };
+  const projectAssignments = isCreateMode ? [] : requiredDataAssignments.filter((item) => item.projectId === activeProject.id);
+  const projectJobItems = isCreateMode ? [] : projectJobs.filter((item) => item.projectId === activeProject.id);
+  const editableProjectJobs = isCreateMode ? draftProjectJobs : projectJobItems;
+  const hasProjectJobAttachments = editableProjectJobs.some((item) => (item.attachments ?? []).length > 0);
+  const draftCompletedJobCount = draftProjectJobs.filter((item) => item.status === 'complete').length;
+  const processingSummary = isCreateMode
+    ? {
+        completed: draftCompletedJobCount,
+        total: draftProjectJobs.length,
+        percentage: draftProjectJobs.length ? Math.round((draftCompletedJobCount / draftProjectJobs.length) * 100) : 0,
+      }
+    : getProjectProcessingSummary(activeProject.id);
   const isDataQualityMode = searchParams.get('focus') === 'data-quality';
+  const sectorOptions = useMemo(
+    () => Array.from(new Set(projects.map((item) => item.sector))).sort((left, right) => left.localeCompare(right)),
+    [projects],
+  );
+  const locationOptions = useMemo(
+    () => {
+      const values = form.location && !administrativeLocationOptions.includes(form.location as (typeof administrativeLocationOptions)[number])
+        ? [form.location, ...administrativeLocationOptions]
+        : [...administrativeLocationOptions];
+      return values.map((location) => ({ value: location, label: getAdministrativeLocationLabel(location, language) }));
+    },
+    [form.location, language],
+  );
   const projectJobFieldClass = 'app-input !border-slate-400 focus:!border-slate-500';
+  const selectedPerson = getAgencyPeopleInCharge(newJob.agencyId).find((person) => person.id === newJob.userId)
+    ?? getAgencyPeopleInCharge(newJob.agencyId)[0]
+    ?? null;
   const currentProjectStatus = normalizeProjectStatus(form.stage || activeProject.stage, form.stage || activeProject.stage);
   const lockProjectJobDueDates = currentProjectStatus !== 'draft';
   const projectStageBadgeClassMap = {
@@ -129,13 +190,42 @@ export default function ProjectEditPage() {
     complete: 'border-emerald-200 bg-emerald-100 text-emerald-900 focus:border-emerald-100 focus:ring-emerald-200/70',
   };
 
+  useEffect(() => {
+    setForm({
+      name: project?.name ?? '',
+      sector: project?.sector ?? 'Infrastructure',
+      province: project?.province ?? 'Ho Chi Minh City',
+      location: project?.location ?? 'ho-chi-minh-city',
+      budget: String(project?.budget ?? 0),
+      minInvestment: String(project?.minInvestment ?? 0),
+      timeline: project?.timeline ?? 'TBD',
+      returnRate: project?.returnRate ?? 'TBD',
+      landArea: project?.landArea ?? 'TBD',
+      stage: project?.stage ?? 'Draft',
+      description: project?.description ?? '',
+      image: project?.image ?? 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+      mapImage: project?.mapImage ?? designVietnamMap,
+    });
+    setDraftProjectJobs([]);
+    setSaveFeedback(null);
+  }, [project, isCreateMode]);
+
   const missingDataItems = [
     !projectAssignments.length ? t('Define at least one required data item and assign a coordinating unit.') : null,
     projectAssignments.some((item) => item.status !== 'complete') ? t('Complete all required data items before final publication review.') : null,
-    !projectJobItems.length ? t('Define at least one project job to establish the delivery process.') : null,
-    projectJobItems.some((item) => item.status !== 'complete') ? t('Close outstanding project jobs to reach full processing readiness.') : null,
-    !activeProject.documents.length ? t('Upload at least one supporting document.') : null,
+    !editableProjectJobs.length ? t('Define at least one project job to establish the delivery process.') : null,
+    editableProjectJobs.some((item) => item.status !== 'complete') ? t('Close outstanding project jobs to reach full processing readiness.') : null,
+    !hasProjectJobAttachments ? t('Upload at least one supporting document.') : null,
   ].filter(Boolean) as string[];
+
+  async function handleImageUpload(field: 'image' | 'mapImage', files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    const dataUrl = await fileToDataUrl(file);
+    if (dataUrl) {
+      handleChange(field, dataUrl);
+    }
+  }
 
   function getAgencyPeopleInCharge(agencyId: string) {
     return agencies.find((agency) => agency.id === agencyId)?.peopleInCharge ?? [];
@@ -145,24 +235,108 @@ export default function ProjectEditPage() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function updateEditableJob(jobId: string, changes: Partial<EditableProjectJob>) {
+    if (isCreateMode) {
+      setDraftProjectJobs((current) => current.map((item) => (item.id === jobId ? { ...item, ...changes } : item)));
+      return;
+    }
+    updateProjectJob(jobId, changes);
+  }
+
+  function deleteEditableJob(jobId: string) {
+    if (isCreateMode) {
+      setDraftProjectJobs((current) => current.filter((item) => item.id !== jobId));
+      return;
+    }
+    deleteProjectJob(jobId);
+  }
+
   function handleSave(event: React.FormEvent) {
     event.preventDefault();
+    const nextStatus = normalizeProjectStatus(form.stage, form.stage);
+    if (isCreateMode) {
+      const nextName = form.name.trim() || 'New Project Draft';
+      const projectId = createProject({
+        name: nextName,
+        sector: form.sector,
+        location: form.location,
+        province: form.province,
+        budget: Number(form.budget || 0),
+        minInvestment: Number(form.minInvestment || 0),
+        status: nextStatus === 'published' ? 'published' : 'draft',
+        stage: nextStatus === 'published' ? 'Published' : 'Draft',
+        description: form.description.trim() || 'Enter the initial project summary, investment profile, and delivery details.',
+        timeline: form.timeline.trim() || 'TBD',
+        landArea: form.landArea.trim() || 'TBD',
+        returnRate: form.returnRate.trim() || 'TBD',
+        image: form.image,
+        mapImage: form.mapImage,
+        jobs: 0,
+      });
+      draftProjectJobs.forEach((job) => {
+        createProjectJob({
+          projectId,
+          title: job.title,
+          description: job.description,
+          agencyId: job.agencyId,
+          userId: job.userId,
+          status: job.status,
+          dueDate: job.dueDate,
+          reminderDaysBefore: job.reminderDaysBefore,
+          note: job.note,
+          attachments: job.attachments,
+        });
+      });
+      if (nextStatus === 'published') {
+        updateProject(projectId, {
+          status: 'published',
+          stage: 'Published',
+          publishedAt: new Date().toISOString().split('T')[0],
+        });
+      }
+      addNotification({
+        title: nextStatus === 'published' ? 'Project Published' : 'Project Draft Created',
+        message:
+          nextStatus === 'published'
+            ? `${nextName} is now visible across the workspace.`
+            : `${nextName} was created as a draft project.`,
+        type: 'success',
+        path: `${workspaceBasePath}/projects/${projectId}`,
+      });
+      navigate(`${workspaceBasePath}/projects`, { replace: true });
+      return;
+    }
     updateProject(activeProject.id, {
       ...activeProject,
       ...form,
       budget: Number(form.budget || 0),
       minInvestment: Number(form.minInvestment || 0),
-      status: normalizeProjectStatus(form.stage, form.stage),
+      status: nextStatus,
       publishedAt:
-        normalizeProjectStatus(form.stage, form.stage) === 'published'
+        nextStatus === 'published'
           ? activeProject.publishedAt || new Date().toISOString().split('T')[0]
           : activeProject.publishedAt,
     });
+    addNotification({
+      title: nextStatus === 'published' ? 'Project Published' : 'Project Saved',
+      message:
+        nextStatus === 'published'
+          ? `${form.name || activeProject.name} is now visible across the workspace.`
+          : `${form.name || activeProject.name} was saved successfully.`,
+      type: nextStatus === 'published' ? 'success' : 'info',
+      path: `${workspaceBasePath}/projects/${activeProject.id}`,
+    });
+    setSaveFeedback(
+      nextStatus === 'published'
+        ? t('Project published and synced across the workspace.')
+        : t('Changes saved successfully.'),
+    );
   }
 
   function handleCreateJob() {
     if (!newJob.title.trim() || !newJob.description.trim() || !newJob.agencyId || !selectedPerson?.id) return;
-    createProjectJob({
+    const nextJob = {
+      id: `draft-job-${Date.now()}`,
       projectId: activeProject.id,
       title: newJob.title.trim(),
       description: newJob.description.trim(),
@@ -173,7 +347,12 @@ export default function ProjectEditPage() {
       reminderDaysBefore: newJob.reminderDaysBefore,
       note: newJob.note.trim(),
       attachments: parseAttachmentList(newJob.attachmentListText),
-    });
+    };
+    if (isCreateMode) {
+      setDraftProjectJobs((current) => [...current, nextJob]);
+    } else {
+      createProjectJob(nextJob);
+    }
     setNewJob({
       title: '',
       description: '',
@@ -194,22 +373,22 @@ export default function ProjectEditPage() {
   return (
     <div className="page-shell space-y-6">
       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-        <Link to={`${workspaceBasePath}/projects/${activeProject.id}`} className="inline-flex items-center gap-1 text-slate-600 hover:text-sky-700">
+        <Link to={isCreateMode ? `${workspaceBasePath}/projects` : `${workspaceBasePath}/projects/${activeProject.id}`} className="inline-flex items-center gap-1 text-slate-600 hover:text-sky-700">
           <ArrowLeft size={14} />
-          {t('Back to project')}
+          {t(isCreateMode ? 'Back to projects' : 'Back to project')}
         </Link>
       </div>
 
       <section className="section-panel p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="space-y-2">
-            <h1 className="section-heading mb-0">{t('Edit Project')}</h1>
-            <p className="section-subheading">{t('Manage one standardized project record with overview data and delivery jobs.')}</p>
+            <h1 className="section-heading mb-0">{t(isCreateMode ? 'Create Project' : 'Edit Project')}</h1>
+            <p className="section-subheading">{t(isCreateMode ? 'Create one standardized project record with overview data before adding delivery jobs.' : 'Manage one standardized project record with overview data and delivery jobs.')}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => navigate(`${workspaceBasePath}/projects/${activeProject.id}`)}
+              onClick={() => navigate(isCreateMode ? `${workspaceBasePath}/projects` : `${workspaceBasePath}/projects/${activeProject.id}`)}
               className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
             >
               {t('Cancel')}
@@ -226,7 +405,16 @@ export default function ProjectEditPage() {
         </div>
       </section>
 
-      {isDataQualityMode && (
+      {saveFeedback && (
+        <section className="section-panel border-emerald-200 bg-emerald-50/70 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-emerald-900">
+            <Check size={16} />
+            <span>{saveFeedback}</span>
+          </div>
+        </section>
+      )}
+
+      {isDataQualityMode && !isCreateMode && (
         <section className="section-panel border-amber-200 bg-amber-50/50 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-amber-950">{t('Data Quality Fix Mode')}</h2>
@@ -244,11 +432,26 @@ export default function ProjectEditPage() {
       )}
 
       <form id="project-edit-form" onSubmit={handleSave} className="space-y-6">
+        <section>
+          <div className="flex flex-nowrap gap-8 overflow-x-auto border-b border-[rgba(224,192,177,0.2)]">
+            {EDIT_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`border-b-2 pb-[18px] pt-[2px] text-[14px] transition-colors ${activeTab === tab.id ? 'border-[#9d4300] text-[#9d4300]' : 'border-transparent text-[#455f87] hover:text-[#9d4300]'}`}
+              >
+                {t(tab.label)}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <div>
           <section className="section-panel overflow-visible p-0">
             <div className="relative h-64">
               <div className="absolute inset-0 overflow-hidden">
-                <img src={activeProject.image} alt={activeProject.name} className="h-full w-full object-cover" />
+                <img src={activeProject.image} alt={form.name || activeProject.name} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0c2d4a]/80 via-[#0c2d4a]/20 to-transparent" />
               </div>
               <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-4 p-6">
@@ -302,55 +505,155 @@ export default function ProjectEditPage() {
             </div>
             <div className="p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="section-heading mb-0">{t('Overview')}</h2>
-                <StatusPill tone="info">{t('Single project record')}</StatusPill>
+                <h2 className="section-heading mb-0">{t(EDIT_TABS.find((tab) => tab.id === activeTab)?.label ?? 'Overview')}</h2>
+                <StatusPill tone="info">{t(isCreateMode ? 'Draft creation' : 'Single project record')}</StatusPill>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {[
-                  { label: 'Name', key: 'name', full: true },
-                  { label: 'Sector', key: 'sector' },
-                  { label: 'Province', key: 'province' },
-                  { label: 'Location', key: 'location', full: true },
-                  { label: 'Budget (USD M)', key: 'budget' },
-                  { label: 'Minimum Investment (USD M)', key: 'minInvestment' },
-                  { label: 'Timeline', key: 'timeline' },
-                  { label: 'Expected IRR', key: 'returnRate' },
-                  { label: 'Land Area', key: 'landArea' },
-                ].map((field) => (
-                  <label key={field.key} className={`space-y-2 ${field.full ? 'md:col-span-2' : ''}`}>
-                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(field.label)}</span>
-                    <input
-                      value={form[field.key as keyof typeof form]}
-                      onChange={(event) => handleChange(field.key as keyof typeof form, event.target.value)}
-                      className="app-input"
-                    />
-                  </label>
-                ))}
-                <label className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Stage')}</span>
-                  <select value={form.stage} onChange={(event) => handleChange('stage', event.target.value)} className="app-input">
-                    {PROJECT_STAGE_OPTIONS.map((stage) => (
-                      <option key={stage} value={stage}>
-                        {t(stage)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-2 md:col-span-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Description')}</span>
-                  <textarea
-                    rows={7}
-                    value={form.description}
-                    onChange={(event) => handleChange('description', event.target.value)}
-                    className="app-input min-h-36"
-                  />
-                </label>
-              </div>
+              {(activeTab === 'overview' || activeTab === 'location-land' || activeTab === 'investment-details') && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {activeTab === 'overview' && (
+                    <>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Name')}</span>
+                        <input value={form.name} onChange={(event) => handleChange('name', event.target.value)} className="app-input" />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Sector')}</span>
+                        <select value={form.sector} onChange={(event) => handleChange('sector', event.target.value)} className="app-input">
+                          {sectorOptions.map((sector) => (
+                            <option key={sector} value={sector}>{t(sector)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Stage')}</span>
+                        <select value={form.stage} onChange={(event) => handleChange('stage', event.target.value)} className="app-input">
+                          {PROJECT_STAGE_OPTIONS.map((stage) => (
+                            <option key={stage} value={stage}>{t(stage)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Description')}</span>
+                        <textarea rows={7} value={form.description} onChange={(event) => handleChange('description', event.target.value)} className="app-input min-h-36" />
+                      </label>
+                      <div className="space-y-3 md:col-span-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Visual')}</span>
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+                            <Upload size={14} />
+                            {t('Upload')}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(event) => {
+                                void handleImageUpload('image', event.target.files);
+                                event.target.value = '';
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-slate-50">
+                          <img src={form.image || activeProject.image} alt={form.name || activeProject.name} className="h-56 w-full object-cover" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {activeTab === 'location-land' && (
+                    <>
+                      <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Province')}</span>
+                        <input value={form.province} onChange={(event) => handleChange('province', event.target.value)} className="app-input" />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Land Area')}</span>
+                        <input value={form.landArea} onChange={(event) => handleChange('landArea', event.target.value)} className="app-input" />
+                      </label>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Location')}</span>
+                        <select value={form.location} onChange={(event) => handleChange('location', event.target.value)} className="app-input">
+                          {locationOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="space-y-3 md:col-span-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Location map')}</span>
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+                            <Upload size={14} />
+                            {t('Upload')}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(event) => {
+                                void handleImageUpload('mapImage', event.target.files);
+                                event.target.value = '';
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-slate-50">
+                          <img src={form.mapImage || activeProject.mapImage || designVietnamMap} alt={t('Location map')} className="h-56 w-full object-cover" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {activeTab === 'investment-details' && (
+                    <>
+                      {[
+                        { label: 'Budget', key: 'budget' },
+                        { label: 'Minimum Investment', key: 'minInvestment' },
+                        { label: 'Timeline', key: 'timeline' },
+                        { label: 'Expected IRR', key: 'returnRate' },
+                      ].map((field) => (
+                        <label key={field.key} className="space-y-2">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(field.label)}</span>
+                          <input value={form[field.key as keyof typeof form]} onChange={(event) => handleChange(field.key as keyof typeof form, event.target.value)} className="app-input" />
+                        </label>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'documents' && (
+                <div className="space-y-3">
+                  {activeProject.documents.length > 0 ? activeProject.documents.map((document) => (
+                    <div key={document.id} className="rounded-[4px] border border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="text-sm font-semibold text-slate-900">{document.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">{document.type} • {document.size} • {document.uploadedAt}</div>
+                    </div>
+                  )) : (
+                    <div className="rounded-[4px] border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+                      {t('No documents are available yet.')}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'activity' && (
+                <div className="space-y-3">
+                  {(project?.qa ?? []).length > 0 ? (project?.qa ?? []).map((item) => (
+                    <div key={item.id} className="rounded-[4px] border border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="text-sm font-semibold text-slate-900">{t(item.question)}</div>
+                      <div className="mt-1 text-xs text-slate-500">{item.askedBy} • {item.askedAt}</div>
+                    </div>
+                  )) : (
+                    <div className="rounded-[4px] border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+                      {t('No activity has been recorded for this project yet.')}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
         </div>
-
+        {activeTab === 'planning-infrastructure' && (
         <section className="section-panel p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -363,9 +666,9 @@ export default function ProjectEditPage() {
           </div>
 
           <div className="space-y-4">
-            {projectJobItems.length > 0 &&
-              projectJobItems.map((job) => {
-                const jobAgency = agencies.find((item) => item.id === job.agencyId);
+            {editableProjectJobs.length > 0 &&
+              editableProjectJobs.map((job) => {
+                const jobAgency = agencies.find((item) => item.id === job.agencyId);
                 const jobAlert = getAlertMeta(job, t);
                 return (
                   <div key={job.id} className="relative rounded-2xl border border-slate-200 bg-white p-5 pb-16 shadow-sm">
@@ -409,7 +712,7 @@ export default function ProjectEditPage() {
                                         role="option"
                                         aria-selected={isSelected}
                                         onClick={() => {
-                                          updateProjectJob(job.id, { status: option.value });
+                                          updateEditableJob(job.id, { status: option.value });
                                           setOpenJobStatusMenuId(null);
                                         }}
                                         className="flex w-full items-center justify-between rounded-xl px-2 py-2 text-left transition hover:bg-slate-50"
@@ -431,11 +734,11 @@ export default function ProjectEditPage() {
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                       <label className="space-y-2 xl:col-span-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Job Title')}</span>
-                        <input value={job.title} onChange={(event) => updateProjectJob(job.id, { title: event.target.value })} className={projectJobFieldClass} />
+                        <input value={job.title} onChange={(event) => updateEditableJob(job.id, { title: event.target.value })} className={projectJobFieldClass} />
                       </label>
                       <label className="space-y-2 xl:col-span-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Job Description')}</span>
-                        <input value={job.description} onChange={(event) => updateProjectJob(job.id, { description: event.target.value })} className={projectJobFieldClass} />
+                        <input value={job.description} onChange={(event) => updateEditableJob(job.id, { description: event.target.value })} className={projectJobFieldClass} />
                       </label>
                       <label className="space-y-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Coordinating Unit')}</span>
@@ -444,7 +747,7 @@ export default function ProjectEditPage() {
                           onChange={(event) => {
                             const nextAgencyId = event.target.value;
                             const nextUserId = getAgencyPeopleInCharge(nextAgencyId)[0]?.id ?? '';
-                            updateProjectJob(job.id, { agencyId: nextAgencyId, userId: nextUserId });
+                            updateEditableJob(job.id, { agencyId: nextAgencyId, userId: nextUserId });
                           }}
                           className={projectJobFieldClass}
                         >
@@ -460,14 +763,14 @@ export default function ProjectEditPage() {
                         <input
                           type="date"
                           value={job.dueDate}
-                          onChange={(event) => updateProjectJob(job.id, { dueDate: event.target.value })}
+                          onChange={(event) => updateEditableJob(job.id, { dueDate: event.target.value })}
                           className={`${projectJobFieldClass} ${lockProjectJobDueDates ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
                           disabled={lockProjectJobDueDates}
                         />
                       </label>
                       <label className="space-y-2">
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Reminder timing')}</span>
-                        <select value={job.reminderDaysBefore} onChange={(event) => updateProjectJob(job.id, { reminderDaysBefore: Number(event.target.value) as ReminderDays })} className={projectJobFieldClass}>
+                        <select value={job.reminderDaysBefore} onChange={(event) => updateEditableJob(job.id, { reminderDaysBefore: Number(event.target.value) as ReminderDays })} className={projectJobFieldClass}>
                           <option value="5">{t('5 days before due date')}</option>
                           <option value="10">{t('10 days before due date')}</option>
                         </select>
@@ -487,7 +790,7 @@ export default function ProjectEditPage() {
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        updateProjectJob(job.id, {
+                                        updateEditableJob(job.id, {
                                           attachments: (job.attachments ?? []).filter(
                                             (attachment) =>
                                               !(
@@ -524,7 +827,7 @@ export default function ProjectEditPage() {
                               onChange={(event) => {
                                 const uploadedFiles = filesToAttachments(event.target.files);
                                 if (uploadedFiles.length > 0) {
-                                  updateProjectJob(job.id, {
+                                  updateEditableJob(job.id, {
                                     attachments: [...(job.attachments ?? []), ...uploadedFiles],
                                   });
                                 }
@@ -539,14 +842,14 @@ export default function ProjectEditPage() {
                         <textarea
                           rows={8}
                           value={job.note ?? ''}
-                          onChange={(event) => updateProjectJob(job.id, { note: event.target.value })}
+                          onChange={(event) => updateEditableJob(job.id, { note: event.target.value })}
                           className={`${projectJobFieldClass} min-h-[14rem]`}
                         />
                       </label>
                       <div className="absolute bottom-5 right-5">
                         <button
                           type="button"
-                          onClick={() => deleteProjectJob(job.id)}
+                          onClick={() => deleteEditableJob(job.id)}
                           className={`rounded-xl bg-transparent p-2.5 text-red-700 transition-colors hover:text-red-800 ${lockProjectJobDueDates ? 'cursor-not-allowed opacity-50 hover:text-red-700' : ''}`}
                           disabled={lockProjectJobDueDates}
                           title={t('Remove')}
@@ -706,6 +1009,7 @@ export default function ProjectEditPage() {
             </div>
           </div>
         </section>
+        )}
       </form>
     </div>
   );
