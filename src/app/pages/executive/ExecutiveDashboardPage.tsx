@@ -690,6 +690,7 @@ export default function ExecutiveDashboardPage() {
                 project={project}
                 workspaceBasePath="/executive"
                 canManageProjects={false}
+                language={language}
                 translate={t}
                 variant="managementExpandable"
                 isExpanded={expandedProjectId === project.id}

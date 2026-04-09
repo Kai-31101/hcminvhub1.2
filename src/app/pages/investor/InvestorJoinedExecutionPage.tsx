@@ -536,6 +536,7 @@ export default function InvestorJoinedExecutionPage() {
                 project={project}
                 workspaceBasePath="/investor"
                 canManageProjects={false}
+                language={language}
                 translate={t}
                 variant="managementExpandable"
                 isExpanded={expandedProjectId === project.id}

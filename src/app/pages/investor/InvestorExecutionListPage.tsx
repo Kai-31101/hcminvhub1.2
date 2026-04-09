@@ -543,6 +543,7 @@ export default function InvestorExecutionListPage() {
                 project={project}
                 workspaceBasePath="/investor"
                 canManageProjects={false}
+                language={language}
                 translate={t}
                 variant="managementExpandable"
                 isExpanded={expandedProjectId === project.id}

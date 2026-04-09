@@ -86,8 +86,19 @@ function formatFollowerCount(count: number) {
   return `${count}`;
 }
 
-function formatPortfolioValue(totalBudgetInMillions: number) {
-  return `$${(totalBudgetInMillions / 1000).toFixed(2)}B`;
+function formatPortfolioValue(totalBudgetInMillions: number, language: 'en' | 'vi') {
+  const billions = totalBudgetInMillions / 1000;
+  const formatted = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(billions);
+
+  return language === 'vi' ? `${formatted} tỷ USD` : `$${formatted}B`;
+}
+
+function formatInvestmentAmount(totalBudgetInMillions: number, language: 'en' | 'vi') {
+  const formatted = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US').format(totalBudgetInMillions);
+  return language === 'vi' ? `${formatted} triệu USD` : `$${formatted}M`;
 }
 
 function selectClassName() {
@@ -159,7 +170,7 @@ export default function HomePage() {
   const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
   const [isInvestmentMapOpen, setIsInvestmentMapOpen] = useState(false);
   const [submissionDialog, setSubmissionDialog] = useState<'fast_track' | 'support' | null>(null);
-  const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: 'Vietnam', sector: '', locationNeed: 'Ho Chi Minh City', investmentSize: '', investmentType: '', notes: '' });
+  const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: t('Vietnam'), sector: '', locationNeed: t('Ho Chi Minh City'), investmentSize: '', investmentType: '', notes: '' });
   const [supportForm, setSupportForm] = useState<SupportDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', projectId: homeProjects[0]?.id ?? 'p1', topic: t('Project clarification and next-step coordination'), message: '', urgent: false });
   const filteredProjects = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -212,6 +223,16 @@ export default function HomePage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
+  useEffect(() => {
+    setFastTrackForm((current) => ({
+      ...current,
+      country: current.country === 'Vietnam' || current.country === 'Việt Nam' ? t('Vietnam') : current.country,
+      locationNeed:
+        current.locationNeed === 'Ho Chi Minh City' || current.locationNeed === 'TP. Ho Chi Minh'
+          ? t('Ho Chi Minh City')
+          : current.locationNeed,
+    }));
+  }, [language]);
   const stats = useMemo(() => {
     const totalFollowers = projects.reduce((sum, project) => sum + getMockFollowerCount(project.id, project.budget), 0);
 
@@ -219,9 +240,9 @@ export default function HomePage() {
       { label: 'Total Projects', value: `${projects.length}` },
       { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
       { label: 'Follower', value: formatFollowerCount(totalFollowers) },
-      { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0)) },
+      { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0), language) },
     ];
-  }, [projects]);
+  }, [language, projects]);
   const keyStats = useMemo(
     () => {
       const totalFollowers = projects.reduce((sum, project) => sum + getMockFollowerCount(project.id, project.budget), 0);
@@ -230,10 +251,10 @@ export default function HomePage() {
         { label: 'Total Projects', value: `${projects.length}` },
         { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
         { label: 'Follower', value: formatFollowerCount(totalFollowers) },
-        { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0)) },
+        { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0), language) },
       ];
     },
-    [projects],
+    [language, projects],
   );
   const navItems = [
     { label: t('Home'), id: 'top' },
@@ -683,9 +704,9 @@ export default function HomePage() {
 
                     <div className="mt-4 grid grid-cols-4 gap-3 border-t border-[rgba(224,192,177,0.15)] pt-4">
                       {[
-                        { label: 'Total Budget', value: `$${project.budget}M` },
+                        { label: 'Total Budget', value: formatInvestmentAmount(project.budget, language) },
                         { label: 'IRR', value: t(project.returnRate) },
-                        { label: 'Min Invest', value: `$${project.minInvestment}M` },
+                        { label: 'Min Invest', value: formatInvestmentAmount(project.minInvestment, language) },
                         { label: 'Timeline', value: t(project.timeline) },
                       ].map((metric) => (
                         <div key={metric.label} className="min-w-0">
@@ -864,7 +885,7 @@ export default function HomePage() {
                         />
                       </label>
                       <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">Email <span className="text-[#f97316]">(*)</span></span>
+                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
                         <Input
                           type="email"
                           value={supportForm.email}
@@ -934,6 +955,7 @@ export default function HomePage() {
       {isFastTrackModalOpen && (
         <ExplorerActionModal
           onClose={closeFastTrackModal}
+          closeLabel={t('Close')}
           panelTitle={t('Quick Intake')}
           leftIcon={<Headset size={44} />}
           leftTitle={t('Quick Intake')}
@@ -960,7 +982,7 @@ export default function HomePage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">Email <span className="text-[#f97316]">(*)</span></span>
+                <span className="text-[12px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
                 <Input
                   type="email"
                   value={fastTrackForm.email}
@@ -1014,7 +1036,7 @@ export default function HomePage() {
                   value={fastTrackForm.investmentSize}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentSize: value }))}
                   placeholder={t('Select investment size')}
-                  options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: option }))}
+                  options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: t(option) }))}
                   className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
                 />
               </label>

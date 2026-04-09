@@ -11,6 +11,7 @@ interface ProjectCardProps {
   project: Project;
   workspaceBasePath: string;
   canManageProjects: boolean;
+  language?: 'en' | 'vi';
   translate: (value: string) => string;
   viewHref?: string;
   assignmentSummary?: {
@@ -42,6 +43,7 @@ export function ProjectCard({
   project,
   workspaceBasePath,
   canManageProjects,
+  language = 'en',
   translate,
   viewHref,
   assignmentSummary,
@@ -61,6 +63,11 @@ export function ProjectCard({
   const summaryLocation = translate(project.location || project.province);
   const updatedLabel = formatUpdatedLabel(project.updatedAt || auditSummary?.updatedAt);
 
+  function formatBudgetLabel(valueInMillions: number) {
+    const formatted = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US').format(valueInMillions);
+    return language === 'vi' ? `${formatted} triệu USD` : `$${formatted}M`;
+  }
+
   function formatUpdatedLabel(value?: string) {
     if (!value) {
       return translate('Updated recently');
@@ -71,7 +78,7 @@ export function ProjectCard({
       return value;
     }
 
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -188,7 +195,7 @@ export function ProjectCard({
                 <div className="grid gap-2 text-xs">
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Budget')}</span>
-                    <div className="text-sm text-[#191c1e]">${project.budget}M</div>
+                    <div className="text-sm text-[#191c1e]">{formatBudgetLabel(project.budget)}</div>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Project Jobs')}</span>
@@ -285,7 +292,7 @@ export function ProjectCard({
               <div className="grid gap-2 text-xs">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Budget')}</span>
-                  <div className="text-sm text-[#191c1e]">${project.budget}M</div>
+                  <div className="text-sm text-[#191c1e]">{formatBudgetLabel(project.budget)}</div>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{translate('Project Jobs')}</span>

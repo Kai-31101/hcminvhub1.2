@@ -1,8 +1,10 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import designHeroSkyline from '../assets/design-hero-skyline.png';
 
 type ExplorerActionModalProps = {
   children: React.ReactNode;
+  closeLabel: string;
   leftDescription: string;
   leftIcon: React.ReactNode;
   leftTitle: string;
@@ -12,6 +14,7 @@ type ExplorerActionModalProps = {
 
 export function ExplorerActionModal({
   children,
+  closeLabel,
   leftDescription,
   leftIcon,
   leftTitle,
@@ -24,9 +27,11 @@ export function ExplorerActionModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-5 top-5 z-20 inline-flex h-11 items-center justify-center border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          aria-label={closeLabel}
+          title={closeLabel}
+          className="absolute right-5 top-5 z-20 inline-flex h-11 w-11 items-center justify-center border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
         >
-          Close
+          <X size={18} />
         </button>
 
         <div className="grid bg-white lg:grid-cols-[360px_minmax(0,1fr)]">

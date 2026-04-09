@@ -535,6 +535,7 @@ export default function ProjectManagementPage() {
                 project={project}
                 workspaceBasePath={workspaceBasePath}
                 canManageProjects={canManageProjects}
+                language={language}
                 translate={t}
                 variant="managementExpandable"
                 isExpanded={expandedProjectId === project.id}

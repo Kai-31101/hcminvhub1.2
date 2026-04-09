@@ -21,8 +21,19 @@ const PAGINATION_PAGE_SIZE = 9;
 const DEFAULT_PROJECT_TYPE = 'public';
 const DEFAULT_SUPPORT_PRIORITY = 'high';
 
-function formatPortfolioValue(totalBudgetInMillions: number) {
-  return `$${(totalBudgetInMillions / 1000).toFixed(2)}B`;
+function formatPortfolioValue(totalBudgetInMillions: number, language: 'en' | 'vi') {
+  const billions = totalBudgetInMillions / 1000;
+  const formatted = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(billions);
+
+  return language === 'vi' ? `${formatted} tỷ USD` : `$${formatted}B`;
+}
+
+function formatInvestmentAmount(totalBudgetInMillions: number, language: 'en' | 'vi') {
+  const formatted = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US').format(totalBudgetInMillions);
+  return language === 'vi' ? `${formatted} triệu USD` : `$${formatted}M`;
 }
 
 function getMockFollowerCount(projectId: string, budget: number) {
@@ -186,20 +197,20 @@ export default function ExplorerPage() {
 
     return [
       { label: 'Active Projects', value: `${activeProjects}` },
-      { label: 'Total Value', value: formatPortfolioValue(totalValue) },
+      { label: 'Total Value', value: formatPortfolioValue(totalValue, language) },
       { label: 'Sectors', value: `${totalSectors}` },
       { label: 'Avg IRR', value: '12-15%' },
     ];
-  }, [projects]);
+  }, [language, projects]);
 
   const keyStats = useMemo(
     () => [
       { label: 'Total Projects', value: `${projects.length}` },
       { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
       { label: 'Following Projects', value: `${watchlist.length}` },
-      { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0)) },
+      { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0), language) },
     ],
-    [projects, watchlist.length],
+    [language, projects, watchlist.length],
   );
 
   function handleToggleWatchlist(id: string, event: React.MouseEvent) {
@@ -630,9 +641,9 @@ export default function ExplorerPage() {
 
                 <div className="mt-4 grid grid-cols-4 gap-3 border-t border-[rgba(224,192,177,0.15)] pt-4">
                   {[
-                    { label: 'Total Budget', value: `$${project.budget}M` },
+                    { label: 'Total Budget', value: formatInvestmentAmount(project.budget, language) },
                     { label: 'IRR', value: t(project.returnRate) },
-                    { label: 'Min Invest', value: `$${project.minInvestment}M` },
+                    { label: 'Min Invest', value: formatInvestmentAmount(project.minInvestment, language) },
                     { label: 'Timeline', value: t(project.timeline) },
                   ].map((metric) => (
                     <div key={metric.label} className="min-w-0">
@@ -812,6 +823,7 @@ export default function ExplorerPage() {
       {activeModal && (
         <ExplorerActionModal
           onClose={closeModal}
+          closeLabel={t('Close')}
           panelTitle={activeModal === 'interest' ? t('Investment Interest') : t('Investment Support')}
           leftIcon={activeModal === 'interest' ? <Landmark size={44} /> : <Headset size={44} />}
           leftTitle={
@@ -853,7 +865,7 @@ export default function ExplorerPage() {
                           />
                         </label>
                         <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">Email <span className="text-[#f97316]">(*)</span></span>
+                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
                           <Input
                             type="email"
                             value={interestForm.email}
@@ -878,7 +890,7 @@ export default function ExplorerPage() {
                             value={interestForm.investmentSize}
                             onChange={(value) => handleInterestFieldChange('investmentSize', value)}
                             placeholder={t('Select investment size')}
-                            options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: option }))}
+                            options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: t(option) }))}
                             className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
                           />
                         </label>
@@ -987,7 +999,7 @@ export default function ExplorerPage() {
                           />
                         </label>
                         <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">Email <span className="text-[#f97316]">(*)</span></span>
+                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
                           <Input
                             type="email"
                             value={supportForm.email}
