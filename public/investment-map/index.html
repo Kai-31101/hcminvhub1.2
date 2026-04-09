@@ -97,6 +97,24 @@
     background: #fff; border-radius: 8px; padding: 16px; width: 300px; position: relative;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #e5e7eb;
   }
+  .popup-image-button {
+    position: relative; display: block; width: 100%; height: 140px; margin-bottom: 10px; padding: 0;
+    border: none; border-radius: 8px; overflow: hidden; cursor: pointer; background: #e5e7eb;
+  }
+  .popup-image-button::after {
+    content: attr(data-hint); position: absolute; right: 10px; bottom: 10px; z-index: 1;
+    padding: 4px 8px; border-radius: 999px; background: rgba(17,24,39,0.72); color: #fff;
+    font-size: 11px; font-weight: 600;
+  }
+  .popup-image {
+    width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.2s ease;
+  }
+  .popup-image-button:hover .popup-image { transform: scale(1.04); }
+  .popup-image-fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    padding: 16px; text-align: center; background: linear-gradient(135deg, #fed7aa, #fdba74);
+    color: #7c2d12; font-size: 12px; font-weight: 600;
+  }
   .popup-close {
     position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer;
     opacity: 0.5; padding: 4px; border-radius: 4px; line-height: 0;
@@ -127,6 +145,30 @@
   }
   .point-marker:hover { transform: scale(1.3); }
   .point-marker.selected { transform: scale(1.4); }
+
+  .image-lightbox {
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    padding: 24px; background: rgba(15, 23, 42, 0.78); z-index: 50;
+  }
+  .image-lightbox.open { display: flex; }
+  .image-lightbox-dialog {
+    position: relative; width: min(92vw, 960px); max-height: 88vh; padding: 20px 20px 16px;
+    border-radius: 18px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+  }
+  .image-lightbox-close {
+    position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: none;
+    border-radius: 999px; background: rgba(15, 23, 42, 0.08); color: #111827; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 0;
+  }
+  .image-lightbox-close:hover { background: rgba(15, 23, 42, 0.14); }
+  .image-lightbox-close svg { width: 18px; height: 18px; }
+  .image-lightbox img {
+    display: block; width: 100%; max-height: calc(88vh - 76px); object-fit: contain;
+    border-radius: 12px; background: #f3f4f6;
+  }
+  .image-lightbox-caption {
+    margin-top: 12px; padding-right: 36px; font-size: 14px; font-weight: 600; color: #111827;
+  }
 </style>
 </head>
 <body>
@@ -190,6 +232,19 @@
   </div>
 </div>
 
+<div class="image-lightbox" id="imageLightbox" aria-hidden="true">
+  <div class="image-lightbox-dialog" role="dialog" aria-modal="true" aria-labelledby="imageLightboxCaption">
+    <button class="image-lightbox-close" id="imageLightboxClose" type="button" aria-label="Close image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6 6 18"></path>
+        <path d="m6 6 12 12"></path>
+      </svg>
+    </button>
+    <img id="imageLightboxImage" alt="">
+    <div class="image-lightbox-caption" id="imageLightboxCaption"></div>
+  </div>
+</div>
+
 <script>
 // ── Data ──────────────────────────────────────────────────────
 var STATUS_COLORS = {
@@ -232,6 +287,18 @@ function locationFilterLabel() {
 
 function getProjectLocation(project) {
   return project.location || project.district || '';
+}
+
+function getProjectImage(project) {
+  return project.mapImage || project.image || '';
+}
+
+function imagePreviewHintLabel() {
+  return currentLanguage === 'vi' ? 'Nhấn để xem lớn' : 'Click to enlarge';
+}
+
+function imageFallbackLabel() {
+  return currentLanguage === 'vi' ? 'Chưa có hình ảnh dự án' : 'Project image unavailable';
 }
 
 var PROJECTS = [
@@ -332,10 +399,92 @@ function createSvg(paths, viewBox) {
 }
 
 // ── State ─────────────────────────────────────────────────────
+function clearPreviewCloseTimer() {
+  if (previewCloseTimer) {
+    clearTimeout(previewCloseTimer);
+    previewCloseTimer = null;
+  }
+}
+
+function removePopup() {
+  clearPreviewCloseTimer();
+  if (currentPopup) {
+    currentPopup.remove();
+    currentPopup = null;
+  }
+  currentPopupPinned = false;
+}
+
+function schedulePreviewClose() {
+  if (!currentPopup || currentPopupPinned) return;
+  clearPreviewCloseTimer();
+  previewCloseTimer = setTimeout(function() {
+    if (!currentPopupPinned) {
+      removePopup();
+    }
+  }, 140);
+}
+
+function openImageLightbox(project) {
+  var imageUrl = getProjectImage(project);
+  if (!imageUrl) return;
+
+  var lightbox = document.getElementById('imageLightbox');
+  var lightboxImage = document.getElementById('imageLightboxImage');
+  var lightboxCaption = document.getElementById('imageLightboxCaption');
+  lightboxImage.src = imageUrl;
+  lightboxImage.alt = projectDisplayName(project);
+  lightboxCaption.textContent = projectDisplayName(project);
+  lightbox.classList.add('open');
+  lightbox.setAttribute('aria-hidden', 'false');
+}
+
+function closeImageLightbox() {
+  var lightbox = document.getElementById('imageLightbox');
+  var lightboxImage = document.getElementById('imageLightboxImage');
+  var lightboxCaption = document.getElementById('imageLightboxCaption');
+  lightbox.classList.remove('open');
+  lightbox.setAttribute('aria-hidden', 'true');
+  lightboxImage.removeAttribute('src');
+  lightboxImage.alt = '';
+  lightboxCaption.textContent = '';
+}
+
+function createPopupImageButton(project) {
+  var imageUrl = getProjectImage(project);
+  if (!imageUrl) return null;
+
+  var button = createEl('button', 'popup-image-button');
+  button.type = 'button';
+  button.setAttribute('data-hint', imagePreviewHintLabel());
+  button.setAttribute('aria-label', imagePreviewHintLabel());
+
+  var img = createEl('img', 'popup-image');
+  img.src = imageUrl;
+  img.alt = projectDisplayName(project);
+  img.loading = 'lazy';
+  img.addEventListener('error', function() {
+    button.removeAttribute('data-hint');
+    while (button.firstChild) button.removeChild(button.firstChild);
+    button.appendChild(createEl('div', 'popup-image-fallback', imageFallbackLabel()));
+  });
+
+  button.appendChild(img);
+  button.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    openImageLightbox(project);
+  });
+
+  return button;
+}
+
 var map, clusterIndex, currentPopup, selectedId = null, show3D = true;
 var markerObjects = [];
 var filteredProjects = PROJECTS.slice();
 var activeOwnerType = '';
+var currentPopupPinned = false;
+var previewCloseTimer = null;
 
 var INITIAL_VIEW = { center: [106.700, 10.780], zoom: 11, pitch: 0, bearing: 0 };
 
@@ -498,6 +647,16 @@ function updateMarkers() {
     } else {
       var el = createEl('div', 'point-marker' + (props.id === selectedId ? ' selected' : ''));
       el.style.backgroundColor = STATUS_COLORS[props.status] || '#94a3b8';
+      el.addEventListener('mouseenter', (function(proj) {
+        return function() {
+          if (selectedId) return;
+          showPopup(proj, { pinned: false });
+        };
+      })(props));
+      el.addEventListener('mouseleave', function() {
+        if (selectedId) return;
+        schedulePreviewClose();
+      });
       el.addEventListener('click', (function(proj) {
         return function(e) {
           e.stopPropagation();
@@ -511,15 +670,29 @@ function updateMarkers() {
 }
 
 // ── Popup ─────────────────────────────────────────────────────
-function showPopup(project) {
-  if (currentPopup) currentPopup.remove();
+function showPopup(project, options) {
+  var pinned = !options || options.pinned !== false;
+  clearPreviewCloseTimer();
+  removePopup();
 
   var card = createEl('div', 'popup-card');
+  card.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  var imageButton = createPopupImageButton(project);
+  if (imageButton) card.appendChild(imageButton);
 
   // Close button
   var closeBtn = createEl('button', 'popup-close');
+  closeBtn.type = 'button';
   closeBtn.appendChild(createSvg(['M18 6 6 18', 'm6 6 12 12']));
-  closeBtn.addEventListener('click', function() { closePopup(); });
+  closeBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (pinned) {
+      closePopup();
+    } else {
+      removePopup();
+    }
+  });
   card.appendChild(closeBtn);
 
   // Title
@@ -553,22 +726,27 @@ function showPopup(project) {
   // Wrap in container
   var container = document.createElement('div');
   container.appendChild(card);
+  if (!pinned) {
+    container.addEventListener('mouseenter', clearPreviewCloseTimer);
+    container.addEventListener('mouseleave', schedulePreviewClose);
+  }
 
   currentPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, maxWidth: '320px', offset: [0, -12], anchor: 'bottom' })
     .setLngLat([project.lng, project.lat])
     .setDOMContent(container)
     .addTo(map);
+  currentPopupPinned = pinned;
 }
 
 function closePopup() {
-  if (currentPopup) { currentPopup.remove(); currentPopup = null; }
+  removePopup();
   selectedId = null;
   updateSelectedState();
 }
 
 // ── FlyTo ─────────────────────────────────────────────────────
 function flyToProject(project) {
-  if (currentPopup) { currentPopup.remove(); currentPopup = null; }
+  removePopup();
   selectedId = project.id;
   updateSelectedState();
   scrollToSelected(project.id);
@@ -742,6 +920,20 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('toggle3DBtn').addEventListener('click', toggle3D);
   document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
   document.getElementById('legendToggle').addEventListener('click', toggleLegend);
+  document.getElementById('imageLightboxClose').addEventListener('click', closeImageLightbox);
+  document.getElementById('imageLightbox').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeImageLightbox();
+    }
+  });
+  document.querySelector('.image-lightbox-dialog').addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeImageLightbox();
+    }
+  });
 
   window.addEventListener('message', function(event) {
     if (event.origin !== window.location.origin) return;

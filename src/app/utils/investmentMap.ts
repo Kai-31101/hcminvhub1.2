@@ -9,6 +9,8 @@ export interface InvestmentMapProject {
   slug: string;
   name: string;
   nameVi: string;
+  image?: string;
+  mapImage?: string;
   sector: string;
   location: string;
   district: string;
@@ -150,6 +152,8 @@ export function buildInvestmentMapProjects(projects: Project[], detailBasePath =
       slug: slugify(project.nameEn || project.name),
       name: project.nameEn || project.name,
       nameVi: project.nameVi || project.name,
+      image: project.image,
+      mapImage: project.mapImage,
       sector: project.sector,
       location: getAdministrativeLocationLabel(masterLocation, 'en'),
       district,
