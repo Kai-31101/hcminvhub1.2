@@ -69,8 +69,6 @@ const DISTRICT_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Ba Ria-Vung Tau': { lat: 10.3473, lng: 107.0847 },
 };
 
-const PRIVATE_OWNER_PROJECT_IDS = new Set(['m30']);
-
 function normalizeText(value: string) {
   return value
     .normalize('NFD')
@@ -113,7 +111,7 @@ function inferCoordinates(project: Project, district: string) {
 }
 
 function mapOwnerType(project: Project): 'GOVERNMENT' | 'PRIVATE' {
-  if (PRIVATE_OWNER_PROJECT_IDS.has(project.id) || !project.ownerAgencyId) {
+  if (project.projectType === 'private') {
     return 'PRIVATE';
   }
 

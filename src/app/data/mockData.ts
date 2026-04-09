@@ -1055,9 +1055,11 @@ const baseProjectRecords = [
   ...importedExternalMockProjects,
 ];
 
+const privateProjectIds = new Set(['s2', 's8', 'm8', 'm21', 'm29', 'm30']);
+
 export const projects: Project[] = baseProjectRecords.map((project) => ({
-  projectType: 'public',
   ...project,
+  projectType: privateProjectIds.has(project.id) ? 'private' : project.projectType ?? 'public',
 }));
 
 export const opportunities: Opportunity[] = [

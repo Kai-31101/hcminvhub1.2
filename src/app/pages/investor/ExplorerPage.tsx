@@ -152,7 +152,7 @@ export default function ExplorerPage() {
         .join(' ')
         .toLowerCase();
       const district = getProjectAdministrativeLocation(project);
-      const projectType = 'public';
+      const projectType = project.projectType ?? DEFAULT_PROJECT_TYPE;
 
       let investmentRangeMatch = true;
       if (selectedInvestmentRange === '0-100') investmentRangeMatch = project.budget < 100;
