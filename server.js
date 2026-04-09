@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -79,6 +79,26 @@ function resolveAssetFile(urlPathname) {
   }
 
   return null;
+}
+
+function resolveDistStaticFile(urlPathname) {
+  const sanitizedPath = decodeURIComponent(urlPathname).replace(/^\/+/, "");
+  if (!sanitizedPath) {
+    return null;
+  }
+
+  const filePath = path.resolve(distDir, sanitizedPath);
+  const relativePath = path.relative(distDir, filePath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    return null;
+  }
+
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    return null;
+  }
+
+  return filePath;
 }
 
 function createInvestmentHubServer(baseUrl) {
@@ -180,7 +200,7 @@ const httpServer = createServer(async (req, res) => {
   }
 
   if (req.method === "GET") {
-    const filePath = resolveAssetFile(url.pathname);
+    const filePath = resolveAssetFile(url.pathname) ?? resolveDistStaticFile(url.pathname);
     if (filePath) {
       const asset = readStaticAsset(filePath);
       if (!asset) {
