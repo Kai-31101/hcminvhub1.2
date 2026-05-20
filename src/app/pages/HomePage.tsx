@@ -442,7 +442,7 @@ export default function HomePage() {
   return (
     <div id="top" className="flex min-h-screen flex-col bg-white text-slate-900">
       <main className="flex-1 bg-white">
-        <section ref={heroSectionRef} className="relative h-[1080px] overflow-hidden bg-[#071423] text-white">
+        <section ref={heroSectionRef} className="relative h-[100svh] min-h-[680px] overflow-hidden bg-[#071423] text-white">
           <img
             src={interactiveHero ? homeHeroInteractive : homeHeroFigmaCity}
             alt={t('Ho Chi Minh City hero banner')}
@@ -453,7 +453,7 @@ export default function HomePage() {
             <iframe
               title={t('Ho Chi Minh City hero background video')}
               src={HERO_VIDEO_SRC}
-              className="pointer-events-none absolute left-1/2 top-1/2 aspect-video h-full min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+              className="pointer-events-none absolute left-1/2 top-[calc(50%-90px)] aspect-video h-[calc(100%+180px)] min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
               allow="autoplay; encrypted-media; picture-in-picture"
               referrerPolicy="strict-origin-when-cross-origin"
               aria-hidden="true"
@@ -536,7 +536,7 @@ export default function HomePage() {
             </div>
           ) : null}
 
-          <div className="absolute left-6 top-[287px] z-10 w-[calc(100%-48px)] max-w-[896px] md:left-[78px]">
+          <div className="absolute left-6 top-[clamp(140px,26vh,287px)] z-10 w-[calc(100%-48px)] max-w-[896px] md:left-[78px]">
             <div>
               <h1 className="text-[42px] font-bold leading-[56px] text-[#ed6203] md:text-[48px]">HO CHI MINH CITY</h1>
               <div className="mt-0 flex items-center gap-3 text-[46px] font-extrabold leading-[52px] text-white md:text-[52px]">
@@ -557,7 +557,7 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div id="fast-track" className="mt-20 flex w-full max-w-[384px] flex-col items-center justify-center gap-2 rounded-lg bg-black/20 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)]">
+            <div id="fast-track" className="mt-[clamp(24px,7vh,80px)] flex w-full max-w-[384px] flex-col items-center justify-center gap-2 rounded-lg bg-black/20 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)]">
               <div className="text-[18px] leading-7 text-white">{t('Need tailor support')}</div>
               <div className="text-[24px] font-bold leading-8 text-white">{t('FAST-TRACK')}</div>
               <button type="button" onClick={openFastTrackModal} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 py-2.5 text-[14px] font-medium leading-5 text-white">
