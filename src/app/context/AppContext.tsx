@@ -1172,10 +1172,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedRole = window.localStorage.getItem('hcminvhub-role');
     return savedRole as UserRole | null;
   });
-  const [language, setLanguage] = useState<Language>(() => {
-    const savedLanguage = window.localStorage.getItem('hcminvhub-language');
-    return savedLanguage === 'en' || savedLanguage === 'vi' ? savedLanguage : 'vi';
-  });
+  const [language, setLanguageState] = useState<Language>('en');
+  const setLanguage = (nextLanguage: Language) => {
+    if (nextLanguage !== 'en') return;
+    setLanguageState('en');
+  };
   const [activeUserId, setActiveUserId] = useState<string>(() => {
     return window.localStorage.getItem(ACTIVE_USER_KEY) ?? getDefaultActiveUserId(role);
   });
@@ -1451,7 +1452,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [role]);
 
   useEffect(() => {
-    window.localStorage.setItem('hcminvhub-language', language);
+    window.localStorage.setItem('hcminvhub-language', 'en');
   }, [language]);
 
   useEffect(() => {

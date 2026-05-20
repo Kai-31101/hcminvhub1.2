@@ -1,19 +1,15 @@
 import React, { FormEvent, useMemo, useRef, useState } from 'react';
 import { useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Building2, CheckCircle2, Compass, Globe2, Headset, Landmark, Mail, Map, MapPin, Phone, Search, ShieldCheck, Star, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Briefcase, Building2, CheckCircle2, ChevronDown, Cloud, Globe2, Headset, Landmark, Mail, Map, MapPin, Search, SearchCheck, ShieldCheck, Star, User, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import { ExplorerFooter } from '../components/ExplorerFooter';
 import { ExplorerActionModal } from '../components/ExplorerActionModal';
-import { PublicPortalHeader } from '../components/PublicPortalHeader';
 import { ClearableSelectField } from '../components/ui/clearable-select-field';
 import { InvestmentMapModal } from '../components/InvestmentMapModal';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { SeeAllButton } from '../components/SeeAllButton';
-import designHeroSkyline from '../assets/design-hero-skyline.png';
 import homeHeroFigmaCity from '../assets/home-hero-figma-city.png';
 import homeHeroInteractive from '../assets/home-hero-interactive.png';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../data/administrativeLocations';
@@ -23,23 +19,17 @@ import { FastTrackDraft, SupportDraft } from '../utils/homeLeadFlow';
 import { translateText } from '../utils/localization';
 import { normalizeProjectStatus } from '../utils/projectStatus';
 
-const BRAND = {
-  orange: '#eb7a1a',
-  orangeSoft: '#fff3e7',
-  orangeBorder: '#f0c9a7',
-  blue: '#0f3557',
-  blueSoft: '#eef4f8',
-  blueBorder: '#d9e3ec',
-};
-
 const HEADER_VI_GOV_LABEL = 'ỦY BAN NHÂN DÂN TP. HỒ CHÍ MINH';
 const HEADER_EN_GOV_LABEL = 'HO CHI MINH CITY PEOPLE\'S COMMITTEE';
 const OFFICIAL_VI_TITLE = 'H\u1ea0 T\u1ea6NG X\u00daC TI\u1ebeN \u0110\u1ea6U T\u01af';
 const OFFICIAL_EN_TITLE = 'Hochiminh City Investment Hub';
+const HERO_VIDEO_ID = 'LjDjXXM62Xg';
+const HERO_VIDEO_SRC = `https://www.youtube.com/embed/${HERO_VIDEO_ID}?autoplay=1&mute=1&controls=0&loop=1&playlist=${HERO_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&vq=hd1080`;
 const OFFICIAL_TAGLINE = 'Your Gateway. Our Support. Your Success';
 const ALL_OPTION = '__all__';
-const DEFAULT_LIST_COUNT = 6;
-const PAGINATION_PAGE_SIZE = 9;
+const FEATURED_LIST_COUNT = 3;
+const NEW_UPDATE_INITIAL_COUNT = 6;
+const NEW_UPDATE_ROW_SIZE = 3;
 const DEFAULT_PROJECT_TYPE = 'public';
 const HERO_HOTSPOTS = [
   { id: 'hotspot-west', projectId: 'p3', left: 8, top: 56, color: '#5140b2' },
@@ -101,16 +91,11 @@ function formatInvestmentAmount(totalBudgetInMillions: number, language: 'en' | 
   return language === 'vi' ? `${formatted} triệu USD` : `$${formatted}M`;
 }
 
-function selectClassName() {
-  return 'h-11 w-full rounded-xl border border-[#d9e3ec] bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-[#0f3557]';
-}
-
 export default function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { language, projects, watchlist, toggleWatchlist, activeInvestorCompany, setActiveInvestorCompany, createOpportunity, createIssue, addNotification } = useApp();
   const t = (value: string) => translateText(value, language);
-  const isVi = language === 'vi';
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const featuredProjectsRef = useRef<HTMLElement | null>(null);
 
@@ -163,13 +148,13 @@ export default function HomePage() {
   const [selectedLocation, setSelectedLocation] = useState(ALL_OPTION);
   const [selectedInvestmentRange, setSelectedInvestmentRange] = useState(ALL_OPTION);
   const [selectedProjectType, setSelectedProjectType] = useState(DEFAULT_PROJECT_TYPE);
-  const [isPaginationMode, setIsPaginationMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [newUpdateVisibleCount, setNewUpdateVisibleCount] = useState(NEW_UPDATE_INITIAL_COUNT);
   const [fastTrackNotice, setFastTrackNotice] = useState<string | null>(null);
   const [supportNotice, setSupportNotice] = useState<string | null>(null);
   const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
   const [isInvestmentMapOpen, setIsInvestmentMapOpen] = useState(false);
   const [submissionDialog, setSubmissionDialog] = useState<'fast_track' | 'support' | null>(null);
+  const [supportAcceptedTerms, setSupportAcceptedTerms] = useState(false);
   const [fastTrackForm, setFastTrackForm] = useState<FastTrackDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', country: t('Vietnam'), sector: '', locationNeed: t('Ho Chi Minh City'), investmentSize: '', investmentType: '', notes: '' });
   const [supportForm, setSupportForm] = useState<SupportDraft>({ companyName: activeInvestorCompany, contactName: '', email: '', phone: '', projectId: homeProjects[0]?.id ?? 'p1', topic: t('Project clarification and next-step coordination'), message: '', urgent: false });
   const filteredProjects = useMemo(() => {
@@ -197,11 +182,12 @@ export default function HomePage() {
       return true;
     });
   }, [projects, searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGINATION_PAGE_SIZE));
-  const visibleProjects = isPaginationMode
-    ? filteredProjects.slice((currentPage - 1) * PAGINATION_PAGE_SIZE, currentPage * PAGINATION_PAGE_SIZE)
-    : filteredProjects.slice(0, DEFAULT_LIST_COUNT);
-  const highlightedProject = homeProjects[0] ?? null;
+  const featuredProjects = filteredProjects.slice(0, FEATURED_LIST_COUNT);
+  const updatedProjects = useMemo(
+    () => [...filteredProjects].sort((left, right) => (right.updatedAt ?? right.createdAt ?? '').localeCompare(left.updatedAt ?? left.createdAt ?? '')),
+    [filteredProjects],
+  );
+  const visibleUpdatedProjects = updatedProjects.slice(0, newUpdateVisibleCount);
   const heroHotspots = useMemo(() => HERO_HOTSPOTS.map((hotspot) => ({ ...hotspot, project: homeProjects.find((project) => project.id === hotspot.projectId) ?? null })).filter((hotspot) => hotspot.project), [homeProjects]);
   const [interactiveHero, setInteractiveHero] = useState(false);
   const [activeHeroHotspotId, setActiveHeroHotspotId] = useState<string | null>(null);
@@ -221,7 +207,7 @@ export default function HomePage() {
     }
   }, [submittedType]);
   useEffect(() => {
-    setCurrentPage(1);
+    setNewUpdateVisibleCount(NEW_UPDATE_INITIAL_COUNT);
   }, [searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
   useEffect(() => {
     setFastTrackForm((current) => ({
@@ -239,35 +225,54 @@ export default function HomePage() {
     return [
       { label: 'Total Projects', value: `${projects.length}` },
       { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
-      { label: 'Follower', value: formatFollowerCount(totalFollowers) },
+      { label: 'Follows', value: formatFollowerCount(totalFollowers) },
       { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0), language) },
     ];
   }, [language, projects]);
-  const keyStats = useMemo(
-    () => {
-      const totalFollowers = projects.reduce((sum, project) => sum + getMockFollowerCount(project.id, project.budget), 0);
-
-      return [
-        { label: 'Total Projects', value: `${projects.length}` },
-        { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
-        { label: 'Follower', value: formatFollowerCount(totalFollowers) },
-        { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0), language) },
-      ];
-    },
-    [language, projects],
+  const investmentSystemCards = useMemo(
+    () => [
+      {
+        title: 'Verified Investment Pipeline',
+        description: 'All projects are validated by responsible authorities before publication',
+        badge: 'TRUSTED',
+        badgeClassName: 'bg-[#ffeae1] text-[#ed6203]',
+        Icon: ShieldCheck,
+      },
+      {
+        title: 'Structured Discovery Engine',
+        description: 'Filter projects by sector, capital size, readiness, and location',
+        badge: 'FILTERED',
+        badgeClassName: 'bg-[#ecfeff] text-[#075985]',
+        Icon: SearchCheck,
+      },
+      {
+        title: 'Direct Government Routing',
+        description: 'Investor requests are handled by the responsible department',
+        badge: 'GOV ROUTE',
+        badgeClassName: 'bg-[#ecfeff] text-[#0070e0]',
+        Icon: Landmark,
+      },
+      {
+        title: 'City-Level Operating System',
+        description: 'Not a listing platform — an execution infrastructure',
+        badge: 'INFRASTRUCTURE',
+        badgeClassName: 'bg-[#dcfce7] text-[#166534]',
+        Icon: Cloud,
+      },
+    ],
+    [],
   );
-  const navItems = [
-    { label: t('Home'), id: 'top' },
-    { label: t('Projects'), id: 'discover' },
-    { label: t('Quick intake'), id: 'fast-track' },
-    { label: t('Support'), id: 'support' },
-  ];
-  const solutionCards = [
-    [ShieldCheck, t('Verified project records'), t('Structured project records prepared for serious investment review.')],
-    [Compass, t('Signal-first discovery'), t('Discover by sector, size, geography, and readiness.')],
-    [Globe2, t('Coordinated investor support'), t('Requests are routed to the responsible city support desk.')],
-    [Building2, t('City-operated platform'), t('An enterprise interface designed as operating infrastructure, not a news portal.')],
-  ];
+  const investmentSystemMetrics = useMemo(() => {
+    const totalBudget = projects.reduce((sum, project) => sum + project.budget, 0);
+    const averageBudget = projects.length > 0 ? totalBudget / projects.length : 0;
+
+    return [
+      { label: 'TOTAL INVESTMENT PROJECTS', value: `${projects.length}` },
+      { label: 'TOTAL REGISTERED CAPITAL (USD)', value: formatPortfolioValue(totalBudget, language) },
+      { label: 'ACTIVE SECTORS', value: `${new Set(projects.map((project) => project.sector)).size}` },
+      { label: 'AVG DEAL SIZE / RANGE', value: formatInvestmentAmount(averageBudget, language) },
+    ];
+  }, [language, projects]);
   function closeSubmissionDialog() {
     setSubmissionDialog(null);
     if (location.search) {
@@ -304,19 +309,102 @@ export default function HomePage() {
     setSelectedLocation(ALL_OPTION);
     setSelectedInvestmentRange(ALL_OPTION);
     setSelectedProjectType(DEFAULT_PROJECT_TYPE);
-    setIsPaginationMode(false);
-    setCurrentPage(1);
-  }
-
-  function enablePaginationMode() {
-    setIsPaginationMode(true);
-    setCurrentPage(1);
+    setNewUpdateVisibleCount(NEW_UPDATE_INITIAL_COUNT);
   }
 
   function handleToggleWatchlist(id: string, event: React.MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
     toggleWatchlist(id);
+  }
+
+  function renderProjectCard(project: (typeof projects)[number]) {
+    const isWatching = watchlist.includes(project.id);
+    const followerCount = getMockFollowerCount(project.id, project.budget);
+    const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
+
+    return (
+      <Link key={project.id} to={`/investor/project/${project.id}`} className="group rounded-xl bg-white p-3 shadow-[0_0_6px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-0.5">
+        <div className="relative aspect-[1080/608] overflow-hidden rounded-md bg-[#e0e3e5]">
+          <img
+            src={project.image}
+            alt={t(project.name)}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+          <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+            <div className="inline-flex h-6 items-center gap-1.5 rounded-md bg-white/80 px-2 pr-3 text-[10px] leading-3 text-[#1f2937]">
+              <User size={12} />
+              {formatFollowerCount(followerCount)} {t('followers')}
+            </div>
+            <button
+              type="button"
+              onClick={(event) => handleToggleWatchlist(project.id, event)}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-sm transition-colors ${
+                isWatching
+                  ? 'border-[#f6d6bf] bg-[#fff1e7] text-[#9d4300]'
+                  : 'border-white/70 bg-white/92 text-[#8c7164] hover:text-[#9d4300]'
+              }`}
+              aria-label={isWatching ? t('Watching') : t('Follow')}
+            >
+              <Star size={14} fill={isWatching ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+          <div className="absolute bottom-3 left-3 flex items-center gap-2">
+            <span className="rounded-md bg-[#ffeae1] px-2.5 py-1.5 text-[10px] uppercase leading-3 text-[#ed6203]">
+              {t(project.sector)}
+            </span>
+            <span className="inline-flex h-6 items-center gap-1.5 rounded-md bg-white/80 px-2 pr-3 text-[10px] text-[#030712]">
+              <MapPin size={12} />
+              {locationLabel}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex min-h-[255px] flex-col px-1.5 py-3">
+          <div>
+            <h3 className="line-clamp-2 text-[18px] font-semibold leading-7 text-[#030712]">
+              {t(project.name)}
+            </h3>
+            <p className="mt-2 line-clamp-2 min-h-[40px] text-[14px] leading-5 text-[#1f2937]">
+              {t(project.description)}
+            </p>
+            <div className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-[#6b7280]">
+              <Building2 size={14} />
+              {t('Opening for Investor')}
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-4 gap-4">
+            {[
+              { label: 'Total Budget', value: formatInvestmentAmount(project.budget, language) },
+              { label: 'IRR', value: t(project.returnRate) },
+              { label: 'Min Invest', value: formatInvestmentAmount(project.minInvestment, language) },
+              { label: 'Timeline', value: t(project.timeline) },
+            ].map((metric) => (
+              <div key={metric.label} className="min-w-0">
+                <div className="text-[10px] uppercase leading-3 text-[#6b7280]">
+                  {t(metric.label)}
+                </div>
+                <div className="mt-2 truncate text-[12px] font-bold leading-4 text-[#92400e]">
+                  {metric.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-auto flex items-center justify-between border-t border-[#e5e7eb] pt-3">
+            <div className="inline-flex items-center gap-1 text-[12px] text-[#6b7280]">
+              <Globe2 size={14} />
+              {t(project.projectType === 'private' ? 'Private' : 'Public')}
+            </div>
+            <div className="inline-flex items-center gap-1 text-[12px] font-medium text-[#ed6203]">
+              {t('Discovery Now')}
+              <ArrowRight size={14} />
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
   }
 
   function submitFastTrack(event: FormEvent<HTMLFormElement>) {
@@ -353,452 +441,209 @@ export default function HomePage() {
 
   return (
     <div id="top" className="flex min-h-screen flex-col bg-white text-slate-900">
-      <PublicPortalHeader
-        items={navItems.map((item) => ({
-          label: item.label,
-          onClick: () => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' }),
-        }))}
-        title={t('Hochiminh City Investment Hub')}
-        subtitle={t("HO CHI MINH CITY PEOPLE'S COMMITTEE")}
-        actionLabel={t('Login')}
-        actionTo="/login"
-      />
-      <main className="mx-auto max-w-[1180px] flex-1 px-5 pb-16 pt-0 lg:px-6">
-        <section ref={heroSectionRef} className="relative h-[600px] overflow-hidden bg-[#081d36]">
+      <main className="flex-1 bg-white">
+        <section ref={heroSectionRef} className="relative h-[1080px] overflow-hidden bg-[#071423] text-white">
+          <img
+            src={interactiveHero ? homeHeroInteractive : homeHeroFigmaCity}
+            alt={t('Ho Chi Minh City hero banner')}
+            className="absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
           {!interactiveHero ? (
-            <>
-              <button
-                type="button"
-                className="absolute inset-0 block cursor-pointer overflow-hidden"
-                onClick={enterInteractiveHero}
-                aria-label={t('Open interactive hero banner')}
-              >
-                <img
-                  src={homeHeroFigmaCity}
-                  alt={t('Ho Chi Minh City hero banner')}
-                  className="h-full w-full scale-[1.08] object-cover object-[center_28%]"
-                  draggable={false}
-                />
-              </button>
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,12,33,0.08)_0%,rgba(0,12,33,0.16)_24%,rgba(0,13,38,0.82)_100%)]" />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,22,45,0.88)_0%,rgba(5,22,45,0.48)_26%,rgba(5,22,45,0.12)_56%,rgba(5,22,45,0.12)_84%,rgba(5,22,45,0.62)_100%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_64%,rgba(1,15,33,0.36)_0%,rgba(1,15,33,0.18)_15%,rgba(1,15,33,0)_34%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_98%_95%,rgba(1,15,33,0.86)_0%,rgba(1,15,33,0.58)_3%,rgba(1,15,33,0)_12%)]" />
-              <div className="relative flex h-full flex-col justify-between px-6 pb-10 pt-12 lg:px-10 lg:pb-12 lg:pt-14">
-                <div className="grid gap-8">
-                  <div className="relative z-20 max-w-[520px] pt-4 lg:pt-8">
-                    <h1 className="text-[38px] font-extrabold leading-[0.98] tracking-[-0.04em] text-white md:text-[54px]">
-                      <span className="block">Hochiminh City</span>
-                      <span className="mt-2 block" style={{ color: '#ff6a00' }}>Investment Hub</span>
-                    </h1>
-                    <p className="mt-8 text-[20px] font-medium tracking-[0.03em] text-white/72">
-                      {t('Your Gateway. Our Support. Your Success')}
-                    </p>
-                    <div className="mt-8 flex flex-wrap items-center gap-6">
-                      <Button
-                        className="inline-flex h-[50px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
-                        style={{ background: 'linear-gradient(180deg, #ff7a1a 0%, #ed6203 100%)' }}
-                        onClick={() => document.getElementById('discover')?.scrollIntoView({ behavior: 'smooth' })}
-                      >
-                        {t('Explore Opportunities')}
-                      </Button>
-                      <button
-                        type="button"
-                        className="text-[16px] font-semibold text-white underline decoration-[#ff6a00] decoration-[1.5px] underline-offset-4 transition hover:text-white/85"
-                        onClick={enterInteractiveHero}
-                      >
-                        {t('Interactive Map')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="relative z-10 mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {stats.map((item) => (
-                    <div key={item.label} className="rounded-none border border-[rgba(224,192,177,0.18)] bg-white/70 px-4 py-4 backdrop-blur-sm">
-                      <div className="tabular-nums text-[26px] font-normal leading-8 text-[#9d4300]">{item.value}</div>
-                      <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[#455f87]">{t(item.label)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="absolute inset-0 overflow-hidden">
-                <img
-                  src={homeHeroInteractive}
-                  alt={t('Ho Chi Minh City interactive hero banner')}
-                  className="h-full w-full object-cover object-center"
-                  draggable={false}
-                />
-              </div>
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,13,38,0)_0%,rgba(0,13,38,0.08)_58%,rgba(0,13,38,0.34)_100%)]" />
-              <div className="relative h-full">
-                <div className="absolute left-6 top-6 z-30 lg:left-8">
-                  <button
-                    type="button"
-                    onClick={exitInteractiveHero}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/24 bg-[rgba(4,18,33,0.48)] px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-[rgba(4,18,33,0.68)]"
-                  >
-                    <ArrowLeft size={16} />
-                    {t('Back')}
-                  </button>
-                </div>
-                <div className="absolute inset-0">
-                  {heroHotspots.map(({ id, projectId, left, top, color, project }) => {
-                    if (!project) return null;
-                    const isActive = activeHeroHotspotId === id;
-                    const cardPositionClass = left > 70
-                      ? 'right-[calc(100%+14px)] items-end text-right'
-                      : 'left-[calc(100%+14px)] items-start text-left';
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        className={`absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none ${isActive ? 'z-40' : 'z-20'}`}
-                        style={{ left: `${left}%`, top: `${top}%` }}
-                        onMouseEnter={() => setActiveHeroHotspotId(id)}
-                        onMouseLeave={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
-                        onFocus={() => setActiveHeroHotspotId(id)}
-                        onBlur={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
-                        onClick={() => navigate(`/investor/project/${projectId}`)}
-                        aria-label={t(project.name)}
-                      >
-                        <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full blur-md" style={{ backgroundColor: `${color}66` }} />
-                        <MapPin size={28} fill={color} color={color} strokeWidth={1.8} className={`drop-shadow-[0_10px_18px_rgba(15,23,42,0.38)] transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} />
-                        {isActive && (
-                          <span className={`absolute top-1/2 z-50 flex w-[240px] -translate-y-1/2 ${cardPositionClass}`}>
-                            <span className="block rounded-none border border-white/18 bg-[rgba(7,18,35,0.88)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.42)] backdrop-blur">
-                              <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color }}>
-                                <MapPin size={12} />
-                                {t(project.sectorGroup)}
-                              </span>
-                              <span className="mt-3 block overflow-hidden rounded-none border border-white/10 bg-white/5">
-                                <img src={project.image} alt={t(project.name)} className="h-[120px] w-full object-cover" />
-                              </span>
-                              <span className="mt-3 block text-sm font-semibold leading-5 text-white">
-                                {t(project.name)}
-                              </span>
-                              <span className="mt-2 block text-xs leading-5 text-white/72">
-                                {getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language)}
-                              </span>
-                              <span className="mt-2 block text-[11px] leading-5 text-white/78">
-                                {t(project.description).slice(0, 86)}...
-                              </span>
-                              <span className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold text-[#ffb77c]">
-                                {t('Open project detail')}
-                                <ArrowRight size={12} />
-                              </span>
-                            </span>
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-        <section
-          id="fast-track"
-          className="relative z-20 w-full border px-6 py-4 md:px-8 md:py-4"
-          style={{ borderColor: '#f2e2d5', background: 'linear-gradient(135deg, #fff2e6 0%, #f5f8fb 68%, #edf4f9 100%)' }}>
-          <div className="grid gap-4 md:grid-cols-2 md:items-center">
-            <div className="flex min-h-[96px] flex-col items-center justify-center text-center">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: BRAND.orange }}>
-                {t('Need tailored support')}
-              </div>
-              <div className="mt-2 text-2xl font-semibold" style={{ color: BRAND.blue }}>
-                {t("FAST-TRACK")}
-              </div>
-              <div className="mt-2 text-sm leading-6 text-slate-600">
-                {t('Submit a quick intake')}
-              </div>
-            </div>
-            <div className="flex min-h-[96px] items-center justify-center">
-              <Button
-                className="inline-flex h-[50px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
-                style={{ backgroundColor: BRAND.orange }}
-                onClick={openFastTrackModal}
-              >
-                {t('Submit quick intake')}
-              </Button>
-            </div>
-          </div>
-        </section>
-        <section id="discover" className="mt-10">
-          <Card className="mt-6 rounded-none border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}>
-            <CardContent className="grid gap-5 p-5">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px]">
-                <div className="relative">
-                  <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8c7164]" />
-                  <Input
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder={t('Search by project name, ID, or keywords...')}
-                    className="h-[60px] rounded-none border-[rgba(224,192,177,0.2)] bg-[#f2f4f6] pl-12 text-[16px] text-[#191c1e] shadow-none"
-                  />
-                </div>
+            <iframe
+              title={t('Ho Chi Minh City hero background video')}
+              src={HERO_VIDEO_SRC}
+              className="pointer-events-none absolute left-1/2 top-1/2 aspect-video h-full min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,18,33,0.16)_0%,rgba(5,18,33,0.12)_42%,rgba(5,18,33,0.88)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,33,0.66)_0%,rgba(5,18,33,0.2)_54%,rgba(5,18,33,0.42)_100%)]" />
 
+          <header className="absolute left-0 top-0 z-40 flex h-[84px] w-full items-center gap-3 px-6 py-3 md:px-[78px]">
+            <button type="button" onClick={() => document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' })} className="relative h-[60px] w-[60px] shrink-0">
+              <img src="/figma-homepage/header-logo.png" alt={t('Ho Chi Minh City People Committee')} className="h-full w-full object-contain" />
+            </button>
+            <nav className="ml-auto hidden items-center gap-8 lg:flex">
+              {[
+                { label: 'Home', id: 'top', active: true },
+                { label: 'Projects map view', action: openHeroMapView },
+                { label: 'Projects', id: 'discover' },
+                { label: 'Quick Request', id: 'fast-track' },
+                { label: 'Support', id: 'support' },
+              ].map((item) => (
                 <button
+                  key={item.label}
                   type="button"
-                  onClick={openHeroMapView}
-                  className="inline-flex h-[60px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
+                  onClick={() => item.action ? item.action() : document.getElementById(item.id ?? 'top')?.scrollIntoView({ behavior: 'smooth' })}
+                  className={`h-[31px] border-b-2 px-2 text-[18px] leading-7 ${item.active ? 'border-[#ed6203] font-bold text-[#ed6203]' : 'border-transparent font-normal text-white'}`}
                 >
-                  <Map size={18} />
-                  {t('View on Map')}
-                </button>
-              </div>
-
-              <div className="grid gap-4 border-t border-[rgba(224,192,177,0.12)] pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:items-end">
-                <div className="space-y-2">
-                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Sector')}</div>
-                  <Select value={selectedSector} onValueChange={setSelectedSector}>
-                    <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                      <SelectValue placeholder={t('All Sectors')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sectorOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Location')}</div>
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                  <SelectValue placeholder={t('All areas')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locationOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Investment Size')}</div>
-                  <Select value={selectedInvestmentRange} onValueChange={setSelectedInvestmentRange}>
-                    <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                      <SelectValue placeholder={t('Any Range')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {investmentRangeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Project Type')}</div>
-                  <div className="inline-flex rounded-none bg-[#f2f4f6] p-1">
-                    {[
-                      { value: 'public', label: 'Public' },
-                      { value: 'private', label: 'Private' },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setSelectedProjectType(option.value)}
-                        className={`rounded-none px-4 py-2 text-[13px] font-medium transition-colors ${
-                          selectedProjectType === option.value
-                            ? 'bg-[#ffd7c5] text-[#6a2d00]'
-                            : 'text-[#455f87]'
-                        }`}
-                      >
-                        {t(option.label)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={resetExplorerFilters}
-                  className="justify-self-start border-b border-[rgba(157,67,0,0.2)] pb-1 text-[14px] font-medium text-[#9d4300] lg:justify-self-end"
-                >
-                  {t('Clear all filters')}
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section id="featured-projects" ref={featuredProjectsRef} className="mt-12 space-y-10">
-          <div><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{t('Featured investment projects')}</h2></div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-[14px] text-[#455f87]">
-              {t('Showing')} <span className="font-semibold text-[#191c1e]">{filteredProjects.length}</span> {t('projects')}
-            </div>
-            <div className="text-[12px] uppercase tracking-[0.12em] text-[#8c7164]">
-              {t('Sorted by')}: <span className="text-[#455f87]">{t('Relevance')}</span>
-            </div>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-3">
-            {visibleProjects.map((project) => {
-              const isWatching = watchlist.includes(project.id);
-              const followerCount = getMockFollowerCount(project.id, project.budget);
-              const locationLabel = getAdministrativeLocationLabel(getProjectAdministrativeLocation(project), language);
-
-              return (
-                <Link
-                  key={project.id}
-                  to={`/investor/project/${project.id}`}
-                  className="group overflow-hidden rounded-none border border-[rgba(224,192,177,0.1)] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(69,95,135,0.12)]"
-                >
-                  <div className="relative h-52 overflow-hidden bg-[#e0e3e5]">
-                    <img
-                      src={project.image}
-                      alt={t(project.name)}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
-                      <div className="rounded-none border border-white/60 bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9d4300] shadow-sm">
-                        {formatFollowerCount(followerCount)} {t('followers')}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(event) => handleToggleWatchlist(project.id, event)}
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-none border backdrop-blur-sm transition-colors ${
-                          isWatching
-                            ? 'border-[#f6d6bf] bg-[#fff1e7] text-[#9d4300]'
-                            : 'border-white/70 bg-white/92 text-[#8c7164] hover:text-[#9d4300]'
-                        }`}
-                        aria-label={isWatching ? t('Watching') : t('Follow')}
-                      >
-                        <Star size={14} fill={isWatching ? 'currentColor' : 'none'} />
-                      </button>
-                    </div>
-                    <div className="absolute bottom-3 left-3">
-                      <span className="rounded-none bg-white/92 px-2 py-1 text-[10px] uppercase tracking-[0.06em] text-[#9d4300] shadow-sm">
-                        {t(project.sector)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex h-[290px] flex-col px-5 py-5">
-                    <div>
-                      <h3 className="line-clamp-2 text-[20px] font-normal leading-7 text-[#191c1e]">
-                        {t(project.name)}
-                      </h3>
-                      <div className="mt-3 flex items-center gap-2 text-[12px] text-[#455f87]">
-                        <MapPin size={13} />
-                          <span className="line-clamp-1">{locationLabel}</span>
-                      </div>
-                      <p className="mt-4 line-clamp-3 min-h-[72px] text-[14px] leading-[1.65] text-[#455f87]">
-                        {t(project.description)}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-4 gap-3 border-t border-[rgba(224,192,177,0.15)] pt-4">
-                      {[
-                        { label: 'Total Budget', value: formatInvestmentAmount(project.budget, language) },
-                        { label: 'IRR', value: t(project.returnRate) },
-                        { label: 'Min Invest', value: formatInvestmentAmount(project.minInvestment, language) },
-                        { label: 'Timeline', value: t(project.timeline) },
-                      ].map((metric) => (
-                        <div key={metric.label} className="min-w-0">
-                          <div className="text-[10px] uppercase tracking-[0.08em] text-[#8c7164]">
-                            {t(metric.label)}
-                          </div>
-                          <div className="mt-1 truncate text-[12px] font-medium text-[#191c1e]">
-                            {metric.value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {(project.highlights ?? []).slice(0, 2).map((highlight) => (
-                        <span
-                          key={highlight}
-                          className="rounded-none bg-[#f2f4f6] px-2 py-1 text-[11px] font-medium text-[#455f87]"
-                        >
-                          {t(highlight)}
-                        </span>
-                      ))}
-                      {(project.highlights?.length ?? 0) > 2 && (
-                        <span className="rounded-none bg-[#f2f4f6] px-2 py-1 text-[11px] font-medium text-[#8c7164]">
-                          +{(project.highlights?.length ?? 0) - 2}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-between border-t border-[rgba(224,192,177,0.15)] pt-4">
-                      <button
-                        type="button"
-                        onClick={(event) => handleToggleWatchlist(project.id, event)}
-                        className={`inline-flex items-center justify-center rounded-none px-4 py-2 text-[14px] font-medium transition-colors ${
-                          isWatching
-                            ? 'bg-[#fff1e7] text-[#9d4300]'
-                            : 'bg-[#f2f4f6] text-[#455f87] hover:bg-[#e6eaee]'
-                        }`}
-                      >
-                        {isWatching ? t('Watching') : t('Follow')}
-                      </button>
-                      <div className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#9d4300]">
-                        {t('View detail')}
-                        <ArrowRight size={14} />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          {!isPaginationMode && filteredProjects.length > 0 && (
-            <SeeAllButton label={t('View More')} onClick={enablePaginationMode} />
-          )}
-
-          {isPaginationMode && filteredProjects.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                disabled={currentPage === 1}
-                className="inline-flex min-w-[88px] items-center justify-center border border-[rgba(224,192,177,0.24)] px-4 py-2 text-[14px] font-medium text-[#455f87] disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                {t('Previous')}
-              </button>
-
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => setCurrentPage(page)}
-                  className={`inline-flex h-10 min-w-[40px] items-center justify-center border px-3 text-[14px] font-medium transition-colors ${
-                    page === currentPage
-                      ? 'border-[#9d4300] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] text-white'
-                      : 'border-[rgba(224,192,177,0.24)] bg-white text-[#455f87] hover:bg-[#f7f1ec]'
-                  }`}
-                >
-                  {page}
+                  {t(item.label)}
                 </button>
               ))}
+              <button type="button" disabled aria-disabled="true" className="inline-flex cursor-default items-center gap-3 text-[18px] font-semibold leading-7 text-white">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#1f4b8f]">EN</span>
+                EN
+                <ChevronDown size={24} />
+              </button>
+              <Link to="/login" className="inline-flex h-10 w-[151px] items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
+                <User size={20} />
+                {t('Login')}
+              </Link>
+            </nav>
+          </header>
 
+          {interactiveHero ? (
+            <div className="absolute inset-0 z-20">
               <button
                 type="button"
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                disabled={currentPage === totalPages}
-                className="inline-flex min-w-[88px] items-center justify-center border border-[rgba(224,192,177,0.24)] px-4 py-2 text-[14px] font-medium text-[#455f87] disabled:cursor-not-allowed disabled:opacity-45"
+                onClick={exitInteractiveHero}
+                className="absolute left-6 top-[104px] z-30 inline-flex items-center gap-2 rounded-full border border-white/24 bg-[rgba(4,18,33,0.48)] px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-[rgba(4,18,33,0.68)] md:left-[78px]"
               >
-                {t('Next')}
+                <ArrowLeft size={16} />
+                {t('Back')}
+              </button>
+              {heroHotspots.map(({ id, projectId, left, top, color, project }) => {
+                if (!project) return null;
+                const isActive = activeHeroHotspotId === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none ${isActive ? 'z-40' : 'z-20'}`}
+                    style={{ left: `${left}%`, top: `${top}%` }}
+                    onMouseEnter={() => setActiveHeroHotspotId(id)}
+                    onMouseLeave={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
+                    onFocus={() => setActiveHeroHotspotId(id)}
+                    onBlur={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
+                    onClick={() => navigate(`/investor/project/${projectId}`)}
+                    aria-label={t(project.name)}
+                  >
+                    <MapPin size={30} fill={color} color={color} strokeWidth={1.8} className="drop-shadow-[0_10px_18px_rgba(15,23,42,0.38)]" />
+                    {isActive ? (
+                      <span className="absolute left-[calc(100%+14px)] top-1/2 block w-[240px] -translate-y-1/2 rounded-md border border-white/18 bg-[rgba(7,18,35,0.88)] p-4 text-left shadow-[0_18px_40px_rgba(15,23,42,0.42)] backdrop-blur">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color }}>{t(project.sectorGroup)}</span>
+                        <img src={project.image} alt={t(project.name)} className="mt-3 h-[120px] w-full rounded-md object-cover" />
+                        <span className="mt-3 block text-sm font-semibold leading-5 text-white">{t(project.name)}</span>
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className="absolute left-6 top-[287px] z-10 w-[calc(100%-48px)] max-w-[896px] md:left-[78px]">
+            <div>
+              <h1 className="text-[42px] font-bold leading-[56px] text-[#ed6203] md:text-[48px]">HO CHI MINH CITY</h1>
+              <div className="mt-0 flex items-center gap-3 text-[46px] font-extrabold leading-[52px] text-white md:text-[52px]">
+                INVESTMENT HUB
+              </div>
+              <p className="mt-0 text-[24px] leading-8 text-white">{t('Your Gateway. Our Support. Your Success')}</p>
+            </div>
+
+            <div className="mt-8 grid max-w-[896px] grid-cols-2 gap-6 md:grid-cols-[188px_1px_188px_1px_188px_1px_188px] md:items-center">
+              {stats.map((item, index) => (
+                <React.Fragment key={item.label}>
+                  <div className="text-white">
+                    <div className="text-[32px] font-semibold leading-10">{item.value}</div>
+                    <div className="mt-1 text-[14px] uppercase leading-5">{t(item.label)}</div>
+                  </div>
+                  {index < stats.length - 1 ? <div className="hidden h-[66px] w-px bg-white/35 md:block" /> : null}
+                </React.Fragment>
+              ))}
+            </div>
+
+            <div id="fast-track" className="mt-20 flex w-full max-w-[384px] flex-col items-center justify-center gap-2 rounded-lg bg-black/20 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)]">
+              <div className="text-[18px] leading-7 text-white">{t('Need tailor support')}</div>
+              <div className="text-[24px] font-bold leading-8 text-white">{t('FAST-TRACK')}</div>
+              <button type="button" onClick={openFastTrackModal} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 py-2.5 text-[14px] font-medium leading-5 text-white">
+                <Mail size={20} />
+                {t('Submit Investment Interest')}
               </button>
             </div>
-          )}
+          </div>
+
+          <button type="button" onClick={enterInteractiveHero} className="absolute bottom-10 left-1/2 z-20 flex h-[30px] w-[30px] -translate-x-1/2 items-center justify-center text-white" aria-label={t('Open interactive hero banner')}>
+            <ChevronDown size={30} />
+          </button>
+        </section>
+
+        <section id="projects-map" className="relative overflow-hidden bg-[#f9fafb] px-6 py-8 md:px-[78px]">
+          <div className="relative mx-auto grid max-w-[1284px] items-center gap-8 rounded-lg bg-white px-6 py-8 lg:grid-cols-[451px_1fr] lg:pr-3">
+            <div className="flex max-w-[451px] flex-col justify-center gap-3">
+              <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Smart Investing, Visually Mapped')}</h2>
+              <p className="max-w-[424px] text-[12px] leading-4 text-[#6b7280]">
+                {t('Explore global opportunities with real-time data and intuitive map-based insights. Navigate the complexity of markets with precision.')}
+              </p>
+              <button type="button" onClick={openHeroMapView} className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
+                <Map size={20} />
+                {t('View on map')}
+              </button>
+            </div>
+            <img src="/figma-homepage/map-visual.png" alt="" className="h-[300px] w-full rounded-md object-cover lg:h-[388px]" />
+          </div>
+        </section>
+
+        <section id="discover" ref={featuredProjectsRef} className="relative overflow-hidden bg-white px-6 py-12 md:px-[78px]">
+          <h2 className="text-[28px] font-semibold leading-9 text-[#ed6203]">{t('Featured investment projects')}</h2>
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="relative w-full">
+              <Search size={44} className="absolute left-0 top-3 z-10 rounded-lg bg-[#ed6203] p-3 text-white" />
+              <div className="ml-6 flex min-h-[64px] flex-col gap-4 rounded-lg border border-[#ed6203] bg-white py-2.5 pl-10 pr-3 shadow-[0_0_8px_rgba(0,0,0,0.08)] lg:flex-row lg:items-center">
+                <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={t('Search by project name, ID, or keywords...')} className="h-[42px] min-w-[280px] flex-1 border-0 bg-transparent px-0 text-[14px] font-normal shadow-none focus-visible:ring-0" />
+                {[
+                  { label: 'Sector', value: selectedSector, set: setSelectedSector, options: sectorOptions },
+                  { label: 'Location', value: selectedLocation, set: setSelectedLocation, options: locationOptions },
+                  { label: 'Investment size', value: selectedInvestmentRange, set: setSelectedInvestmentRange, options: investmentRangeOptions },
+                ].map((filter) => (
+                  <Select key={filter.label} value={filter.value} onValueChange={filter.set}>
+                    <div className="min-w-[170px] border-l border-[#e5e7eb] pl-3">
+                      <span className="block text-[14px] font-semibold leading-5 text-[#030712]">{t(filter.label)}</span>
+                      <SelectTrigger className="mt-1 h-8 rounded-md border border-[#d1d5db] bg-white px-3 text-left text-[14px] font-normal text-[#4b5563] shadow-none focus:ring-0">
+                        <SelectValue className="font-normal text-[#4b5563]" />
+                      </SelectTrigger>
+                    </div>
+                    <SelectContent>
+                      {filter.options.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ))}
+                <button type="button" onClick={resetExplorerFilters} className="text-[12px] font-medium text-[#6b7280]">{t('Clear All Filter')}</button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="inline-flex h-11 overflow-hidden rounded-lg shadow-[0_1px_6px_rgba(0,0,0,0.08)]">
+                {[
+                  { value: 'public', label: 'Public Sector', Icon: Globe2 },
+                  { value: 'private', label: 'Private Sector', Icon: Briefcase },
+                ].map(({ value, label, Icon }) => (
+                  <button key={value} type="button" onClick={() => setSelectedProjectType(value)} className={`inline-flex items-center gap-2 px-3 text-[14px] font-medium ${selectedProjectType === value ? 'bg-white text-[#ed6203]' : 'bg-[#f3f4f6] text-[#030712]'}`}>
+                    <Icon size={20} />
+                    {t(label)}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 text-[16px] text-[#030712]">
+                {t('Showing')} <span className="text-[#ed6203]">{filteredProjects.length}</span> {t('projects')}
+                <span className="h-8 w-px bg-[#e5e7eb]" />
+                <button type="button" className="inline-flex items-center gap-2 text-[14px] font-medium">
+                  {t('Relevance')}
+                  <ChevronDown size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-3">
+            {featuredProjects.map(renderProjectCard)}
+          </div>
 
           {filteredProjects.length === 0 && (
             <div className="rounded-none border border-[rgba(224,192,177,0.1)] bg-white px-6 py-14 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
@@ -810,147 +655,301 @@ export default function HomePage() {
           )}
         </section>
 
-        <section className="mt-14"><div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{t('Comprehensive solutions for investors')}</h2></div>
-          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {solutionCards.map(([Icon, title, body]) => <Card key={title as string} className="rounded-none border bg-white shadow-[0_10px_30px_rgba(15,53,87,0.05)]" style={{ borderColor: BRAND.blueBorder }}><CardContent className="p-5 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-none" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}><Icon size={20} /></div><h3 className="mt-4 text-lg font-semibold" style={{ color: BRAND.blue }}>{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{body}</p></CardContent></Card>)}
-          </div>
-        </section>
-        <section className="mt-14 bg-[#455f87] px-6 py-16 text-white md:px-10">
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-            {keyStats.map((item) => (
-              <div key={item.label} className="rounded-none border border-white/12 bg-white/6 px-4 py-4 backdrop-blur-sm">
-                <div className="tabular-nums text-[26px] font-normal leading-8 text-[#f97316]">{item.value}</div>
-                <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/70">{t(item.label)}</div>
+        <section id="new-update-projects" className="relative overflow-hidden bg-[#f9fafb] px-6 py-12 md:px-[78px]">
+          <div className="mx-auto max-w-[1284px]">
+            <h2 className="text-[28px] font-semibold leading-9 text-[#ed6203]">{t('New Update Projects')}</h2>
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              {visibleUpdatedProjects.map(renderProjectCard)}
+            </div>
+            {newUpdateVisibleCount < updatedProjects.length && (
+              <SeeAllButton
+                label={t('View More')}
+                onClick={() => setNewUpdateVisibleCount((count) => Math.min(updatedProjects.length, count + NEW_UPDATE_ROW_SIZE))}
+              />
+            )}
+            {updatedProjects.length === 0 && (
+              <div className="rounded-none border border-[rgba(224,192,177,0.1)] bg-white px-6 py-14 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <div className="text-[18px] font-medium text-[#191c1e]">{t('No projects found')}</div>
+                <div className="mt-2 text-[14px] text-[#455f87]">
+                  {t('Try adjusting your filters to explore other projects.')}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </section>
-        <section className="mt-14">
-          <div className="text-center"><h2 className="mt-2 text-3xl font-semibold" style={{ color: BRAND.blue }}>{t('Why Ho Chi Minh City?')}</h2></div>
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            {investmentNews.map((item, index) => <a key={item.href} href={item.href} target="_blank" rel="noreferrer"><Card className="h-full overflow-hidden rounded-none border bg-white shadow-[0_12px_36px_rgba(15,53,87,0.05)] transition-transform hover:-translate-y-1" style={{ borderColor: BRAND.blueBorder }}><div className="h-2" style={{ background: index % 2 === 0 ? `linear-gradient(90deg, ${BRAND.orange} 0%, #ffb77c 100%)` : `linear-gradient(90deg, ${BRAND.blue} 0%, #2e5f8f 100%)` }} /><div className="h-[220px] overflow-hidden bg-slate-100"><img src={item.image} alt={isVi ? item.viTitle : item.enTitle} className="h-full w-full object-cover" /></div><CardContent className="p-5"><div className="flex items-center justify-between gap-3"><span className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ backgroundColor: BRAND.orangeSoft, color: BRAND.orange }}>{item.source}</span><span className="text-xs text-slate-400">{isVi ? item.viDate : item.enDate}</span></div><h3 className="mt-4 text-lg font-semibold leading-snug" style={{ color: BRAND.blue }}>{isVi ? item.viTitle : item.enTitle}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{isVi ? item.viSummary : item.enSummary}</p><div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold" style={{ color: BRAND.blue }}>{t('Read source')}<ArrowRight size={14} /></div></CardContent></Card></a>)}
-          </div>
-        </section>
-        <section id="support" className="mt-16">
-          <div className="overflow-hidden bg-white shadow-[0_32px_72px_rgba(15,23,42,0.18)]">
-            <div className="grid bg-white lg:grid-cols-[1fr_1.08fr]">
-              <div className="relative min-h-[220px] lg:min-h-full">
-                <img src={designHeroSkyline} alt="" className="h-full w-full object-cover object-center" />
-                <div className="absolute inset-0 bg-[rgba(7,17,31,0.62)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,31,0.22)_0%,rgba(7,17,31,0.68)_100%)]" />
-                <div className="absolute inset-0 flex items-center justify-center px-6 py-6 lg:px-10">
-                  <div className="flex max-w-[640px] flex-col items-center text-center text-white">
-                    <div className="inline-flex h-[84px] w-[84px] items-center justify-center rounded-[20px] bg-[#ffe6d8] text-[#f97316] shadow-[0_18px_40px_rgba(0,0,0,0.16)] lg:h-[92px] lg:w-[92px]">
-                      <Headset size={44} />
+
+        <section id="investment-system" className="relative overflow-hidden bg-[#1e40af] px-6 py-8 text-white md:px-[78px]">
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/2 opacity-70"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='160' viewBox='0 0 240 160'%3E%3Crect width='240' height='160' fill='%231e40af'/%3E%3Cpath d='M48 0 86 28 48 56Z' fill='%232a55c4'/%3E%3Cpath d='M142 20 180 48 142 76Z' fill='%232751c0'/%3E%3Cpath d='M212 0 240 21 212 42Z' fill='%23305ccc'/%3E%3Cpath d='M18 76 56 104 18 132Z' fill='%2317359a'/%3E%3Cpath d='M104 96 142 124 104 152Z' fill='%232449b6'/%3E%3Cpath d='M208 104 240 128 208 152Z' fill='%232d58c8'/%3E%3Cpath d='M0 10 34 35 0 60Z' fill='%23193a9f'/%3E%3C/svg%3E\")",
+              backgroundSize: '240px 160px',
+            }}
+          />
+          <div className="relative mx-auto max-w-[1284px]">
+            <h2 className="text-center text-[28px] font-semibold leading-9 text-white">{t('How the Investment System Works')}</h2>
+            <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              {investmentSystemCards.map(({ title, description, badge, badgeClassName, Icon }) => (
+                <div key={title} className="relative min-h-[156px] overflow-hidden rounded-md bg-white px-3 py-6 text-left text-[#1f2937]">
+                  <div className="absolute -right-12 -top-16 h-[155px] w-[155px] rounded-full bg-[#f3f4f6]" />
+                  <div className="relative flex items-center justify-between gap-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f3f4f6] text-[#1f2937]">
+                      <Icon size={22} />
                     </div>
-                    <h2 className="mt-4 text-[24px] font-semibold leading-[1.2] text-white lg:text-[26px]">
-                      {t('Need assistance with your investment journey?')}
-                    </h2>
-                    <p className="mt-2 max-w-[560px] text-[15px] leading-[1.5] text-white/88 lg:text-[16px]">
-                      {t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')}
-                    </p>
+                    <span className={`rounded-md px-2.5 py-1.5 text-[10px] leading-3 ${badgeClassName}`}>{t(badge)}</span>
+                  </div>
+                  <h3 className="relative mt-3 text-[16px] font-medium leading-6 text-[#1f2937]">{t(title)}</h3>
+                  <p className="relative mt-3 text-[10px] leading-3 text-[#6b7280]">{t(description)}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 grid gap-4 py-6 sm:grid-cols-2 xl:grid-cols-4">
+              {investmentSystemMetrics.map((metric, index) => (
+                <div key={metric.label} className={`flex flex-col items-center justify-center gap-1.5 text-center ${index > 0 ? 'xl:border-l xl:border-white/40' : ''}`}>
+                  <div className="text-[32px] font-semibold leading-10 text-white">{metric.value}</div>
+                  <div className="text-[14px] leading-5 text-white">{t(metric.label)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="support"
+          className="relative overflow-hidden bg-white px-6 pb-6 pt-24 md:px-[78px]"
+          style={{
+            backgroundImage: "url('/figma-homepage/support-pattern.png')",
+            backgroundRepeat: 'repeat',
+            backgroundSize: '120px 206px',
+            backgroundPosition: 'left 180px',
+          }}
+        >
+          <div className="absolute inset-0 bg-white/40" />
+          <div className="relative mx-auto grid max-w-[1284px] gap-10 lg:grid-cols-[519px_1fr]">
+            <div className="flex max-w-[519px] flex-col gap-7">
+              <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">
+                {t('Need assistance')}<br />
+                {t('with your investment journey?')}
+              </h2>
+              <p className="max-w-[444px] text-[16px] leading-6 text-black">
+                {t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')}
+              </p>
+              <img src="/figma-homepage/support-journey.png" alt="" className="h-[173px] w-[284px] rounded-2xl object-cover" />
+            </div>
+
+            <form onSubmit={submitSupport} className="flex flex-col gap-4 bg-white/95">
+              {supportNotice ? (
+                <div className="rounded-md border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
+                  {supportNotice}
+                </div>
+              ) : null}
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="space-y-1.5">
+                  <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Company Name')} <span className="text-[#dc2626]">*</span></span>
+                  <Input
+                    value={supportForm.companyName}
+                    onChange={(event) => setSupportForm((current) => ({ ...current, companyName: event.target.value }))}
+                    placeholder={t('Enter company name')}
+                    className="h-11 rounded-lg border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] shadow-none placeholder:text-[#6b7280]"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Contact Person')} <span className="text-[#dc2626]">*</span></span>
+                  <Input
+                    value={supportForm.contactName}
+                    onChange={(event) => setSupportForm((current) => ({ ...current, contactName: event.target.value }))}
+                    placeholder={t('Enter full name')}
+                    className="h-11 rounded-lg border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] shadow-none placeholder:text-[#6b7280]"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Email')} <span className="text-[#dc2626]">*</span></span>
+                  <Input
+                    type="email"
+                    value={supportForm.email}
+                    onChange={(event) => setSupportForm((current) => ({ ...current, email: event.target.value }))}
+                    placeholder={t('Enter email address')}
+                    className="h-11 rounded-lg border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] shadow-none placeholder:text-[#6b7280]"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Phone Number')} <span className="text-[#dc2626]">*</span></span>
+                  <Input
+                    value={supportForm.phone}
+                    onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
+                    placeholder={t('Enter phone number')}
+                    className="h-11 rounded-lg border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] shadow-none placeholder:text-[#6b7280]"
+                  />
+                </label>
+              </div>
+
+              <label className="space-y-1.5">
+                <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Support Topic')}</span>
+                <Input
+                  value={supportForm.topic}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, topic: event.target.value }))}
+                  placeholder={t('Project clarification and next-step coordination')}
+                  className="h-11 rounded-lg border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] shadow-none placeholder:text-[#6b7280]"
+                />
+              </label>
+
+              <label className="space-y-1.5">
+                <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Project')}</span>
+                <select
+                  value={supportForm.projectId}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, projectId: event.target.value }))}
+                  className="h-11 w-full rounded-lg border border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] outline-none"
+                >
+                  {homeProjects.map((project) => (
+                    <option key={project.id} value={project.id}>{t(project.name)}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1.5">
+                <span className="text-[14px] font-medium leading-5 text-[#1f2937]">{t('Support Detail')} <span className="text-[#dc2626]">*</span></span>
+                <Textarea
+                  value={supportForm.message}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
+                  placeholder={t('Enter a description...')}
+                  rows={6}
+                  className="min-h-[148px] rounded-lg border-[#d4d4d4] bg-white px-3.5 py-2.5 text-[16px] font-normal text-[#030712] shadow-[0_1px_2px_rgba(0,0,0,0.05)] placeholder:text-[#737373]"
+                />
+              </label>
+
+              <label className="flex items-center gap-2 text-[14px] font-medium leading-5 text-[#6b7280]">
+                <input
+                  type="checkbox"
+                  checked={supportAcceptedTerms}
+                  onChange={(event) => setSupportAcceptedTerms(event.target.checked)}
+                  className="h-5 w-5 rounded border-[#d4d4d4] accent-[#ed6203]"
+                />
+                <span>{t('I agree to Ho Chi Minh Investment Hub’s')} <span className="text-[#ed6203] underline">{t('Term and Conditions')}</span></span>
+              </label>
+
+              <button
+                type="submit"
+                disabled={!supportAcceptedTerms}
+                className="inline-flex h-10 w-[176px] items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white disabled:bg-[#d1d5db] disabled:text-[#9ca3af]"
+              >
+                <Headset size={20} />
+                {t('Send')}
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section id="why-hcmc" className="px-6 py-10 md:px-[78px]">
+          <div className="mx-auto max-w-[1284px]">
+            <h2 className="text-[28px] font-semibold leading-9 text-[#ed6203]">{t('Why Ho Chi Minh City?')}</h2>
+            <div className="mt-6 flex flex-wrap gap-3 text-[16px] leading-6">
+              {['Investment Environment', 'Key Industries', 'Operating Ecosystem', 'Infrastructure & Connectivity', 'Living & Lifestyle'].map((tab, index) => (
+                <button key={tab} type="button" className={`h-[31px] px-3 ${index === 0 ? 'border-b-2 border-[#ed6203] font-semibold text-[#ed6203]' : 'text-[#6b7280]'}`}>
+                  {t(tab)}
+                </button>
+              ))}
+            </div>
+            <div className="mt-6 grid gap-3 lg:grid-cols-[659px_1fr]">
+              <a href={investmentNews[0]?.href} target="_blank" rel="noreferrer" className="relative h-[371px] overflow-hidden rounded-md">
+                <img src="/figma-homepage/why-main.png" alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                  <div className="rounded-md bg-black/35 p-3 backdrop-blur-sm">
+                    <span className="rounded-full bg-[#ecfeff] px-2.5 py-1.5 text-[10px] text-[#075985]">VIETNAM NEWS</span>
+                    <div className="mt-2 text-[14px] leading-5">April 17, 2026</div>
+                    <div className="text-[16px] leading-6">{t('The green living advantages stem from the location and planning of Van Phuc City.')}</div>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex min-h-0 flex-col bg-white">
-                <div className="shrink-0 bg-[#5872A0] px-8 py-3 text-center text-[20px] font-semibold text-white md:px-12 md:py-4">
-                  {t('Investment Support')}
-                </div>
-                <div className="flex-1 px-5 py-4 md:px-8 md:py-4">
-                  <form className="space-y-4" onSubmit={submitSupport}>
-                    {supportNotice ? (
-                      <div className="border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
-                        {supportNotice}
+              </a>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[0, 1, 2, 3].map((item) => (
+                  <a key={item} href={investmentNews[item % investmentNews.length]?.href} target="_blank" rel="noreferrer" className="relative min-h-[180px] overflow-hidden rounded-md">
+                    <img src="/figma-homepage/why-card.png" alt="" className="h-full w-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                      <div className="rounded-md bg-black/35 p-3 backdrop-blur-sm">
+                        <span className="rounded-full bg-[#ecfeff] px-2.5 py-1.5 text-[10px] text-[#075985]">VIETNAM NEWS</span>
+                        <div className="mt-2 text-[14px] leading-5">April 17, 2026</div>
+                        <div className="line-clamp-2 text-[16px] leading-6">{t('The green living advantages stem from the location and planning of Van Phuc...')}</div>
                       </div>
-                    ) : null}
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Company Name')} <span className="text-[#f97316]">(*)</span></span>
-                        <Input
-                          value={supportForm.companyName}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, companyName: event.target.value }))}
-                          placeholder={t('Enter company name')}
-                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                        />
-                      </label>
-                      <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Contact Person')} <span className="text-[#f97316]">(*)</span></span>
-                        <Input
-                          value={supportForm.contactName}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, contactName: event.target.value }))}
-                          placeholder={t('Enter full name')}
-                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                        />
-                      </label>
-                      <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
-                        <Input
-                          type="email"
-                          value={supportForm.email}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, email: event.target.value }))}
-                          placeholder={t('Enter email address')}
-                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                        />
-                      </label>
-                      <label className="space-y-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Phone Number')} <span className="text-[#f97316]">(*)</span></span>
-                        <Input
-                          value={supportForm.phone}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
-                          placeholder={t('Enter phone number')}
-                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                        />
-                      </label>
-                      <label className="space-y-2 md:col-span-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Support Topic')}</span>
-                        <Input
-                          value={supportForm.topic}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, topic: event.target.value }))}
-                          placeholder={t('Project clarification and next-step coordination')}
-                          className="h-10 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                        />
-                      </label>
-                      <label className="space-y-2 md:col-span-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Project')}</span>
-                        <select
-                          value={supportForm.projectId}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, projectId: event.target.value }))}
-                          className="h-10 w-full rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none"
-                        >
-                          {homeProjects.map((project) => (
-                            <option key={project.id} value={project.id}>{t(project.name)}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="space-y-2 md:col-span-2">
-                        <span className="text-[12px] font-medium text-[#1a2755]">{t('Support Details')} <span className="text-[#f97316]">(*)</span></span>
-                        <Textarea
-                          value={supportForm.message}
-                          onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
-                          rows={4}
-                          placeholder={t('Enter your request details')}
-                          className="min-h-[96px] rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 py-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
-                        />
-                      </label>
                     </div>
-
-                    <div className="flex justify-center pt-0.5">
-                      <button
-                        type="submit"
-                        className="inline-flex min-w-[260px] items-center justify-center gap-3 bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-7 py-3 text-[18px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
-                      >
-                        <Headset size={20} />
-                        {t('Contact Support')}
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                  </a>
+                ))}
               </div>
             </div>
           </div>
         </section>
+
+        <section id="partners" className="relative overflow-hidden bg-white px-6 py-8 md:px-[78px]">
+          <img src="/figma-homepage/partners-bg.png" alt="" className="pointer-events-none absolute inset-x-0 top-[-521px] h-[1450px] w-full object-cover opacity-30" />
+          <div className="relative mx-auto flex max-w-[1284px] flex-col items-center gap-10">
+            <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Partners')}</h2>
+            <div className="flex w-full flex-col items-center gap-6">
+              <div className="text-[16px] font-medium leading-6 text-[#6b7280]">{t('Government')}</div>
+              <div className="flex w-full flex-wrap items-center justify-center gap-[90px]">
+                {['gov-1.png', 'gov-2.png', 'gov-3b.png', 'gov-4.png', 'gov-5.png'].map((logo) => (
+                  <div key={logo} className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-white">
+                    <img src={`/figma-homepage/${logo}`} alt="" className="max-h-full max-w-full object-contain" />
+                  </div>
+                ))}
+              </div>
+              <button type="button" className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2.5 text-[14px] font-medium text-[#ed6203]">
+                {t('See more')}
+                <ArrowRight size={20} />
+              </button>
+            </div>
+            <div className="flex w-full flex-col items-center gap-6">
+              <div className="text-[16px] font-medium leading-6 text-[#6b7280]">{t('Strategic Partners')}</div>
+              <div className="flex w-full flex-wrap items-center justify-center gap-10">
+                {['strategic-1.png', 'strategic-2.png', 'strategic-3.png', 'strategic-4.png', 'strategic-5.png'].map((logo) => (
+                  <div key={logo} className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-white">
+                    <img src={`/figma-homepage/${logo}`} alt="" className="max-h-full max-w-full object-contain" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer id="footer" className="border-t border-[#f9fafb] bg-white px-6 py-8 md:px-[78px]">
+          <div className="mx-auto flex max-w-[1284px] flex-col gap-3">
+            <div className="grid gap-8 lg:grid-cols-[365px_1fr_1fr_327px]">
+              <div className="space-y-7">
+                <div className="flex items-center gap-[13px]">
+                  <img src="/figma-homepage/header-logo.png" alt="" className="h-[50px] w-[50px] object-contain" />
+                  <div className="text-[22px] font-bold leading-6 text-[#1f2937]">HCMC<br />INVESTMENT HUB</div>
+                </div>
+                <p className="text-[12px] leading-4 text-[#6b7280]">© 2024 HCMC Investment Promotion Center. All Rights Reserved.</p>
+                <div className="flex gap-3 text-[#1f2937]">
+                  <span className="flex h-[25px] w-[25px] items-center justify-center rounded-full bg-[#1877f2] text-[12px] font-bold text-white">f</span>
+                  <Mail size={25} />
+                  <span className="flex h-[25px] w-[25px] items-center justify-center rounded-sm bg-[#0a66c2] text-[12px] font-bold text-white">in</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="text-[16px] font-bold leading-6 text-[#ed6203]">HCMC INVESTMENT HUB</div>
+                {['Projects', 'Projects Map View', 'Why Ho Chi Minh City?'].map((item) => <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>)}
+              </div>
+              <div className="space-y-3">
+                <div className="text-[16px] font-bold leading-6 text-[#ed6203]">{t('SUPPORT')}</div>
+                {['Quick Intake', 'Support', 'FAQs'].map((item) => <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>)}
+              </div>
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 py-1.5 text-[10px] leading-3 text-[#166534]">
+                  <CheckCircle2 size={15} />
+                  Digital Trade & Investment Infrastructure
+                </div>
+                <div className="flex items-center gap-[13px]">
+                  <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
+                  <span className="text-[28px] font-bold leading-10 text-[#ed6203]">Arobid</span>
+                </div>
+                <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
+              </div>
+            </div>
+            <div className="mt-3 border-t border-[#e5e7eb] pt-3 text-right text-[10px] leading-3 text-[#111827]">
+              Privacy Policy&nbsp;&nbsp;&nbsp; Term of Services
+            </div>
+          </div>
+        </footer>
       </main>
       {isFastTrackModalOpen && (
         <ExplorerActionModal
@@ -1132,7 +1131,6 @@ export default function HomePage() {
         title={t('Investment Opportunity Map')}
         description={t('Explore the projects currently matching your filters in the interactive map workspace.')}
       />
-      <ExplorerFooter />
     </div>
   );
 }
