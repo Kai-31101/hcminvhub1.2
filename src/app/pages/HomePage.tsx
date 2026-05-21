@@ -220,16 +220,6 @@ export default function HomePage() {
           : current.locationNeed,
     }));
   }, [language]);
-  const stats = useMemo(() => {
-    const totalFollowers = projects.reduce((sum, project) => sum + getMockFollowerCount(project.id, project.budget), 0);
-
-    return [
-      { label: 'Total Projects', value: `${projects.length}` },
-      { label: 'Active Sectors', value: `${new Set(projects.map((project) => project.sector)).size}` },
-      { label: 'Follows', value: formatFollowerCount(totalFollowers) },
-      { label: 'Investment Value', value: formatPortfolioValue(projects.reduce((sum, project) => sum + project.budget, 0), language) },
-    ];
-  }, [language, projects]);
   const investmentSystemCards = useMemo(
     () => [
       {
@@ -546,15 +536,12 @@ export default function HomePage() {
               <p className="mt-0 text-[24px] leading-8 text-white">{t('Your Gateway. Our Support. Your Success')}</p>
             </div>
 
-            <div className="mt-8 grid max-w-[896px] grid-cols-2 gap-6 md:grid-cols-[188px_1px_188px_1px_188px_1px_188px] md:items-center">
-              {stats.map((item, index) => (
-                <React.Fragment key={item.label}>
-                  <div className="text-white">
-                    <div className="text-[32px] font-semibold leading-10">{item.value}</div>
-                    <div className="mt-1 text-[14px] uppercase leading-5">{t(item.label)}</div>
-                  </div>
-                  {index < stats.length - 1 ? <div className="hidden h-[66px] w-px bg-white/35 md:block" /> : null}
-                </React.Fragment>
+            <div className="mt-8 grid max-w-[896px] grid-cols-2 gap-4 md:grid-cols-4">
+              {investmentSystemMetrics.map((metric) => (
+                <div key={metric.label} className="flex min-h-[118px] flex-col items-center justify-center rounded-lg border border-white/25 bg-white/10 px-3 py-4 text-center shadow-[0_12px_30px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+                  <div className="text-[32px] font-semibold leading-10 text-white">{metric.value}</div>
+                  <div className="mt-1 text-[12px] font-medium uppercase leading-4 text-white/85">{t(metric.label)}</div>
+                </div>
               ))}
             </div>
 

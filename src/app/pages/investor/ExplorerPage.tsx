@@ -402,7 +402,7 @@ export default function ExplorerPage() {
   return (
     <div className="bg-[#f9fafb]" style={{ fontFamily: 'Inter, var(--font-body), sans-serif' }}>
       <div className="mx-auto max-w-[1192px] px-4 py-4 md:px-8">
-        <section ref={heroRef} className="relative h-[321px] overflow-hidden rounded-lg bg-[#071423]">
+        <section ref={heroRef} className="relative min-h-[321px] overflow-hidden rounded-lg bg-[#071423] py-6">
           <iframe
             title={t('Ho Chi Minh City hero background video')}
             src={HERO_VIDEO_SRC}
@@ -413,13 +413,23 @@ export default function ExplorerPage() {
             tabIndex={-1}
           />
           <div className="absolute inset-0 bg-transparent" />
-          <div className="absolute left-6 top-10 flex w-[min(384px,calc(100%-48px))] flex-col items-center justify-center gap-2 rounded-lg bg-black/25 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)] backdrop-blur-sm md:left-[91px] md:top-[51px]">
+          <div className="relative z-10 mx-6 grid min-h-[273px] items-center gap-6 md:mx-[91px] lg:grid-cols-[384px_minmax(0,1fr)]">
+          <div className="flex w-full max-w-[384px] flex-col items-center justify-center gap-2 rounded-lg bg-black/25 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)] backdrop-blur-sm">
             <div className="text-[18px] leading-7 text-white">{t('Need tailor support')}</div>
             <div className="text-[24px] font-bold leading-8 text-white">{t('FAST-TRACK')}</div>
             <button type="button" onClick={openInterestFlow} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 py-2.5 text-[14px] font-medium leading-5 text-white">
               <Send size={20} />
               {t('Submit Investment Interest')}
             </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+            {investmentMetrics.map((metric) => (
+              <div key={metric.label} className="flex min-h-[118px] flex-col items-center justify-center rounded-lg border border-white/25 bg-white/10 px-3 py-4 text-center shadow-[0_12px_30px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+                <div className="text-[32px] font-semibold leading-10 text-white">{metric.value}</div>
+                <div className="mt-1 text-[12px] font-medium uppercase leading-4 text-white/85">{t(metric.label)}</div>
+              </div>
+            ))}
+          </div>
           </div>
         </section>
 
