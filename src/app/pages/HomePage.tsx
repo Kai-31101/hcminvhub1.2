@@ -906,7 +906,7 @@ export default function HomePage() {
                   <img src="/figma-homepage/header-logo.png" alt="" className="h-[50px] w-[50px] object-contain" />
                   <div className="text-[22px] font-bold leading-6 text-[#1f2937]">HCMC<br />INVESTMENT HUB</div>
                 </div>
-                <p className="text-[12px] leading-4 text-[#6b7280]">© 2024 HCMC Investment Promotion Center. All Rights Reserved.</p>
+                <p className="text-[12px] leading-4 text-[#6b7280]">© 2026 HCMC Investment Promotion Center. All Rights Reserved.</p>
                 <div className="flex gap-3 text-[#1f2937]">
                   <span className="flex h-[25px] w-[25px] items-center justify-center rounded-full bg-[#1877f2] text-[12px] font-bold text-white">f</span>
                   <Mail size={25} />
