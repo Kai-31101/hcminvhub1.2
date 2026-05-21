@@ -955,126 +955,129 @@ export default function HomePage() {
         <ExplorerActionModal
           onClose={closeFastTrackModal}
           closeLabel={t('Close')}
-          panelTitle={t('Quick Intake')}
-          leftIcon={<Headset size={44} />}
-          leftTitle={t('Quick Intake')}
-          leftDescription={t('Submit a quick intake so the platform can route the responsible desk and coordinate the next step inside the city workflow.')}
+          panelTitle={t('Investment Interest')}
+          variant="investment-interest"
+          leftIcon={<Landmark size={44} />}
+          leftTitle={t('Ready to submit your investment interest?')}
+          leftDescription={t('Share your company profile and project intent. Our team will capture the request and coordinate the next step in the city investment workflow.')}
         >
-          <form onSubmit={submitFastTrack} className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Company Name')} <span className="text-[#f97316]">(*)</span></span>
+          <form onSubmit={submitFastTrack} className="space-y-3">
+            <div className="grid gap-x-3 gap-y-2 md:grid-cols-2">
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Company Name')}<span className="text-[#dc2626]">*</span></span>
                 <Input
                   value={fastTrackForm.companyName}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, companyName: event.target.value }))}
-                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                   placeholder={t('Enter company name')}
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Contact Person')} <span className="text-[#f97316]">(*)</span></span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Contact Name')}<span className="text-[#dc2626]">*</span></span>
                 <Input
                   value={fastTrackForm.contactName}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, contactName: event.target.value }))}
-                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                   placeholder={t('Enter full name')}
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Email')}<span className="text-[#dc2626]">*</span></span>
                 <Input
                   type="email"
                   value={fastTrackForm.email}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, email: event.target.value }))}
-                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                   placeholder={t('Enter email address')}
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Phone Number')}</span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Phone Number')}</span>
                 <Input
                   value={fastTrackForm.phone}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, phone: event.target.value }))}
-                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                   placeholder={t('Enter phone number')}
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Country')}</span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Country')}</span>
                 <Input
                   value={fastTrackForm.country}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, country: event.target.value }))}
-                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                   placeholder={t('Enter country')}
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Preferred Sector')}</span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Preferred Sector')}</span>
                 <ClearableSelectField
                   ariaLabel={t('Preferred Sector')}
                   value={fastTrackForm.sector}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, sector: value }))}
                   placeholder={t('Select preferred sector')}
                   options={sectors.map((sector) => ({ value: sector, label: t(sector) }))}
-                  className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Preferred Location')}</span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Preferred Location')}</span>
                 <Input
                   value={fastTrackForm.locationNeed}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, locationNeed: event.target.value }))}
-                  className="h-11 rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                   placeholder={t('Enter preferred location')}
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Investment Size')}</span>
+              <label className="space-y-1">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Investment Size')}</span>
                 <ClearableSelectField
                   ariaLabel={t('Investment Size')}
                   value={fastTrackForm.investmentSize}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentSize: value }))}
                   placeholder={t('Select investment size')}
                   options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: t(option) }))}
-                  className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                 />
               </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Investment Type')}</span>
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Investment Type')}</span>
                 <ClearableSelectField
                   ariaLabel={t('Investment Type')}
                   value={fastTrackForm.investmentType}
                   onChange={(value) => setFastTrackForm((current) => ({ ...current, investmentType: value }))}
                   placeholder={t('Select investment type')}
                   options={['I have investment requirements', 'I want project suggestions', 'I need investment support', 'I want to explore partnership', 'Others'].map((option) => ({ value: option, label: t(option) }))}
-                  className="h-11 rounded-[14px] border border-[#dfe5ec] bg-[#f7f9fb] px-4 text-[14px] text-[#1f2937] outline-none transition focus:border-[#0f3557]"
+                  className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                 />
               </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-medium text-[#1a2755]">{t('Notes')}</span>
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Notes')}</span>
                 <Textarea
                   value={fastTrackForm.notes}
                   onChange={(event) => setFastTrackForm((current) => ({ ...current, notes: event.target.value }))}
                   rows={4}
                   placeholder={t('Enter a short note about your investment needs')}
-                  className="min-h-[110px] rounded-[14px] border-[#dfe5ec] bg-[#f7f9fb] px-4 py-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[13px] placeholder:text-[#8b97a8]"
+                  className="h-[152px] resize-none rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                 />
               </label>
             </div>
 
             {fastTrackNotice && (
-              <div className="rounded-[14px] border border-[#f2c5a5] bg-[#fff3e7] px-4 py-3 text-sm text-[#9d4300]">
+              <div className="rounded-lg border border-[#f2c5a5] bg-[#fff3e7] px-3 py-2 text-sm text-[#9d4300]">
                 {fastTrackNotice}
               </div>
             )}
 
+            <label className="flex items-center gap-2 text-[14px] font-medium leading-5 text-[#6b7280]"><span className="relative h-6 w-6 shrink-0"><span className="absolute left-1/2 top-1/2 h-[17px] w-[17px] -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-[#e5e7eb] bg-white" /></span><span>{t('By submitting, I agree to the Ho Chi Minh Investment Hub')} <span className="text-[#ed6203] underline">{t('Terms and Conditions')}</span></span></label>
+
             <div className="flex justify-center pt-1">
               <button
                 type="submit"
-                className="inline-flex min-w-[240px] items-center justify-center gap-3 bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-7 py-3 text-[18px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
+                className="inline-flex h-10 min-w-[208px] items-center justify-center gap-2 whitespace-nowrap rounded-md bg-[#ed6203] px-4 py-2 text-[14px] font-medium text-white shadow-none transition-colors hover:bg-[#d95702]"
               >
-                <Mail size={18} />
-                {t('Submit quick intake')}
+                <Mail size={18} className="shrink-0" />
+                {t('Submit Your Interest')}
               </button>
             </div>
           </form>

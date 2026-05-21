@@ -11,7 +11,7 @@ type ExplorerActionModalProps = {
   onClose: () => void;
   panelTitle: string;
   sideImageSrc?: string;
-  variant?: 'default' | 'investment-interest' | 'meeting-request';
+  variant?: 'default' | 'investment-interest' | 'meeting-request' | 'investor-question';
 };
 
 export function ExplorerActionModal({
@@ -27,10 +27,10 @@ export function ExplorerActionModal({
 }: ExplorerActionModalProps) {
   const resolvedCloseLabel = closeLabel ?? 'Close';
 
-  const isFigmaFormVariant = variant === 'investment-interest' || variant === 'meeting-request';
+  const isFigmaFormVariant = variant === 'investment-interest' || variant === 'meeting-request' || variant === 'investor-question';
 
   if (isFigmaFormVariant) {
-    const sidePanelHeight = variant === 'meeting-request' ? 'h-[876px]' : 'h-[674px]';
+    const sidePanelHeight = variant === 'meeting-request' ? 'h-[876px]' : variant === 'investor-question' ? 'h-[628px]' : 'h-[674px]';
 
     return (
       <div className="fixed inset-0 z-[140] flex items-start justify-center overflow-y-auto bg-[rgba(15,23,42,0.72)] p-3 md:p-4">

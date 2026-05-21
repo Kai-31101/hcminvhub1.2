@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { ArrowRight, CheckCircle2, Headset, Landmark, Mail, Map, MapPin, Search, Send, Star, TrendingUp } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, Headset, Landmark, Mail, Map, MapPin, Search, Send, Star, TrendingUp } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
@@ -775,117 +775,120 @@ export default function ExplorerPage() {
         <ExplorerActionModal
           onClose={closeModal}
           closeLabel={t('Close')}
-          panelTitle={activeModal === 'interest' ? t('Quick Intake') : t('Investment Support')}
+          panelTitle={activeModal === 'interest' ? t('Investment Interest') : activeModal === 'support' ? t('Investor Question') : t('Investment Support')}
+          variant={activeModal === 'interest' ? 'investment-interest' : activeModal === 'support' ? 'investor-question' : 'default'}
           leftIcon={activeModal === 'interest' ? <Landmark size={44} /> : <Headset size={44} />}
           leftTitle={
             activeModal === 'interest'
-              ? t('Quick Intake')
-              : t('Need assistance with your investment journey?')
+              ? t('Ready to submit your investment interest?')
+              : t('Need clarification before moving forward?')
           }
           leftDescription={
             activeModal === 'interest'
               ? t('Share your company profile and project intent. Our team will capture the request and coordinate the next step in the city investment workflow.')
-              : t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')
+              : t('Send a structured question to the project response queue and keep the due-diligence conversation inside the investor workflow.')
           }
         >
           {activeModal === 'interest' && interestStep === 'form' && (
-                    <div className="space-y-6">
+                    <div className="space-y-3">
                       {interestError ? (
-                        <div className="border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
+                        <div className="rounded-lg border border-[#f3c3a7] bg-[#fff1e7] px-3 py-2 text-[14px] text-[#9d4300]">
                           {interestError}
                         </div>
                       ) : null}
 
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Company Name')} <span className="text-[#f97316]">(*)</span></span>
+                      <div className="grid gap-x-3 gap-y-2 md:grid-cols-2">
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Company Name')}<span className="text-[#dc2626]">*</span></span>
                           <Input
                             value={interestForm.companyName}
                             onChange={(event) => handleInterestFieldChange('companyName', event.target.value)}
                             placeholder={t('Enter company name')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Contact Person')} <span className="text-[#f97316]">(*)</span></span>
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Contact Name')}<span className="text-[#dc2626]">*</span></span>
                           <Input
                             value={interestForm.contactName}
                             onChange={(event) => handleInterestFieldChange('contactName', event.target.value)}
                             placeholder={t('Enter full name')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Email')}<span className="text-[#dc2626]">*</span></span>
                           <Input
                             type="email"
                             value={interestForm.email}
                             onChange={(event) => handleInterestFieldChange('email', event.target.value)}
                             placeholder={t('Enter email address')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Phone Number')}</span>
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Phone Number')}</span>
                           <Input
                             value={interestForm.phone}
                             onChange={(event) => handleInterestFieldChange('phone', event.target.value)}
                             placeholder={t('Enter phone number')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Investment Size')}</span>
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Investment Size')}</span>
                           <ClearableSelectField
                             ariaLabel={t('Investment Size')}
                             value={interestForm.investmentSize}
                             onChange={(value) => handleInterestFieldChange('investmentSize', value)}
                             placeholder={t('Select investment size')}
                             options={['< $10M', '$10M - $50M', '$50M - $200M', '>$200M'].map((option) => ({ value: option, label: t(option) }))}
-                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Investment Type')}</span>
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Investment Type')}</span>
                           <ClearableSelectField
                             ariaLabel={t('Investment Type')}
                             value={interestForm.investmentType}
                             onChange={(value) => handleInterestFieldChange('investmentType', value)}
                             placeholder={t('Select investment type')}
                             options={['Equity', 'JV', 'PPP'].map((option) => ({ value: option, label: t(option) }))}
-                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                           />
                         </label>
-                        <label className="space-y-2 md:col-span-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Project')}</span>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Associated Project')}</span>
                           <ClearableSelectField
                             ariaLabel={t('Project')}
                             value={interestForm.projectId}
                             onChange={(value) => handleInterestFieldChange('projectId', value)}
                             placeholder={t('Select project')}
                             options={projects.map((project) => ({ value: project.id, label: t(project.name) }))}
-                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                           />
                         </label>
-                        <label className="space-y-2 md:col-span-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Investment Details')}</span>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Notes')}</span>
                           <textarea
                             value={interestForm.notes}
                             onChange={(event) => handleInterestFieldChange('notes', event.target.value)}
                             rows={6}
                             placeholder={t('Enter your investment details')}
-                            className="min-h-[190px] w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 py-4 text-[16px] text-[#1f2937] outline-none placeholder:text-[#8b97a8]"
+                            className="h-[152px] w-full resize-none rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none placeholder:text-[#6b7280]"
                           />
                         </label>
                       </div>
 
-                      <div className="flex justify-center pt-2">
+                      <label className="flex items-center gap-2 text-[14px] font-medium leading-5 text-[#6b7280]"><span className="relative h-6 w-6 shrink-0"><span className="absolute left-1/2 top-1/2 h-[17px] w-[17px] -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-[#e5e7eb] bg-white" /></span><span>{t('By submitting, I agree to the Ho Chi Minh Investment Hub')} <span className="text-[#ed6203] underline">{t('Terms and Conditions')}</span></span></label>
+
+                      <div className="flex justify-center pt-1">
                         <button
                           type="button"
                           onClick={handleInterestSubmit}
-                          className="inline-flex min-w-[320px] items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-5 text-[20px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
+                          className="inline-flex h-10 min-w-[208px] items-center justify-center gap-2 whitespace-nowrap rounded-md bg-[#ed6203] px-4 py-2 text-[14px] font-medium text-white shadow-none transition-colors hover:bg-[#d95702]"
                         >
-                          <Send size={20} />
+                          <Send size={20} className="shrink-0" />
                           {t('Submit Your Interest')}
                         </button>
                       </div>
@@ -923,91 +926,83 @@ export default function ExplorerPage() {
           )}
 
           {activeModal === 'support' && supportStep === 'form' && (
-                    <div className="space-y-6">
+                    <div className="space-y-3">
                       {supportError ? (
-                        <div className="border border-[#f3c3a7] bg-[#fff1e7] px-4 py-3 text-[14px] text-[#9d4300]">
+                        <div className="rounded-lg border border-[#f3c3a7] bg-[#fff1e7] px-3 py-2 text-[14px] text-[#9d4300]">
                           {supportError}
                         </div>
                       ) : null}
 
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Company Name')} <span className="text-[#f97316]">(*)</span></span>
+                      <div className="grid gap-x-3 gap-y-2 md:grid-cols-2">
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Company Name')}<span className="text-[#dc2626]">*</span></span>
                           <Input
                             value={supportForm.companyName}
                             onChange={(event) => handleSupportFieldChange('companyName', event.target.value)}
                             placeholder={t('Enter company name')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Contact Person')} <span className="text-[#f97316]">(*)</span></span>
-                          <Input
-                            value={supportForm.contactName}
-                            onChange={(event) => handleSupportFieldChange('contactName', event.target.value)}
-                            placeholder={t('Enter full name')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
-                          />
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Contact Person')}<span className="text-[#dc2626]">*</span></span>
+                          <div className="flex h-10 items-center rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937]"><button type="button" className="inline-flex shrink-0 items-center gap-1 pr-2 text-[#030712]"><span>Mr</span><ChevronDown size={16} className="text-[#6b7280]" /></button><input value={supportForm.contactName} onChange={(event) => handleSupportFieldChange('contactName', event.target.value)} className="min-w-0 flex-1 bg-transparent px-2 text-[14px] font-normal text-[#1f2937] outline-none placeholder:text-[#6b7280]" placeholder={t('Enter full name')} /></div>
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Email')} <span className="text-[#f97316]">(*)</span></span>
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Email')}<span className="text-[#dc2626]">*</span></span>
                           <Input
                             type="email"
                             value={supportForm.email}
                             onChange={(event) => handleSupportFieldChange('email', event.target.value)}
                             placeholder={t('Enter email address')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Phone Number')} <span className="text-[#f97316]">(*)</span></span>
-                          <Input
-                            value={supportForm.phone}
-                            onChange={(event) => handleSupportFieldChange('phone', event.target.value)}
-                            placeholder={t('Enter phone number')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
-                          />
+                        <label className="space-y-1">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Phone Number')}<span className="text-[#dc2626]">*</span></span>
+                          <div className="flex h-10 items-center rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937]"><button type="button" className="inline-flex shrink-0 items-center gap-1 pr-2 text-[#030712]"><span>VN</span><ChevronDown size={16} className="text-[#6b7280]" /></button><span className="shrink-0 border-l border-[#e5e7eb] px-2 text-[#030712]">+84</span><input value={supportForm.phone} onChange={(event) => handleSupportFieldChange('phone', event.target.value)} className="min-w-0 flex-1 bg-transparent px-2 text-[14px] font-normal text-[#1f2937] outline-none placeholder:text-[#6b7280]" placeholder="000-000-000" /></div>
                         </label>
-                        <label className="space-y-2 md:col-span-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Support Topic')}</span>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Support Topic')}</span>
                           <Input
                             value={supportForm.topic}
                             onChange={(event) => handleSupportFieldChange('topic', event.target.value)}
                             placeholder={t('Clarification on project scope and next coordination steps')}
-                            className="h-14 rounded-[16px] border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] shadow-none placeholder:text-[#8b97a8]"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] shadow-none placeholder:text-[#6b7280]"
                           />
                         </label>
-                        <label className="space-y-2 md:col-span-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Project')}</span>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Associated Project')}</span>
                           <ClearableSelectField
                             ariaLabel={t('Project')}
                             value={supportForm.projectId}
                             onChange={(value) => handleSupportFieldChange('projectId', value)}
                             placeholder={t('Select project')}
                             options={projects.map((project) => ({ value: project.id, label: t(project.name) }))}
-                            className="h-14 rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 text-[16px] text-[#1f2937] outline-none"
+                            className="h-10 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none"
                           />
                         </label>
-                        <label className="space-y-2 md:col-span-2">
-                          <span className="text-[14px] font-medium text-[#1a2755]">{t('Support Details')}</span>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-[14px] font-medium leading-5 text-[#030712]">{t('Investor Question')}<span className="text-[#dc2626]">*</span></span>
                           <textarea
                             value={supportForm.details}
                             onChange={(event) => handleSupportFieldChange('details', event.target.value)}
                             rows={6}
                             placeholder={t('Enter your request details')}
-                            className="min-h-[190px] w-full rounded-[16px] border border-[#dfe5ec] bg-[#f7f9fb] px-5 py-4 text-[16px] text-[#1f2937] outline-none placeholder:text-[#8b97a8]"
+                            className="h-[152px] w-full resize-none rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[14px] font-normal text-[#1f2937] outline-none placeholder:text-[#6b7280]"
                           />
                         </label>
                       </div>
 
-                      <div className="flex justify-center pt-2">
+                      <label className="flex items-center gap-2 text-[14px] font-medium leading-5 text-[#6b7280]"><span className="relative h-6 w-6 shrink-0"><span className="absolute left-1/2 top-1/2 h-[17px] w-[17px] -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-[#e5e7eb] bg-white" /></span><span>{t('By submitting, I agree to the Ho Chi Minh Investment Hub')} <span className="text-[#ed6203] underline">{t('Terms and Conditions')}</span></span></label>
+
+                      <div className="flex justify-center pt-1">
                         <button
                           type="button"
                           onClick={handleSupportSubmit}
-                          className="inline-flex min-w-[320px] items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-5 text-[20px] font-semibold text-white shadow-[0_10px_18px_rgba(249,115,22,0.18)]"
+                          className="inline-flex h-10 min-w-[208px] items-center justify-center gap-2 whitespace-nowrap rounded-md bg-[#ed6203] px-4 py-2 text-[14px] font-medium text-white shadow-none transition-colors hover:bg-[#d95702]"
                         >
-                          <Headset size={20} />
-                          {t('Contact Support')}
+                          <Send size={20} className="shrink-0" />
+                          {t('Submit Question')}
                         </button>
                       </div>
                     </div>
