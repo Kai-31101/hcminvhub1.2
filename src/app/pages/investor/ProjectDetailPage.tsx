@@ -243,30 +243,30 @@ export default function ProjectDetailPage() {
   ]);
 
   return (
-    <div className="bg-[#f9fafb] px-4 pb-10 pt-4 md:px-8">
-      <div className="mx-auto grid max-w-[1128px] gap-6 xl:grid-cols-[840px_264px]">
+    <div className="bg-[#f9fafb] px-3 pb-10 pt-4 sm:px-4 md:px-8">
+      <div className="mx-auto grid max-w-[1128px] grid-cols-1 gap-6 xl:grid-cols-[minmax(0,840px)_264px]">
         <div className="space-y-4">
-          <div className="flex h-9 items-center gap-2 text-[14px] text-[#6b7280]">
-            <Link to="/investor/explorer" className="inline-flex items-center gap-1 hover:text-[#ed6203]"><ArrowLeft size={14} />{t('Projects')}</Link>
-            <ChevronRight size={14} /><span className="truncate text-[#030712]">{t(project.name)}</span>
+          <div className="flex h-9 min-w-0 items-center gap-2 overflow-hidden text-[14px] text-[#6b7280]">
+            <Link to="/investor/explorer" className="inline-flex shrink-0 items-center gap-1 hover:text-[#ed6203]"><ArrowLeft size={14} />{t('Projects')}</Link>
+            <ChevronRight size={14} className="shrink-0" /><span className="min-w-0 truncate text-[#030712]">{t(project.name)}</span>
           </div>
 
           <section className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_0_24px_rgba(0,0,0,0.04)]">
             <div className="flex flex-col gap-4">
               <div className="space-y-1.5">
-                <h1 className="text-[24px] font-semibold leading-8 text-[#030712]">{t(project.name)}</h1>
+                <h1 className="break-words text-[22px] font-semibold leading-8 text-[#030712] sm:text-[24px]">{t(project.name)}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#1f2937]">
                   <span className="inline-flex items-center gap-1"><MapPin size={16} />{locationLabel}</span>
                   <span className="inline-flex items-center gap-1"><Eye size={16} />{formatFollowerCount(followerCount * 9 + 145)} {t('views')}</span>
                   <span className="inline-flex items-center gap-1"><Calendar size={16} />{t('Updated')} {project.updatedAt || 'May 2, 2024'}</span>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded bg-[#f3f4f6] text-[#5b6b79]"><Building2 size={20} /></div>
-                <div><div className="text-[12px] text-[#6b7280]">{t('Project Owner')}</div><div className="text-[16px] font-medium text-[#0070e0]">{ownerAgencyLabel}</div></div>
+                <div className="min-w-0"><div className="text-[12px] text-[#6b7280]">{t('Project Owner')}</div><div className="break-words text-[16px] font-medium text-[#0070e0]">{ownerAgencyLabel}</div></div>
               </div>
-              <div className="h-6 w-px bg-[#e5e7eb]" />
+              <div className="hidden h-6 w-px bg-[#e5e7eb] sm:block" />
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded bg-[#f3f4f6] text-[#5b6b79]"><Landmark size={20} /></div>
                 <div><div className="text-[12px] text-[#6b7280]">{t('Total Investment')}</div><div className="text-[16px] font-medium text-[#ed6203]">${project.budget}M USD</div></div>
@@ -276,18 +276,18 @@ export default function ProjectDetailPage() {
 
             <div className="my-5 h-px w-full bg-[#e5e7eb]" />
 
-            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-1">{tabs.map((tab) => (
+            <div className="-mx-4 flex flex-nowrap gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">{tabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`h-8 whitespace-nowrap rounded-lg px-2.5 text-[14px] leading-5 transition-colors ${activeTab === tab.id ? 'bg-[#fef2eb] font-semibold text-[#ed6203]' : 'text-[#5b6b79] hover:bg-[#f9fafb] hover:text-[#ed6203]'}`}>{t(tab.label)}</button>
           ))}</div></section>
 
           {activeTab === 'overview' && (
             <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_0_24px_rgba(0,0,0,0.04)]">
               <div className="space-y-8">
-                <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_332px]">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_332px] xl:gap-10">
                   <div className="space-y-6 min-w-0">
                     <div>
                       <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-[#191c1e]">{t('Project Summary')}</h2>
-                      <div className="mt-5 space-y-5 text-[16px] leading-[1.65] text-[#584237]">{(summaryParagraphs.length ? summaryParagraphs : [t(project.description)]).slice(0, 2).map((paragraph, index) => <p key={`${project.id}-${index}`}>{paragraph}</p>)}</div>
+                      <div className="mt-5 space-y-5 text-[15px] leading-[1.65] text-[#584237] sm:text-[16px]">{(summaryParagraphs.length ? summaryParagraphs : [t(project.description)]).slice(0, 2).map((paragraph, index) => <p key={`${project.id}-${index}`}>{paragraph}</p>)}</div>
                     </div>
                     <div>
                       <div className="text-[16px] font-semibold text-[#1f2937]">{t('Key Performance Indicators')}</div>
@@ -297,12 +297,12 @@ export default function ProjectDetailPage() {
                           ['Construction Period', project.timeline, 'text-[#191c1e]'],
                           ['Est. Yearly Revenue', `$${project.budget ? Math.round(project.budget * 0.2) : 240}M USD`, 'text-[#006398]'],
                           ['Job Creation', `${Math.max(project.jobs * 250, 12000).toLocaleString()}+`, 'text-[#191c1e]'],
-                        ].map(([label, value, tone]) => <div key={label} className="flex h-[71px] items-center rounded-lg border border-[#c8d9ff] bg-white p-3"><div><div className="text-[14px] text-[#6b7280]">{t(label)}</div><div className={`mt-1 text-[16px] font-bold ${tone}`}>{t(value)}</div></div></div>)}
+                        ].map(([label, value, tone]) => <div key={label} className="flex min-h-[71px] items-center rounded-lg border border-[#c8d9ff] bg-white p-3"><div className="min-w-0"><div className="text-[14px] text-[#6b7280]">{t(label)}</div><div className={`mt-1 break-words text-[16px] font-bold ${tone}`}>{t(value)}</div></div></div>)}
                       </div>
                     </div>
                   </div>
                   <div className="space-y-4 min-w-0">
-                    <div className="overflow-hidden rounded-[4px] border border-[rgba(224,192,177,0.14)] bg-white"><img src={project.image} alt={t(project.name)} className="h-[220px] w-full object-cover" /><div className="px-4 py-3 text-[11px] uppercase tracking-[0.08em] text-[#8c7164]">{t('Artist Impression')}</div></div>
+                    <div className="overflow-hidden rounded-[4px] border border-[rgba(224,192,177,0.14)] bg-white"><img src={project.image} alt={t(project.name)} className="h-[180px] w-full object-cover sm:h-[220px]" /><div className="px-4 py-3 text-[11px] uppercase tracking-[0.08em] text-[#8c7164]">{t('Artist Impression')}</div></div>
                   </div>
                 </div>
                 <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white">
@@ -318,11 +318,11 @@ export default function ProjectDetailPage() {
                   {showCustomDetails ? (
                     <div className="border-t border-[#e5e7eb]">
                       {customProjectFields.map((field) => (
-                        <div key={`${field.group}-${field.label}`} className="flex min-h-11 items-stretch border-b border-[#e5e7eb] last:border-b-0">
-                          <div className="flex w-[135px] shrink-0 items-center border-b border-[#f3f4f6] bg-[#f3f4f6] px-6 py-3 text-[12px] font-medium leading-4 text-[#1f2937]">
+                        <div key={`${field.group}-${field.label}`} className="flex min-h-11 flex-col items-stretch border-b border-[#e5e7eb] last:border-b-0 sm:flex-row">
+                          <div className="flex w-full shrink-0 items-center border-b border-[#f3f4f6] bg-[#f3f4f6] px-4 py-3 text-[12px] font-medium leading-4 text-[#1f2937] sm:w-[135px] sm:px-6">
                             {t(field.label)}
                           </div>
-                          <div className="flex min-w-0 flex-1 items-center px-6 py-3 text-[14px] font-medium leading-5 text-[#1f2937]">
+                          <div className="flex min-w-0 flex-1 items-center break-words px-4 py-3 text-[14px] font-medium leading-5 text-[#1f2937] sm:px-6">
                             {t(field.value)}
                           </div>
                         </div>
@@ -332,7 +332,7 @@ export default function ProjectDetailPage() {
                 </div>
                 <div>
                   <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-[#191c1e]">{t('Investment Milestones')}</h2>
-                  <div className="mt-5 overflow-x-auto rounded-xl border border-[#f3f4f6] bg-white">
+                  <div className="-mx-4 mt-5 overflow-x-auto rounded-xl border border-[#f3f4f6] bg-white sm:mx-0">
                     <div className="min-w-[700px]">
                       <div className="grid grid-cols-[120px_minmax(280px,1fr)_140px_130px] bg-[#f9fafb] text-[12px] font-medium text-[#1f2937]"><div className="px-5 py-3">{t('Phase')}</div><div className="px-5 py-3">{t('Milestone Description')}</div><div className="px-5 py-3">{t('Target Date')}</div><div className="px-5 py-3 text-center">{t('Status')}</div></div>
                       {milestoneRows.map((milestone) => <div key={milestone.id} className="grid min-h-[72px] grid-cols-[120px_minmax(280px,1fr)_140px_130px] border-t border-[#f3f4f6] bg-white text-[14px]"><div className="px-5 py-4 font-semibold leading-5 text-[#1f2937]">{t(milestone.phase)}</div><div className="px-5 py-4 leading-5 text-[#1f2937]">{t(milestone.description)}</div><div className="px-5 py-4 leading-5 text-[#1f2937]">{milestone.dueDate}</div><div className="flex items-center justify-center px-5 py-4"><span className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-center text-[12px] font-medium leading-4 ${milestone.status === 'in_progress' || milestone.status === 'completed' ? 'bg-[#e4e7ff] text-[#011149]' : 'border border-[#f3f4f6] bg-[#f8fafc] text-[#1f2937]'}`}>{t(milestone.status === 'in_progress' || milestone.status === 'completed' ? 'In progress' : 'Planned')}</span></div></div>)}
@@ -355,7 +355,7 @@ export default function ProjectDetailPage() {
                 ].map(([label, value]) => <div key={label} className="rounded-lg border border-[#c8d9ff] bg-white p-4"><div className="text-[14px] text-[#6b7280]">{t(label)}</div><div className="mt-2 text-[16px] font-bold text-[#1f2937]">{t(value)}</div></div>)}
               </div>
               <div className="mt-6 flex flex-wrap items-start gap-6">
-                <div className="min-w-[343px] flex-1">
+                <div className="w-full min-w-0 flex-1 sm:min-w-[343px]">
                   <h3 className="text-[18px] font-semibold leading-7 text-[#1f2937]">{t('Location')}</h3>
                   <div className="relative mt-3 aspect-[392/250] overflow-hidden rounded-xl border border-[#e5e7eb] bg-white">
                     <img src={project.mapImage ?? designVietnamMap} alt={t('Location map')} className="h-full w-full object-cover" />
@@ -371,7 +371,7 @@ export default function ProjectDetailPage() {
                     <div className="absolute left-1/2 top-1/2 h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#ecfeff] bg-[#0070e0] shadow-[0_0_0_6px_rgba(0,112,224,0.12)]" />
                   </div>
                 </div>
-                <div className="min-w-[343px] flex-1">
+                <div className="w-full min-w-0 flex-1 sm:min-w-[343px]">
                   <h3 className="text-[18px] font-semibold leading-7 text-[#1f2937]">{t('Images')}</h3>
                   <div className="mt-3 aspect-[392/250] overflow-hidden rounded-xl border border-[#e5e7eb] bg-white">
                     <img src={project.image} alt={t('Project location')} className="h-full w-full object-cover" />
@@ -382,9 +382,8 @@ export default function ProjectDetailPage() {
           )}
           {activeTab === 'investment-details' && <section className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_0_24px_rgba(0,0,0,0.04)]"><h2 className="text-[18px] font-semibold text-[#1f2937]">{t('Investment Details')}</h2><div className="mt-4 grid gap-3 lg:grid-cols-3">{[['Total Investment', `$${project.budget}M USD`], ['Minimum Investment', `$${project.minInvestment}M USD`], ['Expected IRR', project.returnRate], ['Construction Period', project.timeline], ['Followers', `${formatFollowerCount(followerCount)} ${t('followers')}`], ['Processing Readiness', `${processingSummary.percentage}%`]].map(([label, value]) => <div key={label} className="rounded-lg border border-[#c8d9ff] bg-white p-4"><div className="text-[14px] text-[#6b7280]">{t(label)}</div><div className="mt-2 text-[16px] font-bold text-[#1f2937]">{t(value)}</div></div>)}</div></section>}
           {activeTab === 'planning-infrastructure' && <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_0_24px_rgba(0,0,0,0.04)]"><ProjectPlanningInfrastructureSection project={project} projectJobs={projectJobItems} agencies={agencies} processingSummary={processingSummary} t={t} /></div>}
-          {activeTab === 'documents' && <section className="rounded-[4px] bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"><h2 className="text-[20px] font-semibold text-[#191c1e]">{t('Documents')}</h2><div className="mt-6 space-y-3">{project.documents.length > 0 ? project.documents.map((document) => <button key={document.id} type="button" onClick={() => downloadAttachment({ fileName: document.name, fileUrl: document.fileUrl, lastUploadDate: document.uploadedAt })} className="flex w-full items-center justify-between rounded-[2px] border border-[rgba(224,192,177,0.12)] bg-[#f7f9fb] px-5 py-4 text-left"><div><div className="text-[14px] font-medium text-[#191c1e]">{t(document.name)}</div><div className="mt-1 text-[12px] text-[#584237]">{document.type} • {document.size}</div></div><Download size={16} className="text-[#9d4300]" /></button>) : <div className="rounded-[2px] border border-dashed border-[rgba(224,192,177,0.2)] px-4 py-10 text-center text-sm text-slate-500">{t('No documents are available yet.')}</div>}</div></section>}
-          {activeTab === 'activity' && <section className="rounded-[4px] bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"><h2 className="text-[20px] font-semibold text-[#191c1e]">{t('Activity')}</h2><div className="mt-6 space-y-4">{project.qa.length > 0 ? project.qa.map((item) => <div key={item.id} className="rounded-[2px] border border-[rgba(224,192,177,0.12)] bg-[#f7f9fb] p-5"><div className="text-[14px] font-medium text-[#191c1e]">{t(item.question)}</div><div className="mt-2 text-[12px] text-[#584237]">{item.askedBy} • {item.askedAt}</div>{item.answer ? <div className="mt-3 text-sm leading-7 text-[#455f87]">{t(item.answer)}</div> : null}</div>) : <div className="rounded-[2px] border border-dashed border-[rgba(224,192,177,0.2)] px-4 py-10 text-center text-sm text-slate-500">{t('No activity has been recorded for this project yet.')}</div>}</div></section>}
-          {activeTab === 'faq' && <section className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_0_24px_rgba(0,0,0,0.04)]"><h2 className="text-[18px] font-semibold text-[#1f2937]">{t('FAQ')}</h2><div className="mt-4 space-y-4">{faqItems.map((item, index) => <details key={item.id} open={index === 0} className="group rounded-lg bg-[#f9fafb] open:bg-white open:shadow-[0_0_24px_rgba(0,0,0,0.08)]"><summary className="flex cursor-pointer list-none items-center gap-3 px-6 py-5 text-[14px] font-medium text-[#030712]"><Info size={20} className="shrink-0 text-[#5b6b79]" /><span className="flex-1">{t(item.title)}</span><Plus size={20} className="shrink-0 text-[#5b6b79] group-open:hidden" /><Minus size={20} className="hidden shrink-0 text-[#5b6b79] group-open:block" /></summary><div className="px-6 pb-5 pl-[56px] text-[14px] leading-5 text-[#1f2937]">{t(item.description)}</div></details>)}</div></section>}
+          {activeTab === 'documents' && <section className="rounded-[4px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-8"><h2 className="text-[20px] font-semibold text-[#191c1e]">{t('Documents')}</h2><div className="mt-6 space-y-3">{project.documents.length > 0 ? project.documents.map((document) => <button key={document.id} type="button" onClick={() => downloadAttachment({ fileName: document.name, fileUrl: document.fileUrl, lastUploadDate: document.uploadedAt })} className="flex w-full items-center justify-between gap-3 rounded-[2px] border border-[rgba(224,192,177,0.12)] bg-[#f7f9fb] px-4 py-4 text-left sm:px-5"><div className="min-w-0"><div className="break-words text-[14px] font-medium text-[#191c1e]">{t(document.name)}</div><div className="mt-1 text-[12px] text-[#584237]">{document.type} � {document.size}</div></div><Download size={16} className="shrink-0 text-[#9d4300]" /></button>) : <div className="rounded-[2px] border border-dashed border-[rgba(224,192,177,0.2)] px-4 py-10 text-center text-sm text-slate-500">{t('No documents are available yet.')}</div>}</div></section>}
+          {activeTab === 'faq' && <section className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_0_24px_rgba(0,0,0,0.04)]"><h2 className="text-[18px] font-semibold text-[#1f2937]">{t('FAQ')}</h2><div className="mt-4 space-y-4">{faqItems.map((item, index) => <details key={item.id} open={index === 0} className="group rounded-lg bg-[#f9fafb] open:bg-white open:shadow-[0_0_24px_rgba(0,0,0,0.08)]"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 text-[14px] font-medium text-[#030712] sm:px-6 sm:py-5"><Info size={20} className="shrink-0 text-[#5b6b79]" /><span className="min-w-0 flex-1 break-words">{t(item.title)}</span><Plus size={20} className="shrink-0 text-[#5b6b79] group-open:hidden" /><Minus size={20} className="hidden shrink-0 text-[#5b6b79] group-open:block" /></summary><div className="px-4 pb-5 text-[14px] leading-5 text-[#1f2937] sm:px-6 sm:pl-[56px]">{t(item.description)}</div></details>)}</div></section>}
         </div>
 
         <aside className="space-y-6">
@@ -402,7 +401,7 @@ export default function ProjectDetailPage() {
             </div>
             {contactOfficer ? <div className="mt-4 border-t border-[#e5e7eb] pt-4"><div className="flex items-center gap-2"><div className="flex h-10 w-10 items-center justify-center rounded bg-[#f3f4f6] text-[#5b6b79]"><Building2 size={16} /></div><div><div className="text-[14px] font-medium text-[#030712]">{contactOfficer.name}</div><div className="text-[12px] text-[#6b7280]">{t(contactOfficer.title)}</div></div></div></div> : null}
           </div>
-          <div className="h-[220px] overflow-hidden rounded-xl border border-[#f3f4f6] bg-white p-4"><div className="text-[14px] text-[#6b7280]">{t('Attachments')}</div><div className="mt-3 space-y-2">{quickResources.map((resource) => <button key={resource.id} type="button" onClick={resource.action} className="flex w-full items-center gap-2 rounded-lg border border-[#f3f4f6] bg-white p-3 text-left text-[14px] font-medium text-[#030712]"><FileText size={22} className="shrink-0 text-[#dc2626]" /><span className="min-w-0 flex-1 truncate">{t(resource.label)}</span><Download size={18} className="shrink-0 text-[#5b6b79]" /></button>)}</div></div>
+          <div className="min-h-[220px] overflow-hidden rounded-xl border border-[#f3f4f6] bg-white p-4"><div className="text-[14px] text-[#6b7280]">{t('Attachments')}</div><div className="mt-3 space-y-2">{quickResources.map((resource) => <button key={resource.id} type="button" onClick={resource.action} className="flex w-full items-center gap-2 rounded-lg border border-[#f3f4f6] bg-white p-3 text-left text-[14px] font-medium text-[#030712]"><FileText size={22} className="shrink-0 text-[#dc2626]" /><span className="min-w-0 flex-1 truncate">{t(resource.label)}</span><Download size={18} className="shrink-0 text-[#5b6b79]" /></button>)}</div></div>
         </aside>
       </div>
 

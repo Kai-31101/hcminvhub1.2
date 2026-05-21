@@ -50,13 +50,13 @@ export function ProjectPlanningInfrastructureSection({
 }) {
   return (
     <section className="section-panel overflow-hidden p-0">
-      <div className="border-b border-[rgba(224,192,177,0.18)] bg-[linear-gradient(180deg,#fff7f2_0%,#ffffff_100%)] px-6 py-6">
+      <div className="border-b border-[rgba(224,192,177,0.18)] bg-[linear-gradient(180deg,#fff7f2_0%,#ffffff_100%)] px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#9d4300]">
               {t('Project Jobs')}
             </div>
-            <h2 className="section-heading mb-2 mt-2">{t('Planning & Infrastructure')}</h2>
+            <h2 className="section-heading mb-2 mt-2 break-words">{t('Planning & Infrastructure')}</h2>
             <p className="max-w-3xl text-sm leading-7 text-[#455f87]">
               {t('Track implementation readiness across schedule, land preparation, and coordinated project jobs from one section.')}
             </p>
@@ -96,17 +96,17 @@ export function ProjectPlanningInfrastructureSection({
         </div>
       </div>
 
-      <div className="space-y-4 px-6 py-6">
+      <div className="space-y-4 px-4 py-5 sm:px-6 sm:py-6">
         {projectJobs.length > 0 ? (
           projectJobs.map((job) => {
             const agency = agencies.find((item) => item.id === job.agencyId);
             const statusMeta = getJobStatusMeta(job.status, t);
             return (
-              <article key={job.id} className="rounded-none border border-[rgba(224,192,177,0.18)] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+              <article key={job.id} className="rounded-none border border-[rgba(224,192,177,0.18)] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-[18px] font-semibold leading-7 text-[#191c1e]">{t(job.title)}</div>
+                      <div className="min-w-0 break-words text-[18px] font-semibold leading-7 text-[#191c1e]">{t(job.title)}</div>
                       <StatusPill tone={statusMeta.tone}>{statusMeta.label}</StatusPill>
                     </div>
                     <div className="mt-2 text-sm leading-7 text-[#617086]">{t(job.description)}</div>
@@ -124,7 +124,7 @@ export function ProjectPlanningInfrastructureSection({
 
                   </div>
 
-                  <div className="w-full max-w-[320px] rounded-none border border-[rgba(224,192,177,0.18)] bg-[#fcfcfd] p-4">
+                  <div className="w-full max-w-none rounded-none border border-[rgba(224,192,177,0.18)] bg-[#fcfcfd] p-4 lg:max-w-[320px]">
                     <div className="flex flex-wrap gap-2">
                       <StatusPill tone={statusMeta.tone}>{statusMeta.label}</StatusPill>
                     </div>
@@ -147,7 +147,7 @@ export function ProjectPlanningInfrastructureSection({
                                 >
                                   <Download size={14} />
                                 </button>
-                                <span className="truncate">{t(file.fileName)}</span>
+                          <span className="min-w-0 truncate">{t(file.fileName)}</span>
                               </div>
                               <span className="shrink-0">{file.lastUploadDate || '-'}</span>
                             </div>
