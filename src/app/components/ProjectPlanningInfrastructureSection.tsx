@@ -101,7 +101,6 @@ export function ProjectPlanningInfrastructureSection({
           projectJobs.map((job) => {
             const agency = agencies.find((item) => item.id === job.agencyId);
             const statusMeta = getJobStatusMeta(job.status, t);
-            const dueDateMeta = getDueDateMeta(job.status, job.dueDate, t);
             return (
               <article key={job.id} className="rounded-none border border-[rgba(224,192,177,0.18)] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -112,7 +111,7 @@ export function ProjectPlanningInfrastructureSection({
                     </div>
                     <div className="mt-2 text-sm leading-7 text-[#617086]">{t(job.description)}</div>
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div className="rounded-none bg-[#f7f9fb] px-4 py-3">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{t('Coordinating Unit')}</div>
                         <div className="mt-1 text-sm font-medium text-[#191c1e]">{agency?.name ?? '-'}</div>
@@ -121,23 +120,13 @@ export function ProjectPlanningInfrastructureSection({
                         <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{t('Reminder')}</div>
                         <div className="mt-1 text-sm font-medium text-[#191c1e]">{job.reminderDaysBefore} {t('days')}</div>
                       </div>
-                      <div className="rounded-none bg-[#f7f9fb] px-4 py-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8c7164]">{t('Due date')}</div>
-                        <div className="mt-1 text-sm font-medium text-[#191c1e]">{job.dueDate}</div>
-                      </div>
                     </div>
 
-                    {job.note ? (
-                      <div className="mt-4 rounded-none border border-[rgba(224,192,177,0.18)] bg-[#fff8f3] px-4 py-3 text-sm leading-7 text-[#6a4634]">
-                        {t(job.note)}
-                      </div>
-                    ) : null}
                   </div>
 
                   <div className="w-full max-w-[320px] rounded-none border border-[rgba(224,192,177,0.18)] bg-[#fcfcfd] p-4">
                     <div className="flex flex-wrap gap-2">
                       <StatusPill tone={statusMeta.tone}>{statusMeta.label}</StatusPill>
-                      <StatusPill tone={dueDateMeta.tone}>{dueDateMeta.label}</StatusPill>
                     </div>
 
                     <div className="mt-4">

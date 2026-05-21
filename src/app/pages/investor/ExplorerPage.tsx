@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
-import { ArrowRight, Headset, Landmark, Map, MapPin, Search, Send, Star, TrendingUp } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { ArrowRight, CheckCircle2, Headset, Landmark, Mail, Map, MapPin, Search, Send, Star, TrendingUp } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
@@ -20,6 +20,8 @@ const DEFAULT_LIST_COUNT = 6;
 const PAGINATION_PAGE_SIZE = 9;
 const DEFAULT_PROJECT_TYPE = 'public';
 const DEFAULT_SUPPORT_PRIORITY = 'high';
+const HERO_VIDEO_ID = 'LjDjXXM62Xg';
+const HERO_VIDEO_SRC = `https://www.youtube.com/embed/${HERO_VIDEO_ID}?autoplay=1&mute=1&controls=0&loop=1&playlist=${HERO_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&vq=hd1080`;
 
 function formatPortfolioValue(totalBudgetInMillions: number, language: 'en' | 'vi') {
   const billions = totalBudgetInMillions / 1000;
@@ -93,6 +95,8 @@ const initialSupportForm = {
 export default function ExplorerPage() {
   const { language, projects, watchlist, toggleWatchlist, activeInvestorCompany, setActiveInvestorCompany, createIssue, createOpportunity } = useApp();
   const t = (value: string) => translateText(value, language);
+  const location = useLocation();
+  const navigate = useNavigate();
   const defaultSupportTopic = t('Project clarification and next-step coordination');
   const heroRef = useRef<HTMLElement | null>(null);
   const [selectedSector, setSelectedSector] = useState(ALL_OPTION);
@@ -212,6 +216,17 @@ export default function ExplorerPage() {
     ],
     [language, projects, watchlist.length],
   );
+  const investmentMetrics = useMemo(() => {
+    const totalBudget = projects.reduce((sum, project) => sum + project.budget, 0);
+    const averageBudget = projects.length > 0 ? totalBudget / projects.length : 0;
+
+    return [
+      { label: 'TOTAL INVESTMENT PROJECTS', value: `${projects.length}` },
+      { label: 'TOTAL REGISTERED CAPITAL (USD)', value: formatPortfolioValue(totalBudget, language) },
+      { label: 'ACTIVE SECTORS', value: `${new Set(projects.map((project) => project.sector)).size}` },
+      { label: 'AVG DEAL SIZE / RANGE', value: formatInvestmentAmount(averageBudget, language) },
+    ];
+  }, [language, projects]);
 
   function handleToggleWatchlist(id: string, event: React.MouseEvent) {
     event.preventDefault();
@@ -239,7 +254,16 @@ export default function ExplorerPage() {
   }
 
   function openInterestFlow() {
-    openSupportFlow();
+    setInterestForm({
+      ...initialInterestForm,
+      companyName: activeInvestorCompany,
+      projectId: '',
+    });
+    setInterestStep('form');
+    setSubmittedOpportunityId('');
+    setSubmittedInterestIssueId('');
+    setInterestError('');
+    setActiveModal('interest');
   }
 
   function openSupportFlow() {
@@ -367,223 +391,110 @@ export default function ExplorerPage() {
     setCurrentPage(1);
   }, [searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('fastTrack') !== '1') return;
+    openInterestFlow();
+    navigate('/investor/explorer', { replace: true });
+  }, [location.search]);
+
   return (
-    <div className="bg-[#f7f9fb]" style={{ fontFamily: 'Inter, var(--font-body), sans-serif' }}>
-      <div className="page-shell mx-auto max-w-[1280px] space-y-0 px-4 py-0 md:px-6">
-        <section ref={heroRef} className="relative overflow-hidden bg-[#eceef0] px-6 pb-0 pt-10 md:px-10 md:pt-14">
-          <div className="absolute inset-0 hidden overflow-hidden lg:block">
-            <img src={designHeroSkyline} alt="" className="h-full w-full object-cover object-center" />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(236,238,240,0.98)_0%,rgba(236,238,240,0.84)_28%,rgba(236,238,240,0.58)_52%,rgba(236,238,240,0.28)_74%,rgba(236,238,240,0.12)_100%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0.1)_45%,rgba(255,255,255,0.46)_100%)]" />
-          </div>
-
-          <div className="relative z-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
-            <div className="max-w-[700px]">
-              <div className="mb-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#455f87]">
-                <TrendingUp size={13} className="text-[#9d4300]" />
-                {t('Regional Focus')}
-              </div>
-
-              <h1 className="max-w-[760px] text-[40px] font-normal leading-[1.08] tracking-[-0.03em] text-[#191c1e] md:text-[56px]">
-                {t('Accelerate Your Investment')}
-                <br />
-                <span className="text-[#9d4300]">{t('in Ho Chi Minh City')}</span>
-              </h1>
-
-              <p className="mt-5 max-w-[650px] text-[17px] leading-8 text-[#455f87]">
-                {t('The economic heartbeat of Vietnam, providing a transparent and efficient investment environment. Access the most comprehensive pipeline of development opportunities.')}
-              </p>
-
-              <div className="mt-8 flex flex-wrap gap-4">
-                <button
-                  type="button"
-                  onClick={scrollToProjects}
-                  className="inline-flex items-center justify-center rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-4 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] transition-transform hover:-translate-y-0.5"
-                >
-                  {t('Explore Opportunities')}
-                </button>
-                <button
-                  type="button"
-                  onClick={openInterestFlow}
-                  className="inline-flex items-center justify-center rounded-none bg-[#e6e8ea] px-8 py-4 text-[16px] font-medium text-[#3e5980] transition-colors hover:bg-[#dfe3e6]"
-                >
-                  {t('Submit Your Interest')}
-                </button>
-              </div>
-            </div>
-
-            <div className="relative hidden lg:block">
-              <div className="ml-auto w-full max-w-[256px] rounded-none bg-white p-[17px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
-                <div className="mb-3 flex items-center gap-2 text-[12px] uppercase tracking-[0.06em] text-[#455f87]">
-                  <MapPin size={15} className="text-[#9d4300]" />
-                  <span>{t('Regional Focus')}</span>
-                </div>
-                <div className="relative overflow-hidden rounded-none border border-[rgba(224,192,177,0.15)] bg-[#eceef0]">
-                  <img src={designVietnamMap} alt={t('Vietnam investment map')} className="h-[220px] w-full object-cover" />
-                  <div className="absolute bottom-3 left-3 rounded-none bg-[rgba(157,67,0,0.9)] px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-white">
-                    {t('HCMC Highlighted')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {summaryTiles.map((item) => (
-              <div key={item.label} className="rounded-none border border-[rgba(224,192,177,0.18)] bg-white/70 px-4 py-4 backdrop-blur-sm">
-                <div className="text-[26px] font-normal leading-8 text-[#9d4300]">{item.value}</div>
-                <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[#455f87]">{t(item.label)}</div>
-              </div>
-            ))}
-          </div>
-          <div className="relative z-10 mt-10 border-t border-[rgba(224,192,177,0.28)] bg-[rgba(255,248,243,0.9)] px-6 py-6 md:-mx-10 md:px-10">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-[24px] font-semibold leading-8 text-[#341100]">
-                  {t("Can't find a suitable project?")}
-                </h2>
-                <p className="mt-1 text-[16px] leading-6 text-[#783200]">
-                  {t("Tell us about your investment criteria and we'll find the right opportunity for you.")}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={openSupportFlow}
-                className="inline-flex items-center justify-center rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-8 py-3 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] transition-transform hover:-translate-y-0.5"
-              >
-                {t('Submit Your Request')}
-              </button>
-            </div>
+    <div className="bg-[#f9fafb]" style={{ fontFamily: 'Inter, var(--font-body), sans-serif' }}>
+      <div className="mx-auto max-w-[1192px] px-4 py-4 md:px-8">
+        <section ref={heroRef} className="relative h-[321px] overflow-hidden rounded-lg bg-[#071423]">
+          <iframe
+            title={t('Ho Chi Minh City hero background video')}
+            src={HERO_VIDEO_SRC}
+            className="pointer-events-none absolute left-1/2 top-[calc(50%-70px)] aspect-video h-[calc(100%+160px)] w-[calc(100%+220px)] min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,33,0.72)_0%,rgba(5,18,33,0.24)_60%,rgba(5,18,33,0.1)_100%)]" />
+          <div className="absolute left-6 top-10 flex w-[min(384px,calc(100%-48px))] flex-col items-center justify-center gap-2 rounded-lg bg-black/25 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)] backdrop-blur-sm md:left-[91px] md:top-[51px]">
+            <div className="text-[18px] leading-7 text-white">{t('Need tailor support')}</div>
+            <div className="text-[24px] font-bold leading-8 text-white">{t('FAST-TRACK')}</div>
+            <button type="button" onClick={openInterestFlow} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 py-2.5 text-[14px] font-medium leading-5 text-white">
+              <Send size={20} />
+              {t('Submit Investment Interest')}
+            </button>
           </div>
         </section>
 
-        <section className="mt-6 rounded-none border border-[rgba(224,192,177,0.05)] bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] md:p-8">
-          <div className="grid gap-5">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px]">
-              <div className="relative">
-                <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8c7164]" />
+        <section className="mt-4 grid min-h-[354px] items-center overflow-hidden rounded-lg bg-white p-6 shadow-[0_0_6px_rgba(0,0,0,0.08)] lg:grid-cols-[451px_1fr] lg:pl-14 lg:pr-0">
+          <div className="relative z-10 flex max-w-[451px] flex-col justify-center gap-3">
+            <h1 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Smart Investing, Visually Mapped')}</h1>
+            <p className="max-w-[424px] text-[12px] leading-4 text-[#6b7280]">
+              {t('Explore global opportunities with real-time data and intuitive map-based insights. Navigate the complexity of markets with precision.')}
+            </p>
+            <button type="button" onClick={() => setIsInvestmentMapOpen(true)} className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
+              <Map size={20} />
+              {t('View on map')}
+            </button>
+          </div>
+          <img src="/figma-homepage/map-visual.png" alt="" className="mt-6 h-[300px] w-full rounded-md object-cover lg:mt-0 lg:h-[322px]" />
+        </section>
+
+        <section ref={listRef} className="mt-4 bg-white p-4">
+          <div className="relative">
+            <div className="flex min-h-[62px] flex-col gap-4 rounded-lg border border-[#ed6203] bg-white px-3 py-2.5 shadow-[0_0_8px_rgba(0,0,0,0.08)] lg:flex-row lg:items-center">
+              <div className="relative min-w-[260px] flex-1">
+                <Search size={20} className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 text-[#6b7280]" />
                 <Input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder={t('Search by project name, ID, or keywords...')}
-                  className="h-[60px] rounded-none border-[rgba(224,192,177,0.2)] bg-[#f2f4f6] pl-12 text-[16px] text-[#191c1e] shadow-none"
+                  className="h-[42px] border-0 bg-transparent pl-8 text-[14px] font-normal text-[#4b5563] shadow-none focus-visible:ring-0"
                 />
               </div>
-
-              <button
-                type="button"
-                onClick={() => setIsInvestmentMapOpen(true)}
-                className="inline-flex h-[60px] items-center justify-center gap-3 rounded-none bg-[linear-gradient(10deg,#9d4300_0%,#f97316_100%)] px-6 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
-              >
-                <Map size={18} />
-                {t('View on Map')}
-              </button>
+              {[
+                { label: 'Sector', value: selectedSector, set: setSelectedSector, options: sectorOptions },
+                { label: 'Location', value: selectedLocation, set: setSelectedLocation, options: locationOptions },
+                { label: 'Investment size', value: selectedInvestmentRange, set: setSelectedInvestmentRange, options: investmentRangeOptions },
+                { label: 'Project type', value: selectedProjectType, set: setSelectedProjectType, options: [{ value: 'public', label: t('Public') }, { value: 'private', label: t('Private') }] },
+              ].map((filter) => (
+                <Select key={filter.label} value={filter.value} onValueChange={filter.set}>
+                  <div className="min-w-[143px] border-l border-[#e5e7eb] pl-3">
+                    <span className="block text-[14px] font-semibold leading-5 text-[#030712]">{t(filter.label)}</span>
+                    <SelectTrigger className="mt-1 h-8 rounded-md border border-[#d1d5db] bg-white px-3 text-left text-[14px] font-normal text-[#4b5563] shadow-none focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    {filter.options.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ))}
+              <button type="button" onClick={resetFilters} className="text-[12px] font-medium text-[#6b7280]">{t('Clear All Filter')}</button>
             </div>
+          </div>
 
-            <div className="grid gap-4 border-t border-[rgba(224,192,177,0.12)] pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:items-end">
-              <div className="space-y-2">
-                <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Sector')}</div>
-                <Select value={selectedSector} onValueChange={setSelectedSector}>
-                  <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                    <SelectValue placeholder={t('All Sectors')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sectorOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Location')}</div>
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                    <SelectValue placeholder={t('All areas')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locationOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Investment Size')}</div>
-                <Select value={selectedInvestmentRange} onValueChange={setSelectedInvestmentRange}>
-                  <SelectTrigger className="h-[44px] w-full rounded-none border-[rgba(224,192,177,0.18)] bg-[#f2f4f6] text-[#455f87] shadow-none">
-                    <SelectValue placeholder={t('Any Range')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {investmentRangeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8c7164]">{t('Project Type')}</div>
-                <div className="inline-flex rounded-none bg-[#f2f4f6] p-1">
-                  {[
-                    { value: 'public', label: 'Public' },
-                    { value: 'private', label: 'Private' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setSelectedProjectType(option.value)}
-                      className={`rounded-none px-4 py-2 text-[13px] font-medium transition-colors ${
-                        selectedProjectType === option.value
-                          ? 'bg-[#ffd7c5] text-[#6a2d00]'
-                          : 'text-[#455f87]'
-                      }`}
-                    >
-                      {t(option.label)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="justify-self-start border-b border-[rgba(157,67,0,0.2)] pb-1 text-[14px] font-medium text-[#9d4300] lg:justify-self-end"
-              >
-                {t('Clear all filters')}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+            <Select value={selectedProjectType} onValueChange={setSelectedProjectType}>
+              <SelectTrigger className="h-11 w-[170px] rounded-md border border-[#d1d5db] bg-white text-[14px] text-[#4b5563] shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="public">{t('Public')}</SelectItem>
+                <SelectItem value="private">{t('Private')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-3 text-[16px] leading-6 text-[#6b7280]">
+              <span>{t('Showing')} {filteredProjects.length} {t('projects')}</span>
+              <span className="h-8 w-px bg-[#e5e7eb]" />
+              <button type="button" onClick={() => setIsInvestmentMapOpen(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
+                <Map size={20} />
+                {t('View Map')}
               </button>
             </div>
           </div>
-        </section>
 
-        <section ref={listRef} className="space-y-10 px-1 py-14">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div className="max-w-[680px]">
-              <h2 className="text-[30px] font-normal leading-9 text-[#191c1e]">{t('Investment Opportunities')}</h2>
-              <p className="mt-2 text-[16px] leading-7 text-[#455f87]">
-                {t('Explore prioritized projects aligned with the HCMC 2030 development master plan.')}
-              </p>
-            </div>
-          </div>
+          <h2 className="mt-6 text-[28px] font-semibold leading-9 text-[#ed6203]">{t('Featured investment projects')}</h2>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-[14px] text-[#455f87]">
-              {t('Showing')} <span className="font-semibold text-[#191c1e]">{filteredProjects.length}</span> {t('projects')}
-            </div>
-            <div className="text-[12px] uppercase tracking-[0.12em] text-[#8c7164]">
-              {t('Sorted by')}: <span className="text-[#455f87]">{t('Relevance')}</span>
-            </div>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-3">
+          <div className="mt-5 grid gap-6 xl:grid-cols-3">
             {visibleProjects.map((project) => {
           const isWatching = watchlist.includes(project.id);
           const followerCount = getMockFollowerCount(project.id, project.budget);
@@ -593,22 +504,22 @@ export default function ExplorerPage() {
             <Link
               key={project.id}
               to={`/investor/project/${project.id}`}
-              className="group overflow-hidden rounded-none border border-[rgba(224,192,177,0.1)] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(69,95,135,0.12)]"
+              className="group rounded-xl bg-white p-3 shadow-[0_0_6px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-0.5"
             >
-              <div className="relative h-52 overflow-hidden bg-[#e0e3e5]">
+              <div className="relative aspect-[1080/608] overflow-hidden rounded-md bg-[#e0e3e5]">
                 <img
                   src={project.image}
                   alt={t(project.name)}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                 />
                 <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
-                  <div className="rounded-none border border-white/60 bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9d4300] shadow-sm">
+                  <div className="rounded-md bg-white/80 px-3 py-1 text-[10px] text-[#1f2937] shadow-sm">
                     {formatFollowerCount(followerCount)} {t('followers')}
                   </div>
                   <button
                     type="button"
                     onClick={(event) => handleToggleWatchlist(project.id, event)}
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-none border backdrop-blur-sm transition-colors ${
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-sm transition-colors ${
                       isWatching
                         ? 'border-[#f6d6bf] bg-[#fff1e7] text-[#9d4300]'
                         : 'border-white/70 bg-white/92 text-[#8c7164] hover:text-[#9d4300]'
@@ -618,28 +529,28 @@ export default function ExplorerPage() {
                     <Star size={14} fill={isWatching ? 'currentColor' : 'none'} />
                   </button>
                 </div>
-                <div className="absolute bottom-3 left-3">
-                  <span className="rounded-none bg-white/92 px-2 py-1 text-[10px] uppercase tracking-[0.06em] text-[#9d4300] shadow-sm">
+                <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                  <span className="rounded-md bg-[#ffeae1] px-2.5 py-1.5 text-[10px] uppercase leading-3 text-[#ed6203]">
                     {t(project.sector)}
+                  </span>
+                  <span className="inline-flex h-6 items-center gap-1.5 rounded-md bg-white/80 px-2 pr-3 text-[10px] text-[#030712]">
+                    <MapPin size={12} />
+                    {locationLabel}
                   </span>
                 </div>
               </div>
 
-              <div className="flex h-[290px] flex-col px-5 py-5">
+              <div className="flex min-h-[255px] flex-col px-1.5 py-3">
                 <div>
-                  <h2 className="line-clamp-2 text-[20px] font-normal leading-7 text-[#191c1e]">
+                  <h2 className="line-clamp-2 text-[18px] font-semibold leading-7 text-[#030712]">
                     {t(project.name)}
                   </h2>
-                  <div className="mt-3 flex items-center gap-2 text-[12px] text-[#455f87]">
-                    <MapPin size={13} />
-                    <span className="line-clamp-1">{locationLabel}</span>
-                  </div>
-                  <p className="mt-4 line-clamp-3 min-h-[72px] text-[14px] leading-[1.65] text-[#455f87]">
+                  <p className="mt-2 line-clamp-2 min-h-[40px] text-[14px] leading-5 text-[#1f2937]">
                     {t(project.description)}
                   </p>
                 </div>
 
-                <div className="mt-4 grid grid-cols-4 gap-3 border-t border-[rgba(224,192,177,0.15)] pt-4">
+                <div className="mt-4 grid grid-cols-4 gap-4">
                   {[
                     { label: 'Total Budget', value: formatInvestmentAmount(project.budget, language) },
                     { label: 'IRR', value: t(project.returnRate) },
@@ -647,37 +558,21 @@ export default function ExplorerPage() {
                     { label: 'Timeline', value: t(project.timeline) },
                   ].map((metric) => (
                     <div key={metric.label} className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-[0.08em] text-[#8c7164]">
+                      <div className="text-[10px] uppercase leading-3 text-[#6b7280]">
                         {t(metric.label)}
                       </div>
-                      <div className="mt-1 truncate text-[12px] font-medium text-[#191c1e]">
+                      <div className="mt-2 truncate text-[12px] font-bold leading-4 text-[#92400e]">
                         {metric.value}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(project.highlights ?? []).slice(0, 2).map((highlight) => (
-                    <span
-                      key={highlight}
-                      className="rounded-none bg-[#f2f4f6] px-2 py-1 text-[11px] font-medium text-[#455f87]"
-                    >
-                      {t(highlight)}
-                    </span>
-                  ))}
-                  {(project.highlights?.length ?? 0) > 2 && (
-                    <span className="rounded-none bg-[#f2f4f6] px-2 py-1 text-[11px] font-medium text-[#8c7164]">
-                      +{(project.highlights?.length ?? 0) - 2}
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-auto flex items-center justify-between border-t border-[rgba(224,192,177,0.15)] pt-4">
+                <div className="mt-auto flex items-center justify-between border-t border-[#e5e7eb] pt-3">
                   <button
                     type="button"
                     onClick={(event) => handleToggleWatchlist(project.id, event)}
-                    className={`inline-flex items-center justify-center rounded-none px-4 py-2 text-[14px] font-medium transition-colors ${
+                    className={`inline-flex items-center justify-center rounded-md px-4 py-2 text-[14px] font-medium transition-colors ${
                       isWatching
                         ? 'bg-[#fff1e7] text-[#9d4300]'
                         : 'bg-[#f2f4f6] text-[#455f87] hover:bg-[#e6eaee]'
@@ -685,8 +580,8 @@ export default function ExplorerPage() {
                   >
                     {isWatching ? t('Watching') : t('Follow')}
                   </button>
-                  <div className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#9d4300]">
-                    {t('View detail')}
+                  <div className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#ed6203]">
+                    {t('Discovery Now')}
                     <ArrowRight size={14} />
                   </div>
                 </div>
@@ -696,7 +591,7 @@ export default function ExplorerPage() {
             })}
           </div>
 
-          {!isPaginationMode && filteredProjects.length > 0 && (
+          {!isPaginationMode && filteredProjects.length > DEFAULT_LIST_COUNT && (
             <SeeAllButton label={t('View More')} onClick={enablePaginationMode} />
           )}
 
@@ -747,76 +642,132 @@ export default function ExplorerPage() {
           )}
         </section>
 
-        <section className="bg-[#455f87] px-6 py-16 text-white md:px-10">
-          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-            {keyStats.map((item) => (
+        <section className="relative overflow-hidden bg-[#1e40af] px-6 py-8 text-white md:px-10">
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/2 opacity-30 [background-image:url('/figma-homepage/support-pattern.png')] [background-size:280px_auto]" />
+          <div className="relative grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+            {investmentMetrics.map((item, index) => (
               <div key={item.label} className="text-center">
-                <div className="text-[44px] leading-[1.05] tracking-[-0.03em] text-[#f97316]">{item.value}</div>
-                <div className="mt-2 text-[14px] uppercase tracking-[0.14em] text-white/70">{t(item.label)}</div>
+                <div className="text-[40px] font-semibold leading-10 text-white">{item.value}</div>
+                <div className="mt-1 text-[14px] uppercase leading-5 text-white/80">{t(item.label)}</div>
+                {index < investmentMetrics.length - 1 ? <div className="absolute top-4 hidden h-[114px] w-px bg-white/25 xl:block" style={{ left: `${25 * (index + 1)}%` }} /> : null}
               </div>
             ))}
           </div>
         </section>
 
-        <section className="space-y-10 px-1 py-16">
-          <div className="text-center">
-            <h2 className="text-[30px] font-normal leading-9 text-[#191c1e]">{t('Why Ho Chi Minh City?')}</h2>
+        <section className="bg-white px-4 py-10">
+          <h2 className="text-[28px] font-semibold leading-9 text-[#ed6203]">{t('Why Ho Chi Minh City?')}</h2>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {['Market Access', 'Economy', 'Infrastructure', 'Talent & Innovation', 'Quality of Life'].map((tab, index) => (
+              <button key={tab} type="button" className={`h-[31px] rounded-md px-4 text-[14px] font-medium ${index === 0 ? 'bg-[#ed6203] text-white' : 'bg-[#f3f4f6] text-[#4b5563]'}`}>
+                {t(tab)}
+              </button>
+            ))}
           </div>
-
-          <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-4">
-            {cityInfoCards.map((card, index) => {
-              const newsItem = investmentNews[index] ?? investmentNews[0];
-              return (
-                <a
-                  key={card.title}
-                  href={newsItem.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex flex-col bg-white"
-                >
-                  <div className="overflow-hidden bg-[#e0e3e5]">
-                    <img
-                      src={newsItem.image}
-                      alt={t(card.title)}
-                      className="h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-                  </div>
-                  <div className="px-4 pb-4 pt-5">
-                    <h3 className="text-[20px] font-normal leading-7 text-[#191c1e]">{t(card.title)}</h3>
-                    <p className="mt-2 text-[14px] leading-[1.65] text-[#455f87]">{t(card.summary)}</p>
-                    <div className="mt-4 inline-flex items-center gap-1 text-[14px] font-medium text-[#9d4300]">
-                      {t('Read more')}
-                      <ArrowRight size={14} />
+          <div className="mt-6 grid gap-3 lg:grid-cols-[536px_1fr]">
+            <a href={investmentNews[0]?.href} target="_blank" rel="noreferrer" className="relative h-[341px] overflow-hidden rounded-md">
+              <img src="/figma-homepage/why-main.png" alt="" className="h-full w-full object-cover" />
+              <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                <div className="rounded-md bg-black/35 p-3 backdrop-blur-sm">
+                  <span className="rounded-full bg-[#ecfeff] px-2.5 py-1.5 text-[10px] text-[#075985]">VIETNAM NEWS</span>
+                  <div className="mt-2 text-[14px] leading-5">April 17, 2026</div>
+                  <div className="text-[16px] leading-6">{t('The green living advantages stem from the location and planning of Van Phuc City.')}</div>
+                </div>
+              </div>
+            </a>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {cityInfoCards.map((card, index) => (
+                <a key={card.title} href={(investmentNews[index] ?? investmentNews[0])?.href} target="_blank" rel="noreferrer" className="relative min-h-[165px] overflow-hidden rounded-md">
+                  <img src="/figma-homepage/why-card.png" alt="" className="h-full w-full object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                    <div className="rounded-md bg-black/35 p-3 backdrop-blur-sm">
+                      <span className="rounded-full bg-[#ecfeff] px-2.5 py-1.5 text-[10px] text-[#075985]">{t(card.title)}</span>
+                      <div className="mt-2 line-clamp-2 text-[14px] leading-5">{t(card.summary)}</div>
                     </div>
                   </div>
                 </a>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <button type="button" className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
+              {t('View More')}
+              <ArrowRight size={16} />
+            </button>
           </div>
         </section>
 
-        <section className="px-1 pb-16">
-          <div className="mx-auto max-w-[832px] rounded-none bg-[#f2f4f6] px-6 py-12 text-center md:px-12">
-            <div className="mx-auto mb-4 inline-flex min-h-[84px] min-w-[240px] items-center justify-center rounded-none bg-[#fff1e7] px-10 py-6 text-[24px] font-medium text-[#9d4300]">
-              {t("We're here")}
+        <section className="relative overflow-hidden bg-white px-4 py-10">
+          <div className="absolute inset-0 opacity-20 [background-image:url('/figma-homepage/support-pattern.png')] [background-size:260px_auto]" />
+          <div className="relative grid gap-10 lg:grid-cols-[444px_1fr]">
+            <div>
+              <h2 className="max-w-[390px] text-[30px] font-bold leading-9 text-[#ed6203]">
+                {t('Need assistance with your investment journey?')}
+              </h2>
+              <p className="mt-7 max-w-[444px] text-[16px] leading-6 text-[#6b7280]">
+                {t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')}
+              </p>
+              <img src="/figma-homepage/support-journey.png" alt="" className="mt-7 h-[173px] w-[284px] rounded-md object-cover" />
             </div>
-            <h2 className="text-[30px] font-normal leading-9 text-[#191c1e]">
-              {t('Need assistance with your investment journey?')}
-            </h2>
-            <p className="mx-auto mt-4 max-w-[660px] text-[18px] leading-8 text-[#455f87]">
-              {t('Our team is here to provide dedicated guidance and bureaucratic support at every single step of your project implementation.')}
-            </p>
-            <div className="mt-8 flex justify-center">
-              <button
-                type="button"
-                onClick={openSupportFlow}
-                className="inline-flex items-center justify-center rounded-none bg-[#455f87] px-10 py-4 text-[16px] font-medium text-white shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)]"
-              >
-                {t('Contact Support')}
-              </button>
+            <div className="rounded-lg bg-white p-6 shadow-[0_0_8px_rgba(0,0,0,0.08)]">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input value={supportForm.companyName} onChange={(event) => handleSupportFieldChange('companyName', event.target.value)} placeholder={t('Company Name')} className="h-12 rounded-md border-[#d1d5db] font-normal" />
+                <Input value={supportForm.contactName} onChange={(event) => handleSupportFieldChange('contactName', event.target.value)} placeholder={t('Contact Person')} className="h-12 rounded-md border-[#d1d5db] font-normal" />
+                <Input type="email" value={supportForm.email} onChange={(event) => handleSupportFieldChange('email', event.target.value)} placeholder={t('Email')} className="h-12 rounded-md border-[#d1d5db] font-normal" />
+                <Input value={supportForm.phone} onChange={(event) => handleSupportFieldChange('phone', event.target.value)} placeholder={t('Phone Number')} className="h-12 rounded-md border-[#d1d5db] font-normal" />
+                <Input value={supportForm.topic} onChange={(event) => handleSupportFieldChange('topic', event.target.value)} placeholder={t('Support Topic')} className="h-12 rounded-md border-[#d1d5db] font-normal md:col-span-2" />
+                <textarea value={supportForm.details} onChange={(event) => handleSupportFieldChange('details', event.target.value)} rows={5} placeholder={t('Enter your request details')} className="min-h-[150px] rounded-md border border-[#d1d5db] px-3 py-3 text-[14px] font-normal text-[#111827] outline-none md:col-span-2" />
+              </div>
+              <div className="mt-5 flex justify-center">
+                <button type="button" onClick={openSupportFlow} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ed6203] px-5 text-[14px] font-medium text-white">
+                  <Headset size={20} />
+                  {t('Contact Support')}
+                </button>
+              </div>
             </div>
           </div>
         </section>
+
+        <footer id="footer" className="border-t border-[#f9fafb] bg-white px-6 py-8 md:px-[78px]">
+          <div className="mx-auto flex max-w-[1284px] flex-col gap-3">
+            <div className="grid gap-8 lg:grid-cols-[365px_1fr_1fr_327px]">
+              <div className="space-y-7">
+                <div className="flex items-center gap-[13px]">
+                  <img src="/figma-homepage/header-logo.png" alt="" className="h-[50px] w-[50px] object-contain" />
+                  <div className="text-[22px] font-bold leading-6 text-[#1f2937]">HCMC<br />INVESTMENT HUB</div>
+                </div>
+                <p className="text-[12px] leading-4 text-[#6b7280]">© 2024 HCMC Investment Promotion Center. All Rights Reserved.</p>
+                <div className="flex gap-3 text-[#1f2937]">
+                  <span className="flex h-[25px] w-[25px] items-center justify-center rounded-full bg-[#1877f2] text-[12px] font-bold text-white">f</span>
+                  <Mail size={25} />
+                  <span className="flex h-[25px] w-[25px] items-center justify-center rounded-sm bg-[#0a66c2] text-[12px] font-bold text-white">in</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="text-[16px] font-bold leading-6 text-[#ed6203]">HCMC INVESTMENT HUB</div>
+                {['Projects', 'Projects Map View', 'Why Ho Chi Minh City?'].map((item) => <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>)}
+              </div>
+              <div className="space-y-3">
+                <div className="text-[16px] font-bold leading-6 text-[#ed6203]">{t('SUPPORT')}</div>
+                {['Quick Intake', 'Support', 'FAQs'].map((item) => <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>)}
+              </div>
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 py-1.5 text-[10px] leading-3 text-[#166534]">
+                  <CheckCircle2 size={15} />
+                  Digital Trade & Investment Infrastructure
+                </div>
+                <div className="flex items-center gap-[13px]">
+                  <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
+                  <span className="text-[28px] font-bold leading-10 text-[#ed6203]">Arobid</span>
+                </div>
+                <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
+              </div>
+            </div>
+            <div className="mt-3 border-t border-[#e5e7eb] pt-3 text-right text-[10px] leading-3 text-[#111827]">
+              Privacy Policy&nbsp;&nbsp;&nbsp; Term of Services
+            </div>
+          </div>
+        </footer>
       </div>
 
 
@@ -824,11 +775,11 @@ export default function ExplorerPage() {
         <ExplorerActionModal
           onClose={closeModal}
           closeLabel={t('Close')}
-          panelTitle={activeModal === 'interest' ? t('Investment Interest') : t('Investment Support')}
+          panelTitle={activeModal === 'interest' ? t('Quick Intake') : t('Investment Support')}
           leftIcon={activeModal === 'interest' ? <Landmark size={44} /> : <Headset size={44} />}
           leftTitle={
             activeModal === 'interest'
-              ? t('Ready to submit your investment interest?')
+              ? t('Quick Intake')
               : t('Need assistance with your investment journey?')
           }
           leftDescription={

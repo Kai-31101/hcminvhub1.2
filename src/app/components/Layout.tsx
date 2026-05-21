@@ -8,7 +8,7 @@ import {
   Settings, Users, Building2, Bell, ChevronDown, LogOut, Menu, X,
   FolderOpen, Wrench, MapPin, Package,
   HardHat, Milestone, Globe, ChevronRight,
-  Home, Activity, Heart,
+  Home, Activity, Star,
 } from 'lucide-react';
 
 interface NavItem {
@@ -23,7 +23,7 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
     label: 'Investor Portal',
     items: [
       { label: 'Project Explorer', path: '/investor/explorer', icon: <Search size={18} /> },
-      { label: 'My Watchlist', path: '/investor/watchlist', icon: <Heart size={18} /> },
+      { label: 'My Watchlist', path: '/investor/watchlist', icon: <Star size={18} /> },
       { label: 'Execution Workspace', path: '/investor/execution', icon: <Activity size={18} /> },
     ],
   },
@@ -92,6 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const nav = navConfig[role];
   const t = (value: string) => translateText(value, language);
+  const hideSharedFooter = location.pathname === '/investor/explorer';
   const availableUserOptions = role === 'gov_operator'
     ? users
         .filter((option) => option.role === 'Government Operator' && option.status === 'active')
@@ -165,81 +166,162 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
-    <div className={`flex h-full flex-col justify-between bg-[#ECEEF0] ${mobile ? 'w-full' : 'w-64'}`}>
-      <div className="flex flex-col gap-1 px-6 pb-0 pt-6">
-        <div className="pb-6">
-          <button
-            type="button"
-            onClick={handleGoHome}
-            className="flex w-full items-center gap-3 text-left transition-opacity hover:opacity-90"
-          >
-            <div className="flex h-10 w-10 items-center justify-center bg-[#E0E3E5] text-[#455F87]">
-              <Globe size={20} />
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-[18px] font-bold leading-7 text-[#1E3A5F]">{t(nav.label)}</div>
-              <div className="truncate text-[10px] uppercase tracking-[0.05em] text-[#455F87]/70">
-                {t(brandSubtitle[role])}
-              </div>
-            </div>
-          </button>
+    role === 'investor' ? (
+      <div className={`flex h-full flex-col justify-between bg-white ${mobile ? 'w-full' : 'w-[248px]'}`}>
+        <div className="flex h-[900px] flex-col gap-3 overflow-hidden">
+          <div className="flex h-16 items-center gap-2 px-4 pb-2 pt-4">
+            <button type="button" onClick={handleGoHome} className="shrink-0">
+              <img src="/figma-homepage/header-logo.png" alt="" className="h-8 w-8 object-contain" />
+            </button>
+            <button type="button" onClick={handleGoHome} className="min-w-0 flex-1 text-left">
+              <div className="truncate text-[10px] font-semibold leading-3 text-[#1f2937]">HO CHI MINH CITY</div>
+              <div className="truncate text-[14px] font-bold leading-5 text-[#1f2937]">INVESTMENT HUB</div>
+            </button>
+            <button type="button" onClick={() => setSidebarOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-lg text-[#030712]">
+              <Menu size={20} />
+            </button>
+          </div>
+
+          <nav className="flex flex-col gap-3 px-4">
+            {nav.items
+              .filter((item) => item.path === '/investor/explorer' || item.path === '/investor/watchlist')
+              .map((item) => {
+                const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+                const label = item.path === '/investor/watchlist' ? 'My Favorite Projects' : item.label;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex h-10 items-center gap-2 rounded-lg px-2 py-2.5 text-[14px] font-medium leading-5 transition-colors ${
+                      isActive ? 'bg-[#fff1e7] text-[#ed6203]' : 'text-[#030712] hover:bg-[#f3f4f6]'
+                    }`}
+                  >
+                    <span className={isActive ? 'text-[#ed6203]' : 'text-[#030712]'}>
+                      {item.icon}
+                    </span>
+                    <span className="truncate">{t(label)}</span>
+                  </Link>
+                );
+              })}
+          </nav>
         </div>
 
-        <nav className="flex flex-col gap-1">
-          {nav.items.map((item) => {
-            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex h-[45px] items-center gap-3 px-4 transition-colors ${
-                  isActive
-                    ? 'border-l-4 border-[#9D4300] bg-white font-bold text-[#9D4300] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
-                    : 'text-[#455F87] hover:bg-white/70'
-                }`}
+        <div className="px-4 pb-0">
+          <div className="relative h-36 overflow-hidden rounded-xl bg-[#071423]">
+            <img src="/figma-homepage/support-journey.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute left-1/2 top-[31px] flex w-[200px] -translate-x-1/2 flex-col gap-3">
+              <div className="text-white">
+                <div className="text-[12px] leading-4">{t('Need tailor support')}</div>
+                <div className="mt-1 text-[16px] font-semibold leading-6">{t('FAST-TRACK')}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  navigate('/investor/explorer?fastTrack=1');
+                }}
+                className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md bg-[#ed6203] px-3 text-[13px] font-medium text-white"
               >
-                <span className={isActive ? 'text-[#9D4300]' : 'text-[#455F87]'}>
-                  {item.icon}
-                </span>
-                <span className="truncate text-[14px] leading-[21px]">{t(item.label)}</span>
-                {item.badge && (
-                  <span className="ml-auto min-w-[18px] bg-[#9D4300] px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
-                    {item.badge}
+                {t('Submit Investment Interest')}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center justify-between py-3 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-[13px] font-semibold text-white ${user.color}`}>{user.avatar}</div>
+              <div className="min-w-0">
+                <div className="truncate text-[14px] font-medium leading-5 text-[#030712]">{user.name}</div>
+                <div className="truncate text-[12px] leading-4 text-[#6b7280]">{user.org}</div>
+              </div>
+            </div>
+            <ChevronDown size={20} className="shrink-0 text-[#6b7280]" />
+          </button>
+        </div>
+      </div>
+    ) : (
+      <div className={`flex h-full flex-col justify-between bg-[#ECEEF0] ${mobile ? 'w-full' : 'w-64'}`}>
+        <div className="flex flex-col gap-1 px-6 pb-0 pt-6">
+          <div className="pb-6">
+            <button
+              type="button"
+              onClick={handleGoHome}
+              className="flex w-full items-center gap-3 text-left transition-opacity hover:opacity-90"
+            >
+              <div className="flex h-10 w-10 items-center justify-center bg-[#E0E3E5] text-[#455F87]">
+                <Globe size={20} />
+              </div>
+              <div className="min-w-0">
+                <div className="truncate text-[18px] font-bold leading-7 text-[#1E3A5F]">{t(nav.label)}</div>
+                <div className="truncate text-[10px] uppercase tracking-[0.05em] text-[#455F87]/70">
+                  {t(brandSubtitle[role])}
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <nav className="flex flex-col gap-1">
+            {nav.items.map((item) => {
+              const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex h-[45px] items-center gap-3 px-4 transition-colors ${
+                    isActive
+                      ? 'border-l-4 border-[#9D4300] bg-white font-bold text-[#9D4300] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
+                      : 'text-[#455F87] hover:bg-white/70'
+                  }`}
+                >
+                  <span className={isActive ? 'text-[#9D4300]' : 'text-[#455F87]'}>
+                    {item.icon}
                   </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                  <span className="truncate text-[14px] leading-[21px]">{t(item.label)}</span>
+                  {item.badge && (
+                    <span className="ml-auto min-w-[18px] bg-[#9D4300] px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-      <div className="mt-8 flex-1" />
+        <div className="mt-8 flex-1" />
 
-      <div className="border-t border-[rgba(224,192,177,0.1)] px-6 py-6">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="flex h-11 w-full items-center justify-center gap-2 bg-[linear-gradient(39.81deg,#9D4300_0%,#F97316_100%)] px-4 text-[14px] font-bold text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
-        >
-          <LogOut size={12} />
-          {t('Switch Role')}
-        </button>
+        <div className="border-t border-[rgba(224,192,177,0.1)] px-6 py-6">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex h-11 w-full items-center justify-center gap-2 bg-[linear-gradient(39.81deg,#9D4300_0%,#F97316_100%)] px-4 text-[14px] font-bold text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
+          >
+            <LogOut size={12} />
+            {t('Switch Role')}
+          </button>
+        </div>
       </div>
-    </div>
+    )
   );
 
   return (
     <div className="flex h-screen bg-[#F1F5F9] overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-shrink-0 bg-[#ECEEF0]">
+      <aside className={`hidden flex-shrink-0 lg:flex ${role === 'investor' ? 'w-[248px] bg-white' : 'w-64 bg-[#ECEEF0]'}`}>
         <Sidebar />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-64 bg-[#ECEEF0] flex flex-col">
+          <div className={`${role === 'investor' ? 'w-[248px] bg-white' : 'w-64 bg-[#ECEEF0]'} flex flex-col`}>
             <div className="flex justify-end p-4">
               <button onClick={() => setSidebarOpen(false)} className="text-[#455F87]">
                 <X size={20} />
@@ -254,7 +336,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="relative flex h-16 flex-shrink-0 items-center justify-between gap-6 border-b border-[rgba(224,192,177,0.12)] bg-[#F7F9FB] px-4 lg:px-8 z-[80]">
+        <header className={`relative z-[80] flex h-16 flex-shrink-0 items-center justify-between gap-6 border-b px-4 lg:px-8 ${
+          role === 'investor'
+            ? 'border-[#e5e7eb] bg-white'
+            : 'border-[rgba(224,192,177,0.12)] bg-[#F7F9FB]'
+        }`}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-[#455F87] transition-colors hover:text-[#1E3A5F] lg:hidden"
@@ -262,7 +348,74 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Menu size={22} />
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-6 lg:gap-8">
+          {role === 'investor' && (
+            <>
+              <div className="flex min-w-0 flex-1 items-center">
+                <h1 className="truncate text-[18px] font-semibold leading-7 text-[#1f2937]">
+                  {t('Investor Portal')}
+                </h1>
+              </div>
+
+              <div className="flex h-10 items-center justify-end gap-1">
+                <button type="button" disabled className="flex cursor-default items-center gap-3 px-1 text-[#1f2937]">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1d4ed8] text-[9px] font-bold text-white">US</span>
+                  <span className="text-[18px] font-semibold leading-7">EN</span>
+                  <ChevronDown size={24} />
+                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); setShowEnvironmentMenu(false); }}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#1f2937] transition-colors hover:bg-[#f3f4f6]"
+                    aria-label={t('Notifications')}
+                  >
+                    <Bell size={24} />
+                    {unreadCount > 0 && (
+                      <span className="absolute right-0 top-1 flex min-w-[18px] items-center justify-center rounded-full border border-white bg-[#dc2626] px-1 text-[10px] font-medium leading-3 text-white">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifications && (
+                    <div
+                      className="absolute right-0 top-full z-[70] mt-2 w-80 border border-gray-200 bg-white shadow-xl"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                        <span className="text-sm font-semibold text-gray-800">{t('Notifications')}</span>
+                        <span className="text-xs text-blue-600">{unreadCount} {t('unread')}</span>
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        {notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => handleNotificationClick(n.id, n.path)}
+                            className={`cursor-pointer border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50 ${!n.read ? 'bg-blue-50/50' : ''}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
+                                n.type === 'success' ? 'bg-green-500' :
+                                n.type === 'warning' ? 'bg-amber-500' :
+                                n.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                              }`} />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-gray-800">{t(n.title)}</div>
+                                <div className="mt-0.5 text-xs text-gray-500">{t(n.message)}</div>
+                                <div className="mt-1 text-xs text-gray-400">{t(n.time)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className={`${role === 'investor' ? 'hidden' : 'flex'} min-w-0 flex-1 items-center gap-6 lg:gap-8`}>
             <div className="min-w-0 shrink-0">
               <h1 className="block truncate py-1 text-[20px] font-bold uppercase leading-8 tracking-[-0.5px] text-[#1E3A5F]">
                 {t(nav.label)}
@@ -295,7 +448,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2 lg:gap-4">
+          <div className={`${role === 'investor' ? 'hidden' : 'flex'} items-center gap-2 lg:gap-4`}>
             <div className="hidden h-9 items-center border border-[rgba(69,95,135,0.16)] bg-white p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.04)] sm:inline-flex">
               {(['vi', 'en'] as const).map((option) => (
                 <button
@@ -506,7 +659,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto">
           <main>{children}</main>
-          <ExplorerFooter />
+          {!hideSharedFooter && <ExplorerFooter />}
         </div>
       </div>
 

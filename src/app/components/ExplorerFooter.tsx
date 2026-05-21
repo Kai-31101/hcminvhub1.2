@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Linkedin, Mail } from 'lucide-react';
+import { CheckCircle2, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { translateText } from '../utils/localization';
 
@@ -8,65 +8,51 @@ export function ExplorerFooter() {
   const t = (value: string) => translateText(value, language);
 
   return (
-    <footer className="bg-[#1e3a5f] py-16 text-white">
-      <div className="mx-auto max-w-[1280px] px-8">
-        <div className="grid gap-16 lg:grid-cols-3">
-          <div className="flex flex-col gap-6">
-            <div className="text-[20px] font-normal uppercase tracking-[2px] text-white">
-              {t('HCMC Investment Hub')}
+    <footer id="footer" className="border-t border-[#f9fafb] bg-white px-6 py-8 md:px-[78px]">
+      <div className="mx-auto flex max-w-[1284px] flex-col gap-3">
+        <div className="grid gap-8 lg:grid-cols-[365px_1fr_1fr_327px]">
+          <div className="space-y-7">
+            <div className="flex items-center gap-[13px]">
+              <img src="/figma-homepage/header-logo.png" alt="" className="h-[50px] w-[50px] object-contain" />
+              <div className="text-[22px] font-bold leading-6 text-[#1f2937]">HCMC<br />INVESTMENT HUB</div>
             </div>
-            <div className="max-w-[320px] text-[12px] leading-[19.5px] text-[#cbd5e1]">
-              <p>{t('The official portal for investment promotion and')}</p>
-              <p>{t('facilitation in Ho Chi Minh City, managed by the')}</p>
-              <p>{t('Investment Promotion Center (ITPC).')}</p>
-            </div>
-            <div className="flex items-start gap-4 text-[#cbd5e1]">
-              <Facebook size={20} strokeWidth={1.75} />
-              <Mail size={20} strokeWidth={1.75} />
-              <Linkedin size={18} strokeWidth={1.75} />
+            <p className="text-[12px] leading-4 text-[#6b7280]">&copy; 2024 HCMC Investment Promotion Center. All Rights Reserved.</p>
+            <div className="flex gap-3 text-[#1f2937]">
+              <span className="flex h-[25px] w-[25px] items-center justify-center rounded-full bg-[#1877f2] text-[12px] font-bold text-white">f</span>
+              <Mail size={25} />
+              <span className="flex h-[25px] w-[25px] items-center justify-center rounded-sm bg-[#0a66c2] text-[12px] font-bold text-white">in</span>
             </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2">
-            <div className="flex flex-col gap-4">
-              <div className="text-[14px] uppercase tracking-[0.7px] text-[#f97316]">{t('Quick Links')}</div>
-              <div className="flex flex-col gap-2 text-[12px] leading-4 text-[#cbd5e1]">
-                <div>{t('Explore Projects')}</div>
-                <div>{t('Interactive Map')}</div>
-                <div>{t('Legal Framework')}</div>
-                <div>{t('Investment News')}</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div className="text-[14px] uppercase tracking-[0.7px] text-[#f97316]">{t('Support')}</div>
-              <div className="flex flex-col gap-2 text-[12px] leading-4 text-[#cbd5e1]">
-                <div>{t('Contact Us')}</div>
-                <div>{t('FAQs')}</div>
-                <div>{t('Sitemap')}</div>
-                <div>{t('E-Governance')}</div>
-              </div>
-            </div>
+          <div className="space-y-3">
+            <div className="text-[16px] font-bold leading-6 text-[#ed6203]">HCMC INVESTMENT HUB</div>
+            {['Projects', 'Projects Map View', 'Why Ho Chi Minh City?'].map((item) => (
+              <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>
+            ))}
           </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="text-[14px] uppercase tracking-[0.7px] text-[#f97316]">{t('About Arobid')}</div>
-            <div className="text-[12px] leading-[19.5px] text-[#cbd5e1]">
-              <p>{t('Powered by Arobid. Providing cutting-edge investment')}</p>
-              <p>{t('management technology for modern government hubs.')}</p>
+          <div className="space-y-3">
+            <div className="text-[16px] font-bold leading-6 text-[#ed6203]">{t('SUPPORT')}</div>
+            {['Quick Intake', 'Support', 'FAQs'].map((item) => (
+              <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 py-1.5 text-[10px] leading-3 text-[#166534]">
+              <CheckCircle2 size={15} />
+              Digital Trade & Investment Infrastructure
             </div>
-            <div className="bg-[rgba(255,255,255,0.05)] p-4 text-[10px] italic leading-[15px] text-[#94a3b8]">
-              {t('Technology Partner of HCMC Government Since 2024')}
+            <div className="flex items-center gap-[13px]">
+              <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
+              <span className="text-[28px] font-bold leading-10 text-[#ed6203]">Arobid</span>
             </div>
+            <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
           </div>
         </div>
 
-        <div className="mt-16 flex flex-col gap-4 border-t border-[rgba(255,255,255,0.1)] pt-[33px] text-[10px] text-[#94a3b8] sm:flex-row sm:items-center sm:justify-between">
-          <div>{t('© 2024 HCMC Investment Promotion Center. All Rights Reserved.')}</div>
-          <div className="flex items-center gap-6">
-            <div>{t('Privacy Policy')}</div>
-            <div>{t('Terms of Service')}</div>
-          </div>
+        <div className="mt-3 border-t border-[#e5e7eb] pt-3 text-right text-[10px] leading-3 text-[#111827]">
+          Privacy Policy&nbsp;&nbsp;&nbsp; Term of Services
         </div>
       </div>
     </footer>
