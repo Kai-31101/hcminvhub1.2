@@ -5,6 +5,7 @@ import { useApp } from '../../context/AppContext';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
 import { InvestmentMapModal } from '../../components/InvestmentMapModal';
+import { ArobidLogo } from '../../components/ArobidLogo';
 import { Input } from '../../components/ui/input';
 import { ClearableSelectField } from '../../components/ui/clearable-select-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -411,7 +412,7 @@ export default function ExplorerPage() {
             aria-hidden="true"
             tabIndex={-1}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,33,0.72)_0%,rgba(5,18,33,0.24)_60%,rgba(5,18,33,0.1)_100%)]" />
+          <div className="absolute inset-0 bg-transparent" />
           <div className="absolute left-6 top-10 flex w-[min(384px,calc(100%-48px))] flex-col items-center justify-center gap-2 rounded-lg bg-black/25 p-6 text-center shadow-[0_0_8px_rgba(237,98,3,0.12)] backdrop-blur-sm md:left-[91px] md:top-[51px]">
             <div className="text-[18px] leading-7 text-white">{t('Need tailor support')}</div>
             <div className="text-[24px] font-bold leading-8 text-white">{t('FAST-TRACK')}</div>
@@ -756,9 +757,9 @@ export default function ExplorerPage() {
                   <CheckCircle2 size={15} />
                   Digital Trade & Investment Infrastructure
                 </div>
-                <div className="flex items-center gap-[13px]">
+                <div className="flex flex-wrap items-center gap-[13px]">
                   <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
-                  <span className="text-[28px] font-bold leading-10 text-[#ed6203]">Arobid</span>
+                  <ArobidLogo className="h-[54px] w-[207px] shrink-0" />
                 </div>
                 <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
               </div>

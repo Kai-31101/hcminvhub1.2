@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { SeeAllButton } from '../components/SeeAllButton';
+import { ArobidLogo } from '../components/ArobidLogo';
 import homeHeroFigmaCity from '../assets/home-hero-figma-city.png';
 import homeHeroInteractive from '../assets/home-hero-interactive.png';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../data/administrativeLocations';
@@ -460,8 +461,8 @@ export default function HomePage() {
               tabIndex={-1}
             />
           ) : null}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,18,33,0.16)_0%,rgba(5,18,33,0.12)_42%,rgba(5,18,33,0.88)_100%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,33,0.66)_0%,rgba(5,18,33,0.2)_54%,rgba(5,18,33,0.42)_100%)]" />
+          <div className="absolute inset-0 bg-transparent" />
+          <div className="absolute inset-0 bg-transparent" />
 
           <header className="absolute left-0 top-0 z-40 flex h-[84px] w-full items-center gap-3 px-6 py-3 md:px-[78px]">
             <button type="button" onClick={() => document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' })} className="relative h-[60px] w-[60px] shrink-0">
@@ -938,9 +939,9 @@ export default function HomePage() {
                   <CheckCircle2 size={15} />
                   Digital Trade & Investment Infrastructure
                 </div>
-                <div className="flex items-center gap-[13px]">
+                <div className="flex flex-wrap items-center gap-[13px]">
                   <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
-                  <span className="text-[28px] font-bold leading-10 text-[#ed6203]">Arobid</span>
+                  <ArobidLogo className="h-[54px] w-[207px] shrink-0" />
                 </div>
                 <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
               </div>

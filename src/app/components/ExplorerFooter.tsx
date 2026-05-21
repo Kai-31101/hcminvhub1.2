@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle2, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { translateText } from '../utils/localization';
+import { ArobidLogo } from './ArobidLogo';
 
 export function ExplorerFooter() {
   const { language } = useApp();
@@ -43,9 +44,9 @@ export function ExplorerFooter() {
               <CheckCircle2 size={15} />
               Digital Trade & Investment Infrastructure
             </div>
-            <div className="flex items-center gap-[13px]">
+            <div className="flex flex-wrap items-center gap-[13px]">
               <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
-              <span className="text-[28px] font-bold leading-10 text-[#ed6203]">Arobid</span>
+              <ArobidLogo className="h-[54px] w-[207px] shrink-0" />
             </div>
             <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
           </div>
