@@ -1,3 +1,28 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+@keyframes partner-logo-slide-right {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.partner-logo-track {
+  animation: partner-logo-slide-right 28s linear infinite;
+}
+
+.partner-logo-marquee:hover .partner-logo-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-logo-track {
+    animation: none;
+    transform: translateX(0);
+  }
+}

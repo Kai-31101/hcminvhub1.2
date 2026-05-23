@@ -1,6 +1,6 @@
 import React, { FormEvent, useMemo, useRef, useState } from 'react';
 import { useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Briefcase, Building2, CheckCircle2, ChevronDown, Cloud, Globe2, Headset, Landmark, Mail, Map, MapPin, Search, SearchCheck, ShieldCheck, Star, User, X } from 'lucide-react';
+import { ArrowRight, Briefcase, Building2, CheckCircle2, ChevronDown, Cloud, Globe2, Headset, Landmark, Mail, Map, MapPin, Search, SearchCheck, ShieldCheck, Star, User, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { ExplorerActionModal } from '../components/ExplorerActionModal';
@@ -11,8 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../components/ui/textarea';
 import { SeeAllButton } from '../components/SeeAllButton';
 import { ArobidLogo } from '../components/ArobidLogo';
-import homeHeroFigmaCity from '../assets/home-hero-figma-city.png';
-import homeHeroInteractive from '../assets/home-hero-interactive.png';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../data/administrativeLocations';
 import { investmentNews } from '../data/investmentNews';
 import { useApp } from '../context/AppContext';
@@ -26,22 +24,24 @@ const OFFICIAL_VI_TITLE = 'H\u1ea0 T\u1ea6NG X\u00daC TI\u1ebeN \u0110\u1ea6U T\
 const OFFICIAL_EN_TITLE = 'Hochiminh City Investment Hub';
 const HERO_VIDEO_ID = 'LjDjXXM62Xg';
 const HERO_VIDEO_SRC = `https://www.youtube.com/embed/${HERO_VIDEO_ID}?autoplay=1&mute=1&controls=0&loop=1&playlist=${HERO_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&vq=hd1080`;
+const HERO_VIDEO_THUMBNAIL = `https://img.youtube.com/vi/${HERO_VIDEO_ID}/maxresdefault.jpg`;
 const OFFICIAL_TAGLINE = 'Your Gateway. Our Support. Your Success';
 const ALL_OPTION = '__all__';
 const FEATURED_LIST_COUNT = 3;
 const NEW_UPDATE_INITIAL_COUNT = 6;
 const NEW_UPDATE_ROW_SIZE = 3;
 const DEFAULT_PROJECT_TYPE = 'public';
-const HERO_HOTSPOTS = [
-  { id: 'hotspot-west', projectId: 'p3', left: 8, top: 56, color: '#5140b2' },
-  { id: 'hotspot-center-west', projectId: 'p1', left: 25, top: 45, color: '#5d7486' },
-  { id: 'hotspot-south', projectId: 'p4', left: 31, top: 70, color: '#c7b326' },
-  { id: 'hotspot-center', projectId: 'p5', left: 57, top: 43, color: '#5aa85e' },
-  { id: 'hotspot-east-center', projectId: 'p6', left: 69, top: 53, color: '#ca4a9b' },
-  { id: 'hotspot-south-east', projectId: 'p2', left: 65, top: 73, color: '#443c5d' },
-  { id: 'hotspot-east', projectId: 'p4', left: 84, top: 45, color: '#c87a29' },
-];
-
+const GOVERNMENT_PARTNER_LOGOS = [
+  { name: 'Department of Home Affairs', src: '/figma-homepage/agency-logos/emblems/so-noi-vu.png' },
+  { name: 'Department of Justice', src: '/figma-homepage/agency-logos/emblems/so-tu-phap.png' },
+  { name: 'Department of Industry and Trade', src: '/figma-homepage/agency-logos/emblems/so-cong-thuong.png' },
+  { name: 'Department of Labor, War Invalids and Social Affairs', src: '/figma-homepage/agency-logos/emblems/so-ldtbxh.png' },
+  { name: 'Department of Tourism', src: '/figma-homepage/agency-logos/emblems/so-du-lich.png' },
+  { name: 'Department of Science and Technology', src: '/figma-homepage/agency-logos/emblems/so-khcn.png' },
+  { name: 'Department of Health', src: '/figma-homepage/agency-logos/emblems/so-y-te.png' },
+  { name: 'Quang Trung Software City', src: '/figma-homepage/agency-logos/emblems/qtsc.jpg' },
+  { name: 'Saigon Hi-Tech Park', src: '/figma-homepage/agency-logos/emblems/shtp.svg' },
+].filter((logo, index, logos) => logos.findIndex((item) => item.src === logo.src) === index);
 const META: Record<string, { sectorGroup: string; investmentType: string; ward: string }> = {
   p1: { sectorGroup: 'Smart City & Urban Tech', investmentType: 'PPP', ward: 'Phường Thủ Đức' },
   p2: { sectorGroup: 'Renewable Energy', investmentType: 'Greenfield', ward: 'Xã Thanh An' },
@@ -189,10 +189,6 @@ export default function HomePage() {
     [filteredProjects],
   );
   const visibleUpdatedProjects = updatedProjects.slice(0, newUpdateVisibleCount);
-  const heroHotspots = useMemo(() => HERO_HOTSPOTS.map((hotspot) => ({ ...hotspot, project: homeProjects.find((project) => project.id === hotspot.projectId) ?? null })).filter((hotspot) => hotspot.project), [homeProjects]);
-  const [interactiveHero, setInteractiveHero] = useState(false);
-  const [activeHeroHotspotId, setActiveHeroHotspotId] = useState<string | null>(null);
-
   const submittedType = new URLSearchParams(location.search).get('submitted');
   useEffect(() => {
     if (submittedType === 'fast-track') {
@@ -279,15 +275,6 @@ export default function HomePage() {
   function closeFastTrackModal() {
     setFastTrackNotice(null);
     setIsFastTrackModalOpen(false);
-  }
-
-  function enterInteractiveHero() {
-    setInteractiveHero(true);
-    setActiveHeroHotspotId((current) => current ?? heroHotspots[0]?.id ?? null);
-  }
-
-  function exitInteractiveHero() {
-    setInteractiveHero(false);
   }
 
   function openHeroMapView() {
@@ -433,24 +420,20 @@ export default function HomePage() {
   return (
     <div id="top" className="flex min-h-screen flex-col bg-white text-slate-900">
       <main className="flex-1 bg-white">
-        <section ref={heroSectionRef} className="relative h-[100svh] min-h-[680px] overflow-hidden bg-[#071423] text-white">
-          <img
-            src={interactiveHero ? homeHeroInteractive : homeHeroFigmaCity}
-            alt={t('Ho Chi Minh City hero banner')}
-            className="absolute inset-0 h-full w-full object-cover"
-            draggable={false}
+        <section
+          ref={heroSectionRef}
+          className="relative h-[100svh] min-h-[680px] overflow-hidden bg-[#071423] bg-cover bg-center text-white"
+          style={{ backgroundImage: `url(${HERO_VIDEO_THUMBNAIL})` }}
+        >
+          <iframe
+            title={t('Ho Chi Minh City hero background video')}
+            src={HERO_VIDEO_SRC}
+            className="pointer-events-none absolute left-1/2 top-[calc(50%-90px)] aspect-video h-[calc(100%+180px)] min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
+            aria-hidden="true"
+            tabIndex={-1}
           />
-          {!interactiveHero ? (
-            <iframe
-              title={t('Ho Chi Minh City hero background video')}
-              src={HERO_VIDEO_SRC}
-              className="pointer-events-none absolute left-1/2 top-[calc(50%-90px)] aspect-video h-[calc(100%+180px)] min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              referrerPolicy="strict-origin-when-cross-origin"
-              aria-hidden="true"
-              tabIndex={-1}
-            />
-          ) : null}
           <div className="absolute inset-0 bg-transparent" />
           <div className="absolute inset-0 bg-transparent" />
 
@@ -487,46 +470,6 @@ export default function HomePage() {
             </nav>
           </header>
 
-          {interactiveHero ? (
-            <div className="absolute inset-0 z-20">
-              <button
-                type="button"
-                onClick={exitInteractiveHero}
-                className="absolute left-6 top-[104px] z-30 inline-flex items-center gap-2 rounded-full border border-white/24 bg-[rgba(4,18,33,0.48)] px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-[rgba(4,18,33,0.68)] md:left-[78px]"
-              >
-                <ArrowLeft size={16} />
-                {t('Back')}
-              </button>
-              {heroHotspots.map(({ id, projectId, left, top, color, project }) => {
-                if (!project) return null;
-                const isActive = activeHeroHotspotId === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none ${isActive ? 'z-40' : 'z-20'}`}
-                    style={{ left: `${left}%`, top: `${top}%` }}
-                    onMouseEnter={() => setActiveHeroHotspotId(id)}
-                    onMouseLeave={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
-                    onFocus={() => setActiveHeroHotspotId(id)}
-                    onBlur={() => setActiveHeroHotspotId((current) => (current === id ? null : current))}
-                    onClick={() => navigate(`/investor/project/${projectId}`)}
-                    aria-label={t(project.name)}
-                  >
-                    <MapPin size={30} fill={color} color={color} strokeWidth={1.8} className="drop-shadow-[0_10px_18px_rgba(15,23,42,0.38)]" />
-                    {isActive ? (
-                      <span className="absolute left-[calc(100%+14px)] top-1/2 block w-[240px] -translate-y-1/2 rounded-md border border-white/18 bg-[rgba(7,18,35,0.88)] p-4 text-left shadow-[0_18px_40px_rgba(15,23,42,0.42)] backdrop-blur">
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color }}>{t(project.sectorGroup)}</span>
-                        <img src={project.image} alt={t(project.name)} className="mt-3 h-[120px] w-full rounded-md object-cover" />
-                        <span className="mt-3 block text-sm font-semibold leading-5 text-white">{t(project.name)}</span>
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-
           <div className="absolute left-6 top-[clamp(140px,26vh,287px)] z-10 w-[calc(100%-48px)] max-w-[896px] md:left-[78px]">
             <div>
               <h1 className="text-[42px] font-bold leading-[56px] text-[#ed6203] md:text-[48px]">HO CHI MINH CITY</h1>
@@ -555,9 +498,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          <button type="button" onClick={enterInteractiveHero} className="absolute bottom-10 left-1/2 z-20 flex h-[30px] w-[30px] -translate-x-1/2 items-center justify-center text-white" aria-label={t('Open interactive hero banner')}>
-            <ChevronDown size={30} />
-          </button>
         </section>
 
         <section id="projects-map" className="relative overflow-hidden bg-[#f9fafb] px-6 py-8 md:px-[78px]">
@@ -870,23 +810,19 @@ export default function HomePage() {
         <section id="partners" className="relative overflow-hidden bg-white px-6 py-8 md:px-[78px]">
           <img src="/figma-homepage/partners-bg.png" alt="" className="pointer-events-none absolute inset-x-0 top-[-521px] h-[1450px] w-full object-cover opacity-30" />
           <div className="relative mx-auto flex max-w-[1284px] flex-col items-center gap-10">
-            <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Partners')}</h2>
             <div className="flex w-full flex-col items-center gap-6">
-              <div className="text-[16px] font-medium leading-6 text-[#6b7280]">{t('Government')}</div>
-              <div className="flex w-full flex-wrap items-center justify-center gap-[90px]">
-                {['gov-1.png', 'gov-2.png', 'gov-3b.png', 'gov-4.png', 'gov-5.png'].map((logo) => (
-                  <div key={logo} className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-white">
-                    <img src={`/figma-homepage/${logo}`} alt="" className="max-h-full max-w-full object-contain" />
-                  </div>
-                ))}
+              <div className="partner-logo-marquee w-full overflow-hidden">
+                <div className="partner-logo-track flex w-max flex-nowrap items-center gap-8">
+                  {[...GOVERNMENT_PARTNER_LOGOS, ...GOVERNMENT_PARTNER_LOGOS].map((logo, index) => (
+                    <div key={`${logo.src}-${index}`} className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden p-3">
+                      <img src={logo.src} alt={t(logo.name)} className="max-h-full max-w-full object-contain" />
+                    </div>
+                  ))}
+                </div>
               </div>
-              <button type="button" className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2.5 text-[14px] font-medium text-[#ed6203]">
-                {t('See more')}
-                <ArrowRight size={20} />
-              </button>
             </div>
             <div className="flex w-full flex-col items-center gap-6">
-              <div className="text-[16px] font-medium leading-6 text-[#6b7280]">{t('Strategic Partners')}</div>
+              <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Partners')}</h2>
               <div className="flex w-full flex-wrap items-center justify-center gap-10">
                 {['strategic-1.png', 'strategic-2.png', 'strategic-3.png', 'strategic-4.png', 'strategic-5.png'].map((logo) => (
                   <div key={logo} className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-white">
