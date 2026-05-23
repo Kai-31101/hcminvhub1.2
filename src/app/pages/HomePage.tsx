@@ -42,6 +42,11 @@ const GOVERNMENT_PARTNER_LOGOS = [
   { name: 'Quang Trung Software City', src: '/figma-homepage/agency-logos/emblems/qtsc.jpg' },
   { name: 'Saigon Hi-Tech Park', src: '/figma-homepage/agency-logos/emblems/shtp.svg' },
 ].filter((logo, index, logos) => logos.findIndex((item) => item.src === logo.src) === index);
+const STRATEGIC_PARTNER_LOGOS = [
+  { name: 'S&P Global Market Intelligence', src: '/figma-homepage/strategic-partners/sp-global.svg' },
+  { name: 'CRIF D&B Vietnam', src: '/figma-homepage/strategic-partners/crif-dnb-vietnam.png' },
+  { name: 'Grant Thornton', src: '/figma-homepage/strategic-partners/grant-thornton.png' },
+];
 const META: Record<string, { sectorGroup: string; investmentType: string; ward: string }> = {
   p1: { sectorGroup: 'Smart City & Urban Tech', investmentType: 'PPP', ward: 'Phường Thủ Đức' },
   p2: { sectorGroup: 'Renewable Energy', investmentType: 'Greenfield', ward: 'Xã Thanh An' },
@@ -823,10 +828,10 @@ export default function HomePage() {
             </div>
             <div className="flex w-full flex-col items-center gap-6">
               <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Partners')}</h2>
-              <div className="flex w-full flex-wrap items-center justify-center gap-10">
-                {['strategic-1.png', 'strategic-2.png', 'strategic-3.png', 'strategic-4.png', 'strategic-5.png'].map((logo) => (
-                  <div key={logo} className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-white">
-                    <img src={`/figma-homepage/${logo}`} alt="" className="max-h-full max-w-full object-contain" />
+              <div className="flex w-full flex-wrap items-center justify-center gap-12">
+                {STRATEGIC_PARTNER_LOGOS.map((logo) => (
+                  <div key={logo.src} className="flex h-16 w-44 items-center justify-center overflow-hidden bg-white px-2">
+                    <img src={logo.src} alt={t(logo.name)} className="max-h-full max-w-full object-contain" />
                   </div>
                 ))}
               </div>
