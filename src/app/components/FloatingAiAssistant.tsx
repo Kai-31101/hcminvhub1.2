@@ -3,7 +3,8 @@ import { Send, X } from 'lucide-react';
 
 const LOGO_SRC = '/figma-homepage/assistant/ai-lotus-logo-button.png';
 const POSITION_KEY = 'hcminvhub-floating-ai-position-v2';
-const BUTTON_SIZE = 144;
+const DESKTOP_BUTTON_SIZE = 100;
+const MOBILE_BUTTON_SIZE = 40;
 const EDGE_PADDING = 16;
 
 type Position = {
@@ -17,14 +18,24 @@ type ChatMessage = {
   text: string;
 };
 
+function getButtonSize() {
+  if (typeof window === 'undefined') {
+    return DESKTOP_BUTTON_SIZE;
+  }
+
+  return window.innerWidth < 768 ? MOBILE_BUTTON_SIZE : DESKTOP_BUTTON_SIZE;
+}
+
 function getDefaultPosition(): Position {
   if (typeof window === 'undefined') {
     return { x: 24, y: 320 };
   }
 
+  const buttonSize = getButtonSize();
+
   return {
-    x: Math.max(EDGE_PADDING, window.innerWidth - BUTTON_SIZE - 24),
-    y: Math.max(EDGE_PADDING, window.innerHeight - BUTTON_SIZE - 24),
+    x: Math.max(EDGE_PADDING, window.innerWidth - buttonSize - 24),
+    y: Math.max(EDGE_PADDING, window.innerHeight - buttonSize - 24),
   };
 }
 
@@ -33,9 +44,11 @@ function clampPosition(position: Position): Position {
     return position;
   }
 
+  const buttonSize = getButtonSize();
+
   return {
-    x: Math.min(Math.max(EDGE_PADDING, position.x), window.innerWidth - BUTTON_SIZE - EDGE_PADDING),
-    y: Math.min(Math.max(EDGE_PADDING, position.y), window.innerHeight - BUTTON_SIZE - EDGE_PADDING),
+    x: Math.min(Math.max(EDGE_PADDING, position.x), window.innerWidth - buttonSize - EDGE_PADDING),
+    y: Math.min(Math.max(EDGE_PADDING, position.y), window.innerHeight - buttonSize - EDGE_PADDING),
   };
 }
 
@@ -223,10 +236,10 @@ export function FloatingAiAssistant() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="group flex h-36 w-36 cursor-grab touch-none items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-950 shadow-2xl ring-2 ring-sky-300/40 active:cursor-grabbing"
+        className={`group flex h-10 w-10 cursor-grab touch-none items-center justify-center overflow-hidden rounded-full bg-slate-950 shadow-2xl ring-2 ring-sky-300/40 transition-[opacity,box-shadow,filter] duration-200 hover:opacity-100 hover:shadow-[0_18px_36px_rgba(14,116,144,0.42)] hover:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] focus-visible:opacity-100 focus-visible:shadow-[0_18px_36px_rgba(14,116,144,0.42)] focus-visible:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] active:cursor-grabbing active:opacity-100 active:shadow-[0_18px_36px_rgba(14,116,144,0.42)] active:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] md:h-[100px] md:w-[100px] ${isOpen ? 'opacity-100' : 'opacity-70'}`}
         aria-label="Open AI assistant"
       >
-        <img src={LOGO_SRC} alt="" draggable={false} className="h-full w-full select-none object-cover transition-transform duration-200 group-hover:scale-105" />
+        <img src={LOGO_SRC} alt="" draggable={false} className="h-full w-full select-none object-cover transition-transform duration-200 group-hover:scale-105 group-active:scale-105" />
       </button>
     </div>
   );
