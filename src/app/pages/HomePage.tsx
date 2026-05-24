@@ -53,9 +53,10 @@ const GOVERNMENT_PARTNER_LOGOS = [
   { name: 'Department of Health', src: '/figma-homepage/agency-logos/emblems/so-y-te.png' },
   { name: 'Department of Construction', src: '/figma-homepage/agency-logos/emblems/so-xay-dung.png' },
   { name: 'Department of Home Affairs', src: '/figma-homepage/agency-logos/emblems/so-noi-vu.png' },
-  { name: 'VIETRADE', src: '/figma-homepage/agency-logos/emblems/vietrade.png', wide: true },
-  { name: 'HCMC ITPC', src: '/figma-homepage/agency-logos/emblems/hcmc-itpc.svg', wide: true },
+  { name: 'VIETRADE', src: '/figma-homepage/agency-logos/emblems/vietrade-new.jpg', wide: true },
+  { name: 'HCMC ITPC', src: '/figma-homepage/agency-logos/emblems/hcmc-itpc-new.jpg', wide: true },
   { name: 'HEPZA', src: '/figma-homepage/agency-logos/emblems/hepza.png' },
+  { name: 'ISC Vietnam', src: '/figma-homepage/agency-logos/emblems/isc-vietnam.png' },
 ].filter((logo, index, logos) => logos.findIndex((item) => item.src === logo.src) === index);
 const STRATEGIC_PARTNER_LOGOS = [
   { name: 'S&P Global Market Intelligence', src: '/figma-homepage/strategic-partners/logo_SP-2.webp' },
@@ -64,7 +65,7 @@ const STRATEGIC_PARTNER_LOGOS = [
   { name: 'Viettel', src: '/figma-homepage/strategic-partners/viettel.svg' },
   { name: 'Bao Viet', src: '/figma-homepage/strategic-partners/bao-viet.svg' },
   { name: 'Vietcombank', src: '/figma-homepage/strategic-partners/vietcombank.svg' },
-  { name: 'SAIA', src: '/figma-homepage/strategic-partners/saia.svg' },
+  { name: 'SAIA', src: '/figma-homepage/strategic-partners/saia.png' },
 ];
 const META: Record<string, { sectorGroup: string; investmentType: string; ward: string }> = {
   p1: { sectorGroup: 'Smart City & Urban Tech', investmentType: 'PPP', ward: 'Phường Thủ Đức' },
