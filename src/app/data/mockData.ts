@@ -1329,22 +1329,21 @@ function buildAgencyOfficers(agencyId: string, shortName: string, agencyIndex: n
 }
 
 const agencySeed: Array<{ id: string; nameVi: string; nameEn: string }> = [
-  { id: 'ag1', nameVi: 'Sở Nội vụ', nameEn: 'Department of Home Affairs' },
-  { id: 'ag2', nameVi: 'Sở Tư pháp', nameEn: 'Department of Justice' },
-  { id: 'ag3', nameVi: 'Sở Kế hoạch và Đầu tư', nameEn: 'Department of Planning and Investment' },
-  { id: 'ag4', nameVi: 'Sở Tài chính', nameEn: 'Department of Finance' },
-  { id: 'ag5', nameVi: 'Sở Công Thương', nameEn: 'Department of Industry and Trade' },
-  { id: 'ag6', nameVi: 'Sở Nông nghiệp và Phát triển nông thôn', nameEn: 'Department of Agriculture and Rural Development' },
-  { id: 'ag7', nameVi: 'Sở Giao thông Vận tải', nameEn: 'Department of Transport' },
-  { id: 'ag8', nameVi: 'Sở Xây dựng', nameEn: 'Department of Construction' },
-  { id: 'ag9', nameVi: 'Sở Tài nguyên và Môi trường', nameEn: 'Department of Natural Resources and Environment' },
-  { id: 'ag10', nameVi: 'Sở Thông tin và Truyền thông', nameEn: 'Department of Information and Communications' },
-  { id: 'ag11', nameVi: 'Sở Lao động - Thương binh và Xã hội', nameEn: 'Department of Labor, War Invalids and Social Affairs' },
-  { id: 'ag12', nameVi: 'Sở Văn hóa và Thể thao', nameEn: 'Department of Culture and Sports' },
-  { id: 'ag13', nameVi: 'Sở Du lịch', nameEn: 'Department of Tourism' },
-  { id: 'ag14', nameVi: 'Sở Khoa học và Công nghệ', nameEn: 'Department of Science and Technology' },
-  { id: 'ag15', nameVi: 'Sở Giáo dục và Đào tạo', nameEn: 'Department of Education and Training' },
-  { id: 'ag16', nameVi: 'Sở Y tế', nameEn: 'Department of Medication' },
+  { id: 'ag1', nameVi: 'Văn phòng UBND TP.HCM', nameEn: "Office of the Ho Chi Minh City People's Committee" },
+  { id: 'ag2', nameVi: 'Sở Công Thương', nameEn: 'Department of Industry and Trade' },
+  { id: 'ag3', nameVi: 'Thanh tra TP.HCM', nameEn: 'Ho Chi Minh City Inspectorate' },
+  { id: 'ag4', nameVi: 'Sở Giáo dục và Đào tạo', nameEn: 'Department of Education and Training' },
+  { id: 'ag5', nameVi: 'Sở Nông nghiệp và Môi trường', nameEn: 'Department of Agriculture and Environment' },
+  { id: 'ag6', nameVi: 'Sở Dân tộc và Tôn giáo', nameEn: 'Department of Ethnic and Religious Affairs' },
+  { id: 'ag7', nameVi: 'Sở Tư pháp', nameEn: 'Department of Justice' },
+  { id: 'ag8', nameVi: 'Sở Khoa học và Công nghệ', nameEn: 'Department of Science and Technology' },
+  { id: 'ag9', nameVi: 'Sở Tài chính', nameEn: 'Department of Finance' },
+  { id: 'ag10', nameVi: 'Sở Du lịch', nameEn: 'Department of Tourism' },
+  { id: 'ag11', nameVi: 'Sở Văn hóa và Thể thao', nameEn: 'Department of Culture and Sports' },
+  { id: 'ag12', nameVi: 'Sở Y tế', nameEn: 'Department of Health' },
+  { id: 'ag13', nameVi: 'Sở Xây dựng', nameEn: 'Department of Construction' },
+  { id: 'ag14', nameVi: 'Sở Nội vụ', nameEn: 'Department of Home Affairs' },
+  { id: 'ag15', nameVi: 'Sở An toàn thực phẩm', nameEn: 'Department of Food Safety' },
 ];
 
 export const agencies: Agency[] = agencySeed.map(({ id, nameVi, nameEn }, agencyIndex) => {

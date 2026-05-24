@@ -31,21 +31,40 @@ const FEATURED_LIST_COUNT = 3;
 const NEW_UPDATE_INITIAL_COUNT = 6;
 const NEW_UPDATE_ROW_SIZE = 3;
 const DEFAULT_PROJECT_TYPE = 'public';
+const GOVERNMENT_PRIMARY_LOGOS = [
+  {
+    name: 'Emblem of Vietnam',
+    src: '/figma-homepage/agency-logos/emblems/emblem-of-vietnam.svg',
+  },
+  {
+    name: "Office of the Ho Chi Minh City People's Committee",
+    src: '/figma-homepage/agency-logos/emblems/van-phong-ubnd-hih.png',
+  },
+];
 const GOVERNMENT_PARTNER_LOGOS = [
-  { name: 'Department of Home Affairs', src: '/figma-homepage/agency-logos/emblems/so-noi-vu.png' },
-  { name: 'Department of Justice', src: '/figma-homepage/agency-logos/emblems/so-tu-phap.png' },
   { name: 'Department of Industry and Trade', src: '/figma-homepage/agency-logos/emblems/so-cong-thuong.png' },
-  { name: 'Department of Labor, War Invalids and Social Affairs', src: '/figma-homepage/agency-logos/emblems/so-ldtbxh.png' },
-  { name: 'Department of Tourism', src: '/figma-homepage/agency-logos/emblems/so-du-lich.png' },
+  { name: 'Ho Chi Minh City Inspectorate', src: '/figma-homepage/agency-logos/emblems/thanh-tra-tphcm.png' },
+  { name: 'Department of Education and Training', src: '/figma-homepage/agency-logos/emblems/so-giao-duc-dao-tao.png' },
+  { name: 'Department of Justice', src: '/figma-homepage/agency-logos/emblems/so-tu-phap.png' },
   { name: 'Department of Science and Technology', src: '/figma-homepage/agency-logos/emblems/so-khcn.png' },
+  { name: 'Department of Finance', src: '/figma-homepage/agency-logos/emblems/so-tai-chinh.png' },
+  { name: 'Department of Tourism', src: '/figma-homepage/agency-logos/emblems/so-du-lich.png' },
+  { name: 'Department of Culture and Sports', src: '/figma-homepage/agency-logos/emblems/so-van-hoa-the-thao.png' },
   { name: 'Department of Health', src: '/figma-homepage/agency-logos/emblems/so-y-te.png' },
-  { name: 'Quang Trung Software City', src: '/figma-homepage/agency-logos/emblems/qtsc.jpg' },
-  { name: 'Saigon Hi-Tech Park', src: '/figma-homepage/agency-logos/emblems/shtp.svg' },
+  { name: 'Department of Construction', src: '/figma-homepage/agency-logos/emblems/so-xay-dung.png' },
+  { name: 'Department of Home Affairs', src: '/figma-homepage/agency-logos/emblems/so-noi-vu.png' },
+  { name: 'VIETRADE', src: '/figma-homepage/agency-logos/emblems/vietrade.png', wide: true },
+  { name: 'HCMC ITPC', src: '/figma-homepage/agency-logos/emblems/hcmc-itpc.svg', wide: true },
+  { name: 'HEPZA', src: '/figma-homepage/agency-logos/emblems/hepza.png' },
 ].filter((logo, index, logos) => logos.findIndex((item) => item.src === logo.src) === index);
 const STRATEGIC_PARTNER_LOGOS = [
-  { name: 'S&P Global Market Intelligence', src: '/figma-homepage/strategic-partners/sp-global.svg' },
+  { name: 'S&P Global Market Intelligence', src: '/figma-homepage/strategic-partners/logo_SP-2.webp' },
   { name: 'CRIF D&B Vietnam', src: '/figma-homepage/strategic-partners/crif-dnb-vietnam.png' },
   { name: 'Grant Thornton', src: '/figma-homepage/strategic-partners/grant-thornton.png' },
+  { name: 'Viettel', src: '/figma-homepage/strategic-partners/viettel.svg' },
+  { name: 'Bao Viet', src: '/figma-homepage/strategic-partners/bao-viet.svg' },
+  { name: 'Vietcombank', src: '/figma-homepage/strategic-partners/vietcombank.svg' },
+  { name: 'SAIA', src: '/figma-homepage/strategic-partners/saia.svg' },
 ];
 const META: Record<string, { sectorGroup: string; investmentType: string; ward: string }> = {
   p1: { sectorGroup: 'Smart City & Urban Tech', investmentType: 'PPP', ward: 'Phường Thủ Đức' },
@@ -816,11 +835,16 @@ export default function HomePage() {
           <img src="/figma-homepage/partners-bg.png" alt="" className="pointer-events-none absolute inset-x-0 top-[-521px] h-[1450px] w-full object-cover opacity-30" />
           <div className="relative mx-auto flex max-w-[1284px] flex-col items-center gap-10">
             <div className="flex w-full flex-col items-center gap-6">
+              <div className="flex h-32 w-full items-center justify-center gap-8">
+                {GOVERNMENT_PRIMARY_LOGOS.map((logo) => (
+                  <img key={logo.src} src={logo.src} alt={t(logo.name)} className="h-28 w-28 object-contain" />
+                ))}
+              </div>
               <div className="partner-logo-marquee w-full overflow-hidden">
                 <div className="partner-logo-track flex w-max flex-nowrap items-center gap-8">
                   {[...GOVERNMENT_PARTNER_LOGOS, ...GOVERNMENT_PARTNER_LOGOS].map((logo, index) => (
-                    <div key={`${logo.src}-${index}`} className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden p-3">
-                      <img src={logo.src} alt={t(logo.name)} className="max-h-full max-w-full object-contain" />
+                    <div key={`${logo.src}-${index}`} className={`flex h-24 shrink-0 items-center justify-center overflow-hidden ${'wide' in logo && logo.wide ? 'w-36' : 'w-24'}`}>
+                      <img src={logo.src} alt={t(logo.name)} className={`object-contain ${'wide' in logo && logo.wide ? 'h-16 w-32' : 'h-20 w-20'}`} />
                     </div>
                   ))}
                 </div>
@@ -828,12 +852,14 @@ export default function HomePage() {
             </div>
             <div className="flex w-full flex-col items-center gap-6">
               <h2 className="text-[28px] font-bold leading-9 text-[#ed6203]">{t('Partners')}</h2>
-              <div className="flex w-full flex-wrap items-center justify-center gap-12">
-                {STRATEGIC_PARTNER_LOGOS.map((logo) => (
-                  <div key={logo.src} className="flex h-16 w-44 items-center justify-center overflow-hidden bg-white px-2">
-                    <img src={logo.src} alt={t(logo.name)} className="max-h-full max-w-full object-contain" />
-                  </div>
-                ))}
+              <div className="partner-logo-marquee w-full overflow-hidden">
+                <div className="partner-logo-track flex w-max flex-nowrap items-center gap-12">
+                  {[...STRATEGIC_PARTNER_LOGOS, ...STRATEGIC_PARTNER_LOGOS].map((logo, index) => (
+                    <div key={`${logo.src}-${index}`} className="flex h-16 w-44 shrink-0 items-center justify-center overflow-hidden bg-white px-2">
+                      <img src={logo.src} alt={t(logo.name)} className="max-h-full max-w-full object-contain" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

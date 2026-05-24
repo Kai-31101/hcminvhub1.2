@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" role="img" aria-labelledby="title desc">
+  <title id="title">Bao Viet logo</title>
+  <desc id="desc">Bao Viet wordmark with gold globe mark</desc>
+  <defs>
+    <radialGradient id="gold" cx="38%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#fff2b8"/>
+      <stop offset="0.38" stop-color="#d4aa48"/>
+      <stop offset="0.72" stop-color="#9a7627"/>
+      <stop offset="1" stop-color="#5f4514"/>
+    </radialGradient>
+  </defs>
+  <g fill="none" fill-rule="evenodd">
+    <text x="0" y="62" fill="#0073bd" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" letter-spacing="-2">BAOVIET</text>
+    <text x="2" y="114" fill="#0073bd" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">TAP DOAN BAO VIET</text>
+    <circle cx="405" cy="61" r="50" fill="url(#gold)"/>
+    <path d="M360 48c30 18 61 22 94 10M362 74c35-5 65-21 92-48M383 18c12 28 17 60 14 96M351 62c25 5 56 23 92 55" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+    <circle cx="405" cy="61" r="50" stroke="#8b6b22" stroke-width="2" opacity=".45"/>
+  </g>
+</svg>
