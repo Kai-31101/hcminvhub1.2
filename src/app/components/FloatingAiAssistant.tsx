@@ -3,7 +3,7 @@ import { Send, X } from 'lucide-react';
 
 const LOGO_SRC = '/figma-homepage/assistant/ai-lotus-logo-button.png';
 const POSITION_KEY = 'hcminvhub-floating-ai-position-v2';
-const DESKTOP_BUTTON_SIZE = 100;
+const DESKTOP_BUTTON_SIZE = 80;
 const MOBILE_BUTTON_SIZE = 40;
 const EDGE_PADDING = 16;
 
@@ -236,7 +236,7 @@ export function FloatingAiAssistant() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className={`group flex h-10 w-10 cursor-grab touch-none items-center justify-center overflow-hidden rounded-full bg-slate-950 shadow-2xl transition-[opacity,box-shadow,filter] duration-200 hover:opacity-100 hover:shadow-[0_18px_36px_rgba(14,116,144,0.42)] hover:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] focus-visible:opacity-100 focus-visible:shadow-[0_18px_36px_rgba(14,116,144,0.42)] focus-visible:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] active:cursor-grabbing active:opacity-100 active:shadow-[0_18px_36px_rgba(14,116,144,0.42)] active:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] md:h-[100px] md:w-[100px] ${isOpen ? 'opacity-100' : 'opacity-70'}`}
+        className={`group flex h-10 w-10 cursor-grab touch-none items-center justify-center overflow-hidden rounded-full bg-slate-950 shadow-2xl transition-[opacity,box-shadow,filter] duration-200 hover:opacity-100 hover:shadow-[0_18px_36px_rgba(14,116,144,0.42)] hover:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] focus-visible:opacity-100 focus-visible:shadow-[0_18px_36px_rgba(14,116,144,0.42)] focus-visible:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] active:cursor-grabbing active:opacity-100 active:shadow-[0_18px_36px_rgba(14,116,144,0.42)] active:drop-shadow-[0_12px_18px_rgba(14,116,144,0.36)] md:h-20 md:w-20 ${isOpen ? 'opacity-100' : 'opacity-70'}`}
         aria-label="Open AI assistant"
       >
         <img src={LOGO_SRC} alt="" draggable={false} className="h-full w-full select-none object-cover transition-transform duration-200 group-hover:scale-105 group-active:scale-105" />
