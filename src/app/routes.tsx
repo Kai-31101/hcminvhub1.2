@@ -182,12 +182,16 @@ export const router = createHashRouter([
 
   // Admin routes
   {
-    path: '/admin/roles',
+    path: '/admin',
     element: <ProtectedLayout defaultRole="admin"><AdminPage /></ProtectedLayout>,
   },
   {
+    path: '/admin/roles',
+    element: <Navigate to="/admin?tab=users" replace />,
+  },
+  {
     path: '/admin/agencies',
-    element: <ProtectedLayout defaultRole="admin"><AdminPage /></ProtectedLayout>,
+    element: <Navigate to="/admin?tab=users" replace />,
   },
 
   // Executive routes

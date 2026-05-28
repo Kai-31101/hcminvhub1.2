@@ -43,8 +43,9 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
   admin: {
     label: 'Admin Console',
     items: [
-      { label: 'User & Roles', path: '/admin/roles', icon: <Users size={18} /> },
-      { label: 'Agency Management', path: '/admin/agencies', icon: <Building2 size={18} /> },
+      { label: 'Invitations', path: '/admin?tab=invitations', icon: <Bell size={18} /> },
+      { label: 'Users & Access', path: '/admin?tab=users', icon: <Users size={18} /> },
+      { label: 'Audit Trail', path: '/admin?tab=audit', icon: <Activity size={18} /> },
     ],
   },
   executive: {
@@ -75,7 +76,7 @@ const roleHomeRoute: Record<UserRole, string> = {
   investor: '/investor/explorer',
   gov_operator: '/gov/projects',
   agency: '/agency/projects',
-  admin: '/admin/roles',
+  admin: '/admin',
   executive: '/executive/dashboard',
 };
 
@@ -93,6 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const nav = navConfig[role];
   const t = (value: string) => translateText(value, language);
   const hideSharedFooter = location.pathname === '/investor/explorer';
+  const currentRoute = `${location.pathname}${location.search}`;
   const availableUserOptions = role === 'gov_operator'
     ? users
         .filter((option) => option.role === 'Government Operator' && option.status === 'active')
@@ -186,7 +188,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {nav.items
               .filter((item) => item.path === '/investor/explorer' || item.path === '/investor/watchlist')
               .map((item) => {
-                const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+                const isActive = item.path.includes('?')
+                  ? currentRoute === item.path
+                  : location.pathname === item.path || location.pathname.startsWith(item.path + '/');
                 const label = item.path === '/investor/watchlist' ? 'My Favorite Projects' : item.label;
                 return (
                   <Link
@@ -268,7 +272,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <nav className="flex flex-col gap-1">
             {nav.items.map((item) => {
-              const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+              const isActive = item.path.includes('?')
+                ? currentRoute === item.path
+                : location.pathname === item.path || location.pathname.startsWith(item.path + '/');
               return (
                 <Link
                   key={item.path}
@@ -424,7 +430,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             <nav className="hidden items-center gap-6 lg:flex">
               {nav.items.map((item) => {
-                const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+                const isActive = item.path.includes('?')
+                  ? currentRoute === item.path
+                  : location.pathname === item.path || location.pathname.startsWith(item.path + '/');
                 return (
                   <Link
                     key={item.path}
