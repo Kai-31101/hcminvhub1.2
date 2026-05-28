@@ -35,8 +35,12 @@ export function ExplorerFooter() {
 
           <div className="space-y-3">
             <div className="text-[16px] font-bold leading-6 text-[#ed6203]">{t('SUPPORT')}</div>
-            <div className="text-[14px] leading-5 text-[#030712]">{t('Quick Intake')}</div>
-            <div className="text-[14px] leading-5 text-[#030712]">{t('Support')}</div>
+            <Link to="/home#fast-track" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+              {t('Quick Intake')}
+            </Link>
+            <Link to="/home#support" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+              {t('Support')}
+            </Link>
             <Link to="/faqs" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
               {t('FAQs')}
             </Link>

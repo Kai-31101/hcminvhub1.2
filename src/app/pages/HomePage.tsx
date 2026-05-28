@@ -232,6 +232,13 @@ export default function HomePage() {
     setNewUpdateVisibleCount(NEW_UPDATE_INITIAL_COUNT);
   }, [searchTerm, selectedInvestmentRange, selectedLocation, selectedProjectType, selectedSector]);
   useEffect(() => {
+    if (!location.hash) return;
+    const sectionId = location.hash.replace('#', '');
+    window.setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }, [location.hash]);
+  useEffect(() => {
     setFastTrackForm((current) => ({
       ...current,
       country: current.country === 'Vietnam' || current.country === 'Việt Nam' ? t('Vietnam') : current.country,
@@ -887,7 +894,15 @@ export default function HomePage() {
               </div>
               <div className="space-y-3">
                 <div className="text-[16px] font-bold leading-6 text-[#ed6203]">{t('SUPPORT')}</div>
-                {['Quick Intake', 'Support', 'FAQs'].map((item) => <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>)}
+                <Link to="/home#fast-track" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+                  {t('Quick Intake')}
+                </Link>
+                <Link to="/home#support" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+                  {t('Support')}
+                </Link>
+                <Link to="/faqs" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+                  {t('FAQs')}
+                </Link>
               </div>
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 py-1.5 text-[10px] leading-3 text-[#166534]">
