@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { useApp, UserRole } from './context/AppContext';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
+import PublicContentPage from './pages/PublicContentPage';
 
 // Investor
 import ExplorerPage from './pages/investor/ExplorerPage';
@@ -48,6 +49,18 @@ export const router = createHashRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/faqs',
+    element: <PublicContentPage />,
+  },
+  {
+    path: '/privacy-policy',
+    element: <PublicContentPage />,
+  },
+  {
+    path: '/terms-of-service',
+    element: <PublicContentPage />,
   },
 
   // Investor routes
@@ -182,11 +195,7 @@ export const router = createHashRouter([
 
   // Admin routes
   {
-    path: '/admin/roles',
-    element: <ProtectedLayout defaultRole="admin"><AdminPage /></ProtectedLayout>,
-  },
-  {
-    path: '/admin/agencies',
+    path: '/admin',
     element: <ProtectedLayout defaultRole="admin"><AdminPage /></ProtectedLayout>,
   },
 

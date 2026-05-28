@@ -84,6 +84,13 @@ function fileToDataUrl(file: File) {
   });
 }
 
+function parseCoordinate(value: string) {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return undefined;
+  const coordinate = Number(trimmedValue);
+  return Number.isFinite(coordinate) ? coordinate : undefined;
+}
+
 function getAlertMeta(
   item: Pick<ProjectJob, 'status' | 'dueDate'>,
   t: (value: string) => string,
@@ -138,6 +145,8 @@ export default function ProjectEditPage() {
     description: project?.description ?? '',
     image: project?.image ?? 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     mapImage: project?.mapImage ?? designVietnamMap,
+    latitude: project?.latitude != null ? String(project.latitude) : '',
+    longitude: project?.longitude != null ? String(project.longitude) : '',
   }));
   const [newJob, setNewJob] = useState({
     title: '',
@@ -169,8 +178,11 @@ export default function ProjectEditPage() {
     projectType: form.projectType || 'public',
     image: form.image || 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     mapImage: form.mapImage || designVietnamMap,
+    latitude: parseCoordinate(form.latitude),
+    longitude: parseCoordinate(form.longitude),
     documents: editableDocuments,
     createdByUserId: getDemoUserIdForRole(role),
+    ownerAgencyId: undefined,
     publishedAt: '',
   };
   const projectAssignments = isCreateMode ? [] : requiredDataAssignments.filter((item) => item.projectId === activeProject.id);
@@ -235,6 +247,8 @@ export default function ProjectEditPage() {
       description: project?.description ?? '',
       image: project?.image ?? 'https://images.unsplash.com/photo-1768364635815-01516ab502f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
       mapImage: project?.mapImage ?? designVietnamMap,
+      latitude: project?.latitude != null ? String(project.latitude) : '',
+      longitude: project?.longitude != null ? String(project.longitude) : '',
     });
     setDraftProjectJobs([]);
     setEditableDocuments(project?.documents ?? []);
@@ -313,6 +327,8 @@ export default function ProjectEditPage() {
         returnRate: form.returnRate.trim() || 'TBD',
         image: form.image,
         mapImage: form.mapImage,
+        latitude: parseCoordinate(form.latitude),
+        longitude: parseCoordinate(form.longitude),
         documents: editableDocuments,
         jobs: 0,
       });
@@ -355,6 +371,8 @@ export default function ProjectEditPage() {
       documents: editableDocuments,
       budget: Number(form.budget || 0),
       minInvestment: Number(form.minInvestment || 0),
+      latitude: parseCoordinate(form.latitude),
+      longitude: parseCoordinate(form.longitude),
       status: nextStatus,
       publishedAt:
         nextStatus === 'published'
@@ -415,7 +433,8 @@ export default function ProjectEditPage() {
   }
 
   return (
-    <div className="page-shell space-y-6">
+    <div className="min-h-screen bg-[#f9fafb]">
+      <div className="page-shell max-w-[1128px] space-y-6 pb-10 pt-4">
       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
         <Link to={isCreateMode ? `${workspaceBasePath}/projects` : `${workspaceBasePath}/projects/${activeProject.id}`} className="inline-flex items-center gap-1 text-slate-600 hover:text-sky-700">
           <ArrowLeft size={14} />
@@ -493,22 +512,47 @@ export default function ProjectEditPage() {
 
         <div>
           <section className="section-panel overflow-visible p-0">
-            <div className="relative h-64">
-              <div className="absolute inset-0 overflow-hidden">
-                <img src={activeProject.image} alt={form.name || activeProject.name} className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c2d4a]/80 via-[#0c2d4a]/20 to-transparent" />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-4 p-6">
-                <div>
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">{t('Overview')}</div>
-                  <div className="text-2xl font-bold text-white">{form.name || activeProject.name}</div>
+            <div className="border-b border-[#e5e7eb] p-4 sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1 space-y-4">
+                  <label className="block space-y-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Name')}</span>
+                    <input
+                      value={form.name}
+                      onChange={(event) => handleChange('name', event.target.value)}
+                      className="w-full border-0 bg-transparent px-0 text-[22px] font-semibold leading-7 text-[#111827] outline-none placeholder:text-slate-300 focus:ring-0"
+                      placeholder={t('New Project Draft')}
+                    />
+                  </label>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Location')}</span>
+                      <select value={form.location} onChange={(event) => handleChange('location', event.target.value)} className="app-input">
+                        {locationOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Owner')}</span>
+                      <input value={agencies.find((item) => item.id === activeProject.ownerAgencyId)?.name ?? 'Ho Chi Minh City'} readOnly className="app-input bg-white text-slate-500" />
+                    </label>
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Total Investment')}</span>
+                      <input value={form.budget} onChange={(event) => handleChange('budget', event.target.value)} className="app-input" />
+                    </label>
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Minimum Investment')}</span>
+                      <input value={form.minInvestment} onChange={(event) => handleChange('minInvestment', event.target.value)} className="app-input" />
+                    </label>
+                  </div>
                 </div>
-                <div className="relative">
-                  <span className="sr-only">{t('Project Stage')}</span>
+                <div className="relative shrink-0">
+                  <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Project Stage')}</span>
                   <button
                     type="button"
                     onClick={() => setIsStageMenuOpen((current) => !current)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm outline-none transition focus:ring-2 ${projectStageSelectClass}`}
+                    className={`inline-flex min-w-44 items-center justify-between gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm outline-none transition focus:ring-2 ${projectStageSelectClass}`}
                     aria-haspopup="listbox"
                     aria-expanded={isStageMenuOpen}
                   >
@@ -629,25 +673,45 @@ export default function ProjectEditPage() {
                           ))}
                         </select>
                       </label>
+                      <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Latitude')}</span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={form.latitude}
+                          onChange={(event) => handleChange('latitude', event.target.value)}
+                          className="app-input"
+                          placeholder="10.7766"
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Longitude')}</span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={form.longitude}
+                          onChange={(event) => handleChange('longitude', event.target.value)}
+                          className="app-input"
+                          placeholder="106.7009"
+                        />
+                      </label>
                       <div className="space-y-3 md:col-span-2">
                         <div className="flex items-center justify-between gap-3">
                           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Location map')}</span>
-                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
-                            <Upload size={14} />
-                            {t('Upload')}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(event) => {
-                                void handleImageUpload('mapImage', event.target.files);
-                                event.target.value = '';
-                              }}
-                            />
-                          </label>
+                          <span className="rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-semibold text-[#9d4300]">{t('Coordinates input')}</span>
                         </div>
-                        <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-slate-50">
-                          <img src={form.mapImage || activeProject.mapImage || designVietnamMap} alt={t('Location map')} className="h-56 w-full object-cover" />
+                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                          <div className="relative h-56">
+                            <img src={designVietnamMap} alt={t('Location map')} className="h-full w-full object-cover opacity-90" />
+                            <div className="absolute inset-x-4 bottom-4 rounded-xl border border-white/70 bg-white/90 p-3 shadow-sm backdrop-blur">
+                              <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('Map coordinate')}</div>
+                              <div className="mt-1 text-sm font-semibold text-slate-900">
+                                {form.latitude && form.longitude
+                                  ? `${form.latitude}, ${form.longitude}`
+                                  : t('Enter latitude and longitude to pin this project on the map.')}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </>
@@ -1107,6 +1171,7 @@ export default function ProjectEditPage() {
         </section>
         )}
       </form>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,8 @@ export interface Project {
   descriptionEn?: string;
   image: string;
   mapImage?: string;
+  latitude?: number;
+  longitude?: number;
   highlights: string[];
   highlightsVi?: string[];
   highlightsEn?: string[];

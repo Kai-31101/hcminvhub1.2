@@ -1833,7 +1833,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'User Created',
         message: `${createdUser.name} was added to the platform.`,
         type: 'success',
-        path: `/admin/roles?highlight=${createdUser.id}`,
+        path: `/admin?tab=users&highlight=${createdUser.id}`,
       });
     return id;
   };
@@ -1852,7 +1852,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'User Access Updated',
         message: `${existingUser.name} is now ${changes.status}.`,
         type: changes.status === 'active' ? 'success' : 'warning',
-        path: `/admin/roles?highlight=${existingUser.id}`,
+        path: `/admin?tab=users&highlight=${existingUser.id}`,
       });
     }
   };
@@ -1869,7 +1869,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'Agency Created',
         message: `${createdAgency.name} was added to the platform.`,
         type: 'success',
-        path: `/admin/agencies?highlight=${createdAgency.id}`,
+        path: `/admin?tab=users&highlight=${createdAgency.id}`,
       });
     return id;
   };
@@ -1888,7 +1888,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         title: 'Agency Status Updated',
         message: `${existingAgency.name} is now ${changes.status}.`,
         type: changes.status === 'active' ? 'success' : 'warning',
-        path: `/admin/agencies?highlight=${existingAgency.id}`,
+        path: `/admin?tab=users&highlight=${existingAgency.id}`,
       });
     }
   };

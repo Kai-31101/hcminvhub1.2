@@ -1,714 +1,1131 @@
 import React, { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import {
-  Building2,
-  Database,
-  Edit,
-  FolderCog,
-  Network,
+  Activity,
+  Ban,
+  CheckCircle2,
+  Clock,
+  Edit3,
+  Filter,
+  History,
+  KeyRound,
+  Mail,
   Plus,
+  RefreshCcw,
   Search,
   Shield,
-  Settings2,
+  Trash2,
+  UserCheck,
+  UserCog,
   Users,
-  Workflow,
   X,
 } from 'lucide-react';
-import { useLocation, useSearchParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
-import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
-import { translateText } from '../../utils/localization';
-import { getProjectStatusTone, PROJECT_STAGE_OPTIONS } from '../../utils/projectStatus';
 
-const DEFAULT_LIST_COUNT = 6;
+type AdminPortalType = 'Admin Portal' | 'Agency Portal';
+type InvitationStatus = 'Pending' | 'Accepted' | 'Expired' | 'Revoked';
+type AccountStatus = 'Invited' | 'Active' | 'Inactive';
+type MembershipStatus = 'Pending' | 'Active' | 'Inactive' | 'Removed';
+type PermissionMode = 'direct' | 'role-derived';
 
-type AdminTab = 'overview' | 'access' | 'agencies' | 'master_data';
-
-const roleTone: Record<string, 'info' | 'success' | 'warning' | 'default' | 'danger'> = {
-  'Government Operator': 'info',
-  'Agency User': 'success',
-  Investor: 'warning',
-  Admin: 'default',
-  Executive: 'danger',
-};
-
-const roleOptions = ['Government Operator', 'Agency User', 'Investor', 'Admin', 'Executive'];
-
-function TabButton({
-  active,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold ${
-        active ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
+interface PortalOption {
+  id: string;
+  name: string;
+  type: AdminPortalType;
 }
 
-function MasterDataCard({
-  title,
-  subtitle,
-  values,
-}: {
-  title: string;
-  subtitle: string;
-  values: Array<{ label: string; tone: 'default' | 'info' | 'success' | 'warning' | 'danger' }>;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,53,87,0.05)]">
-      <div className="text-sm font-semibold text-slate-900">{title}</div>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{subtitle}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {values.map((value) => (
-          <StatusPill key={value.label} tone={value.tone}>
-            {value.label}
-          </StatusPill>
-        ))}
-      </div>
-    </div>
-  );
+interface RoleOption {
+  id: string;
+  name: string;
+  portalType: AdminPortalType;
+  permissions: string[];
+  permissionMode: PermissionMode;
+}
+
+interface AdminInvitation {
+  id: string;
+  email: string;
+  portalId: string;
+  roleId: string;
+  status: InvitationStatus;
+  invitedBy: string;
+  invitedAt: string;
+  expiresAt: string;
+  accountPath: 'First access sign-up' | 'Existing account' | 'Existing investor account';
+}
+
+interface PortalMembership {
+  id: string;
+  userId: string;
+  portalId: string;
+  roleId: string;
+  status: MembershipStatus;
+  featurePermissions: string[];
+}
+
+interface AdminUserAccess {
+  id: string;
+  name: string;
+  email: string;
+  accountStatus: AccountStatus;
+  lastActivity: string;
+  source: 'Admin/Agency' | 'Investor account + Admin/Agency access';
+}
+
+interface AuditEvent {
+  id: string;
+  action: string;
+  actor: string;
+  target: string;
+  detail: string;
+  at: string;
+}
+
+const portalTypeOptions: AdminPortalType[] = ['Admin Portal', 'Agency Portal'];
+const invitationStatusOptions: Array<'All' | InvitationStatus> = ['All', 'Pending', 'Accepted', 'Expired', 'Revoked'];
+const accountStatusOptions: Array<'All' | AccountStatus> = ['All', 'Invited', 'Active', 'Inactive'];
+const portalTypeFilterOptions: Array<'All' | AdminPortalType> = ['All', 'Admin Portal', 'Agency Portal'];
+const membershipStatusOptions: MembershipStatus[] = ['Pending', 'Active', 'Inactive', 'Removed'];
+const directPermissionOptions = ['member.invite', 'member.edit_role', 'member.activate', 'project.review', 'audit.view'];
+
+const adminPortal: PortalOption = {
+  id: 'admin-portal',
+  name: 'Admin Portal',
+  type: 'Admin Portal',
+};
+
+const roleOptions: RoleOption[] = [
+  {
+    id: 'platform-admin',
+    name: 'Platform Admin',
+    portalType: 'Admin Portal',
+    permissions: ['admin.user.manage', 'admin.role.manage', 'admin.permission.manage', 'audit.view'],
+    permissionMode: 'direct',
+  },
+  {
+    id: 'platform-operator',
+    name: 'Platform Operator',
+    portalType: 'Admin Portal',
+    permissions: ['admin.user.view', 'admin.invite.send', 'audit.view'],
+    permissionMode: 'direct',
+  },
+  {
+    id: 'agency-owner',
+    name: 'Agency Owner',
+    portalType: 'Agency Portal',
+    permissions: ['member.invite', 'member.edit_role', 'project.review', 'audit.view'],
+    permissionMode: 'direct',
+  },
+  {
+    id: 'agency-manager',
+    name: 'Agency Manager',
+    portalType: 'Agency Portal',
+    permissions: ['project.review', 'audit.view'],
+    permissionMode: 'direct',
+  },
+  {
+    id: 'agency-editor',
+    name: 'Agency Editor',
+    portalType: 'Agency Portal',
+    permissions: ['project.review'],
+    permissionMode: 'role-derived',
+  },
+  {
+    id: 'agency-viewer',
+    name: 'Agency Viewer',
+    portalType: 'Agency Portal',
+    permissions: ['audit.view'],
+    permissionMode: 'role-derived',
+  },
+];
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatDateTime(date: Date) {
+  return date.toLocaleString('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function statusTone(status: InvitationStatus | AccountStatus | MembershipStatus): 'default' | 'info' | 'success' | 'warning' | 'danger' {
+  if (status === 'Active' || status === 'Accepted') return 'success';
+  if (status === 'Pending' || status === 'Invited') return 'info';
+  if (status === 'Inactive' || status === 'Expired') return 'warning';
+  if (status === 'Removed' || status === 'Revoked') return 'danger';
+  return 'default';
+}
+
+function id(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
 }
 
 export default function AdminPage() {
-  const location = useLocation();
+  const { agencies, users } = useApp();
   const [searchParams] = useSearchParams();
-  const {
-    users,
-    agencies,
-    projects,
-    opportunities,
-    permits,
-    issues,
-    milestones,
-    serviceRequests,
-    requiredDataAssignments,
-    projectJobs,
-    createUser,
-    updateUser,
-    createAgency,
-    updateAgency,
-    language,
-  } = useApp();
-
-  const t = (value: string) => translateText(value, language);
-  const isVi = language === 'vi';
-  const copy = (en: string, vi?: string) => {
-    const localized = t(en);
-    if (localized !== en) return localized;
-    return isVi ? vi ?? en : en;
-  };
-  const highlightedId = searchParams.get('highlight');
-  const defaultTab: AdminTab = location.pathname.includes('/agencies') ? 'agencies' : 'access';
-
-  const [activeTab, setActiveTab] = useState<AdminTab>(defaultTab);
-  const [search, setSearch] = useState('');
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [showAgencyModal, setShowAgencyModal] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editingAgencyId, setEditingAgencyId] = useState<string | null>(null);
-  const [showAllUsers, setShowAllUsers] = useState(false);
-  const [showAllAgencies, setShowAllAgencies] = useState(false);
-  const [userForm, setUserForm] = useState({
-    name: '',
-    email: '',
-    role: 'Agency User',
-    organization: agencies[0]?.name ?? 'Department of Planning and Investment',
-    status: 'active' as 'active' | 'inactive',
-  });
-  const [agencyForm, setAgencyForm] = useState({
-    name: '',
-    shortName: '',
-    type: 'Government',
-    jurisdiction: 'Provincial',
-    contactPerson: '',
-    email: '',
-    phone: '',
-    status: 'active' as 'active' | 'inactive',
-  });
-
-  const filteredUsers = useMemo(
+  const agencyPortals: PortalOption[] = useMemo(
     () =>
-      users.filter((user) =>
-        !search ||
-        [user.name, user.email, user.role, user.organization].join(' ').toLowerCase().includes(search.toLowerCase()),
-      ),
-    [search, users],
-  );
-  const filteredAgencies = useMemo(
-    () =>
-      agencies.filter((agency) =>
-        !search ||
-        [agency.name, agency.shortName, agency.contactPerson, agency.email].join(' ').toLowerCase().includes(search.toLowerCase()),
-      ),
-    [agencies, search],
-  );
-
-  const visibleUsers = showAllUsers ? filteredUsers : filteredUsers.slice(0, DEFAULT_LIST_COUNT);
-  const visibleAgencies = showAllAgencies ? filteredAgencies : filteredAgencies.slice(0, DEFAULT_LIST_COUNT);
-  const distinctRoles = useMemo(() => Array.from(new Set(users.map((user) => user.role))), [users]);
-  const distinctAgencyTypes = useMemo(() => Array.from(new Set(agencies.map((agency) => agency.type))), [agencies]);
-  const agencyNameOptions = useMemo(() => Array.from(new Set(agencies.map((agency) => agency.name))).sort(), [agencies]);
-  const totalPeopleInCharge = useMemo(
-    () => agencies.reduce((sum, agency) => sum + (agency.peopleInCharge?.length ?? 0), 0),
+      agencies.slice(0, 7).map((agency) => ({
+        id: agency.id,
+        name: agency.name,
+        type: 'Agency Portal',
+      })),
     [agencies],
   );
+  const portals = useMemo(() => [adminPortal, ...agencyPortals], [agencyPortals]);
+  const initialAgencyPortal = agencyPortals[0]?.id ?? adminPortal.id;
+  const initialSecondAgencyPortal = agencyPortals[1]?.id ?? initialAgencyPortal;
+  const existingInvestorEmail = users.find((user) => user.role === 'Investor')?.email ?? 'kjw@kip.co.kr';
 
-  const masterDataCatalogs = [
+  const requestedTab = searchParams.get('tab');
+  const activeTab: 'invitations' | 'users' | 'audit' =
+    requestedTab === 'users' || requestedTab === 'audit' || requestedTab === 'invitations' ? requestedTab : 'invitations';
+  const [search, setSearch] = useState('');
+  const [invitationStatusFilter, setInvitationStatusFilter] = useState<'All' | InvitationStatus>('All');
+  const [accountStatusFilter, setAccountStatusFilter] = useState<'All' | AccountStatus>('All');
+  const [userInvitationStatusFilter, setUserInvitationStatusFilter] = useState<'All' | InvitationStatus>('All');
+  const [userPortalTypeFilter, setUserPortalTypeFilter] = useState<'All' | AdminPortalType>('All');
+  const [userPortalFilter, setUserPortalFilter] = useState('All');
+  const [userRoleFilter, setUserRoleFilter] = useState('All');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    portalType: 'Agency Portal' as AdminPortalType,
+    portalId: initialAgencyPortal,
+    roleId: 'agency-owner',
+  });
+  const [membershipForm, setMembershipForm] = useState({
+    portalType: 'Agency Portal' as AdminPortalType,
+    portalId: initialAgencyPortal,
+    roleId: 'agency-manager',
+  });
+
+  const [adminUsers, setAdminUsers] = useState<AdminUserAccess[]>([
     {
-      title: copy('Project Statuses', 'Trạng thái dự án'),
-      subtitle: copy(
-        'Core lifecycle of a project record. These drive explorer visibility and executive reporting.',
-        'Vòng đời cốt lõi của hồ sơ dự án. Nhóm này chi phối khả năng hiển thị và báo cáo điều hành.',
-      ),
-      values: PROJECT_STAGE_OPTIONS.map((value) => ({
-        label: t(value),
-        tone: getProjectStatusTone(value, value),
-      })),
+      id: 'admin-user-1',
+      name: 'Admin System',
+      email: 'admin@mpi.gov.vn',
+      accountStatus: 'Active',
+      lastActivity: '28/05/2026 09:15',
+      source: 'Admin/Agency',
     },
     {
-      title: copy('Project Job Statuses', 'Trạng thái đầu việc dự án'),
-      subtitle: copy(
-        'Stored statuses are simple, while operational statuses such as Upcoming and Delayed are derived from due date.',
-        'Trạng thái lưu trữ đang đơn giản, còn các trạng thái vận hành như Sắp đến hạn và Trễ hạn được suy ra từ hạn xử lý.',
-      ),
-      values: [
-        { label: copy('Incomplete', 'Chưa hoàn thành'), tone: 'default' as const },
-        { label: copy('Complete', 'Hoàn thành'), tone: 'success' as const },
-        { label: copy('In Progress', 'Đang xử lý'), tone: 'info' as const },
-        { label: copy('Upcoming', 'Sắp đến hạn'), tone: 'warning' as const },
-        { label: copy('Delayed', 'Trễ hạn'), tone: 'danger' as const },
-      ],
-    },
-  ];
-
-  const recommendedMasterData = [
-    {
-      title: copy('Coordinating unit matrix', 'Ma trận đơn vị điều phối'),
-      body: copy(
-        'Maintain a master list of agencies, their contact details, and which object types they can own.',
-        'Quản lý danh mục cơ quan, cán bộ phụ trách, người dự phòng và loại đối tượng mỗi cơ quan được phép phụ trách.',
-      ),
+      id: 'admin-user-2',
+      name: 'Pham Gia Huy',
+      email: 'pghuy.skhdt@hcmc.gov.vn',
+      accountStatus: 'Active',
+      lastActivity: '28/05/2026 08:40',
+      source: 'Admin/Agency',
     },
     {
-      title: copy('Status catalogs by object', 'Danh mục trạng thái theo từng đối tượng'),
-      body: copy(
-        'Separate master data for Project, Project Job, Required Data, Opportunity, Permit, Issue, Milestone, and Service Request.',
-        'Tách riêng master data trạng thái cho Dự án, Đầu việc dự án, Dữ liệu được giao, Cơ hội đầu tư, Giấy phép, Vướng mắc, Mốc tiến độ và Yêu cầu dịch vụ.',
-      ),
+      id: 'admin-user-3',
+      name: 'Kim Jae-won',
+      email: existingInvestorEmail,
+      accountStatus: 'Active',
+      lastActivity: '27/05/2026 17:20',
+      source: 'Investor account + Admin/Agency access',
+    },
+  ]);
+
+  const [memberships, setMemberships] = useState<PortalMembership[]>([
+    {
+      id: 'mem-admin-1',
+      userId: 'admin-user-1',
+      portalId: adminPortal.id,
+      roleId: 'platform-admin',
+      status: 'Active',
+      featurePermissions: ['admin.user.manage', 'admin.role.manage', 'admin.permission.manage', 'audit.view'],
     },
     {
-      title: copy('Sector, region, and investment taxonomies', 'Danh mục lĩnh vực, khu vực và loại hình đầu tư'),
-      body: copy(
-        'These should not live as free text if you want consistent reporting and filtering.',
-        'Không nên để dạng nhập tự do nếu cần báo cáo và lọc dữ liệu nhất quán.',
-      ),
+      id: 'mem-agency-1',
+      userId: 'admin-user-2',
+      portalId: initialAgencyPortal,
+      roleId: 'agency-owner',
+      status: 'Active',
+      featurePermissions: ['member.invite', 'member.edit_role', 'project.review', 'audit.view'],
     },
     {
-      title: copy('Priority and SLA rules', 'Quy tắc ưu tiên và SLA'),
-      body: copy(
-        'Admin should control priority tiers, due-date defaults, reminder windows, and breach thresholds.',
-        'Admin nên kiểm soát mức ưu tiên, hạn xử lý mặc định, cửa sổ nhắc việc và ngưỡng vi phạm SLA.',
-      ),
+      id: 'mem-agency-1b',
+      userId: 'admin-user-2',
+      portalId: initialSecondAgencyPortal,
+      roleId: 'agency-manager',
+      status: 'Active',
+      featurePermissions: ['project.review', 'audit.view'],
     },
     {
-      title: copy('Document and data-field templates', 'Mẫu tài liệu và trường dữ liệu'),
-      body: copy(
-        'Useful for standardizing project onboarding, permit submissions, and required data assignments.',
-        'Hữu ích để chuẩn hóa khâu tạo dự án, nộp hồ sơ giấy phép và giao dữ liệu bắt buộc.',
-      ),
+      id: 'mem-admin-2',
+      userId: 'admin-user-2',
+      portalId: adminPortal.id,
+      roleId: 'platform-operator',
+      status: 'Inactive',
+      featurePermissions: ['admin.user.view', 'audit.view'],
     },
     {
-      title: copy('Notification templates and routing rules', 'Mẫu thông báo và quy tắc điều phối'),
-      body: copy(
-        'Admin should be able to define which event notifies which role or agency.',
-        'Admin n?n c?u h?nh ???c s? ki?n n?o g?i th?ng b?o t?i vai tr? ho?c c? quan t??ng ?ng.',
-      ),
+      id: 'mem-agency-2',
+      userId: 'admin-user-3',
+      portalId: initialSecondAgencyPortal,
+      roleId: 'agency-viewer',
+      status: 'Active',
+      featurePermissions: ['audit.view'],
     },
-  ];
+  ]);
 
-  const ownershipRules = [
-    copy('Every Project Job should require one coordinating unit.', 'M?i ??u vi?c d? ?n n?n b?t bu?c c? m?t ??n v? ?i?u ph?i.'),
-    copy('Every Required Data assignment should map to the same coordinating unit matrix.', 'M?i ??u vi?c d? li?u ???c giao n?n d?ng c?ng ma tr?n ??n v? ?i?u ph?i t??ng ?ng.'),
-    copy('Agency deactivation should warn if it is still assigned to open jobs, permits, or service requests.', 'Khi ngừng kích hoạt cơ quan, hệ thống nên cảnh báo nếu cơ quan đó vẫn đang được gán cho đầu việc, giấy phép hoặc yêu cầu dịch vụ đang mở.'),
-    copy('Status changes should optionally trigger notifications, SLA recalculation, and audit logs.', 'Thay đổi trạng thái nên có thể kích hoạt thông báo, tính lại SLA và ghi nhận lịch sử thao tác.'),
-  ];
+  const [invitations, setInvitations] = useState<AdminInvitation[]>([
+    {
+      id: 'invite-1',
+      email: 'new.member@hcmc.gov.vn',
+      portalId: initialAgencyPortal,
+      roleId: 'agency-manager',
+      status: 'Pending',
+      invitedBy: 'System Admin',
+      invitedAt: '28/05/2026 09:00',
+      expiresAt: '31/05/2026 09:00',
+      accountPath: 'First access sign-up',
+    },
+    {
+      id: 'invite-2',
+      email: existingInvestorEmail,
+      portalId: initialSecondAgencyPortal,
+      roleId: 'agency-viewer',
+      status: 'Accepted',
+      invitedBy: 'System Admin',
+      invitedAt: '27/05/2026 15:20',
+      expiresAt: '30/05/2026 15:20',
+      accountPath: 'Existing investor account',
+    },
+  ]);
 
-  function resetUserForm() {
-    setUserForm({
-      name: '',
-      email: '',
-      role: 'Agency User',
-      organization: agencies[0]?.name ?? 'Department of Planning and Investment',
-      status: 'active',
-    });
-    setEditingUserId(null);
-    setShowUserModal(false);
-  }
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([
+    {
+      id: 'audit-1',
+      action: 'Invitation accepted',
+      actor: 'System Admin',
+      target: existingInvestorEmail,
+      detail: 'Activated Agency Portal membership; Investor Portal remains isolated.',
+      at: '27/05/2026 15:28',
+    },
+    {
+      id: 'audit-2',
+      action: 'Role assigned',
+      actor: 'System Admin',
+      target: 'Pham Gia Huy',
+      detail: 'Assigned Agency Owner in selected Agency Portal.',
+      at: '28/05/2026 08:40',
+    },
+  ]);
 
-  function resetAgencyForm() {
-    setAgencyForm({
-      name: '',
-      shortName: '',
-      type: 'Government',
-      jurisdiction: 'Provincial',
-      contactPerson: '',
-      email: '',
-      phone: '',
-      status: 'active',
-    });
-    setEditingAgencyId(null);
-    setShowAgencyModal(false);
-  }
+  const selectedUser = adminUsers.find((user) => user.id === selectedUserId) ?? null;
 
-  function openEditUser(userId: string) {
-    const user = users.find((item) => item.id === userId);
-    if (!user) return;
-    setEditingUserId(userId);
-    setUserForm({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      organization: user.organization,
-      status: user.status,
-    });
-    setShowUserModal(true);
-  }
+  const availablePortals = useMemo(() => portals.filter((portal) => portal.type === inviteForm.portalType), [inviteForm.portalType, portals]);
+  const availableRoles = useMemo(() => roleOptions.filter((role) => role.portalType === inviteForm.portalType), [inviteForm.portalType]);
+  const membershipPortals = useMemo(() => portals.filter((portal) => portal.type === membershipForm.portalType), [membershipForm.portalType, portals]);
+  const membershipRoles = useMemo(() => roleOptions.filter((role) => role.portalType === membershipForm.portalType), [membershipForm.portalType]);
+  const userPortalFilterOptions = useMemo(
+    () => portals.filter((portal) => userPortalTypeFilter === 'All' || portal.type === userPortalTypeFilter),
+    [portals, userPortalTypeFilter],
+  );
+  const userRoleFilterOptions = useMemo(
+    () => roleOptions.filter((role) => userPortalTypeFilter === 'All' || role.portalType === userPortalTypeFilter),
+    [userPortalTypeFilter],
+  );
 
-  function openEditAgency(agencyId: string) {
-    const agency = agencies.find((item) => item.id === agencyId);
-    if (!agency) return;
-    setEditingAgencyId(agencyId);
-    setAgencyForm({
-      name: agency.name,
-      shortName: agency.shortName,
-      type: agency.type,
-      jurisdiction: agency.jurisdiction,
-      contactPerson: agency.contactPerson,
-      email: agency.email,
-      phone: agency.phone,
-      status: agency.status,
-    });
-    setShowAgencyModal(true);
-  }
+  const getPortal = (portalId: string) => portals.find((portal) => portal.id === portalId) ?? adminPortal;
+  const getRole = (roleId: string) => roleOptions.find((role) => role.id === roleId) ?? roleOptions[0];
+  const userMemberships = (userId: string) => memberships.filter((membership) => membership.userId === userId && membership.status !== 'Removed');
+  const latestInvitationFor = (email: string) => invitations.find((invitation) => invitation.email.toLowerCase() === email.toLowerCase());
 
-  function handleSaveUser() {
-    if (editingUserId) {
-      updateUser(editingUserId, userForm);
-    } else {
-      createUser({
-        ...userForm,
-        permissions: [`${userForm.role.toLowerCase().replaceAll(' ', '_')}.basic`],
-      });
+  const filteredInvitations = invitations.filter((invitation) => {
+    const portal = getPortal(invitation.portalId);
+    const role = getRole(invitation.roleId);
+    const text = `${invitation.email} ${portal.name} ${role.name} ${invitation.status}`.toLowerCase();
+    return (!search || text.includes(search.toLowerCase())) && (invitationStatusFilter === 'All' || invitation.status === invitationStatusFilter);
+  });
+
+  const filteredUsers = adminUsers.filter((user) => {
+    const relatedMemberships = userMemberships(user.id);
+    const latestInvitation = latestInvitationFor(user.email);
+    const matchesPortalType =
+      userPortalTypeFilter === 'All' || relatedMemberships.some((membership) => getPortal(membership.portalId).type === userPortalTypeFilter);
+    const matchesPortal = userPortalFilter === 'All' || relatedMemberships.some((membership) => membership.portalId === userPortalFilter);
+    const matchesRole = userRoleFilter === 'All' || relatedMemberships.some((membership) => membership.roleId === userRoleFilter);
+    const matchesInvitationStatus = userInvitationStatusFilter === 'All' || latestInvitation?.status === userInvitationStatusFilter;
+    const userText = [
+      user.name,
+      user.email,
+      user.accountStatus,
+      user.source,
+      relatedMemberships
+        .map((membership) => `${getPortal(membership.portalId).name} ${getRole(membership.roleId).name}`)
+        .join(' '),
+    ]
+      .join(' ')
+      .toLowerCase();
+    return (
+      (!search || userText.includes(search.toLowerCase())) &&
+      (accountStatusFilter === 'All' || user.accountStatus === accountStatusFilter) &&
+      matchesPortalType &&
+      matchesPortal &&
+      matchesRole &&
+      matchesInvitationStatus
+    );
+  });
+
+  const addAudit = (action: string, target: string, detail: string) => {
+    setAuditEvents((current) => [
+      {
+        id: id('audit'),
+        action,
+        actor: 'System Admin',
+        target,
+        detail,
+        at: formatDateTime(new Date()),
+      },
+      ...current,
+    ]);
+  };
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 2600);
+  };
+
+  const handlePortalTypeChange = (portalType: AdminPortalType) => {
+    const nextPortalId = portals.find((portal) => portal.type === portalType)?.id ?? adminPortal.id;
+    const nextRoleId = roleOptions.find((role) => role.portalType === portalType)?.id ?? roleOptions[0].id;
+    setInviteForm((current) => ({ ...current, portalType, portalId: nextPortalId, roleId: nextRoleId }));
+  };
+
+  const handleMembershipPortalTypeChange = (portalType: AdminPortalType) => {
+    const nextPortalId = portals.find((portal) => portal.type === portalType)?.id ?? adminPortal.id;
+    const nextRoleId = roleOptions.find((role) => role.portalType === portalType)?.id ?? roleOptions[0].id;
+    setMembershipForm({ portalType, portalId: nextPortalId, roleId: nextRoleId });
+  };
+
+  const handleUserPortalTypeFilterChange = (portalType: 'All' | AdminPortalType) => {
+    setUserPortalTypeFilter(portalType);
+    setUserPortalFilter('All');
+    setUserRoleFilter('All');
+  };
+
+  const createInvitation = () => {
+    const email = inviteForm.email.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      showToast('Enter a valid email before sending invitation.');
+      return;
     }
-    resetUserForm();
-  }
-
-  function handleSaveAgency() {
-    if (editingAgencyId) {
-      updateAgency(editingAgencyId, agencyForm);
-    } else {
-      createAgency(agencyForm);
+    if (invitations.some((invitation) => invitation.email.toLowerCase() === email && invitation.portalId === inviteForm.portalId && invitation.status === 'Pending')) {
+      showToast('A Pending invitation already exists for this email and portal.');
+      return;
     }
-    resetAgencyForm();
-  }
+
+    const now = new Date();
+    const existingUser = adminUsers.find((user) => user.email.toLowerCase() === email);
+    const isInvestorAccount = users.some((user) => user.email.toLowerCase() === email && user.role === 'Investor');
+    const invitation: AdminInvitation = {
+      id: id('invite'),
+      email,
+      portalId: inviteForm.portalId,
+      roleId: inviteForm.roleId,
+      status: 'Pending',
+      invitedBy: 'System Admin',
+      invitedAt: formatDateTime(now),
+      expiresAt: formatDateTime(addDays(now, 3)),
+      accountPath: isInvestorAccount ? 'Existing investor account' : existingUser ? 'Existing account' : 'First access sign-up',
+    };
+
+    setInvitations((current) => [invitation, ...current]);
+    if (!existingUser) {
+      setAdminUsers((current) => [
+        {
+          id: id('user'),
+          name: email.split('@')[0].replace(/[._-]/g, ' '),
+          email,
+          accountStatus: 'Invited',
+          lastActivity: 'No login yet',
+          source: isInvestorAccount ? 'Investor account + Admin/Agency access' : 'Admin/Agency',
+        },
+        ...current,
+      ]);
+    }
+    addAudit('Invitation sent', email, `Assigned ${getRole(inviteForm.roleId).name} in ${getPortal(inviteForm.portalId).name}; expiry defaults to 3 days.`);
+    setInviteForm((current) => ({ ...current, email: '' }));
+    showToast('Invitation created with 3-day expiry.');
+  };
+
+  const resendInvitation = (invitationId: string) => {
+    const now = new Date();
+    setInvitations((current) =>
+      current.map((invitation) =>
+        invitation.id === invitationId
+          ? { ...invitation, status: 'Pending', invitedAt: formatDateTime(now), expiresAt: formatDateTime(addDays(now, 3)) }
+          : invitation,
+      ),
+    );
+    const invitation = invitations.find((item) => item.id === invitationId);
+    if (invitation) addAudit('Invitation resent', invitation.email, 'Invitation reset to Pending with a new 3-day expiry.');
+    showToast('Invitation resent.');
+  };
+
+  const revokeInvitation = (invitationId: string) => {
+    const invitation = invitations.find((item) => item.id === invitationId);
+    setInvitations((current) => current.map((item) => (item.id === invitationId ? { ...item, status: 'Revoked' } : item)));
+    if (invitation) addAudit('Invitation revoked', invitation.email, 'Pending invitation was revoked before acceptance.');
+    showToast('Invitation revoked.');
+  };
+
+  const acceptInvitation = (invitationId: string) => {
+    const invitation = invitations.find((item) => item.id === invitationId);
+    if (!invitation || invitation.status === 'Revoked' || invitation.status === 'Expired') return;
+    const user = adminUsers.find((item) => item.email.toLowerCase() === invitation.email.toLowerCase());
+    const userId = user?.id ?? id('user');
+
+    if (!user) {
+      setAdminUsers((current) => [
+        {
+          id: userId,
+          name: invitation.email.split('@')[0].replace(/[._-]/g, ' '),
+          email: invitation.email,
+          accountStatus: 'Active',
+          lastActivity: formatDateTime(new Date()),
+          source: invitation.accountPath === 'Existing investor account' ? 'Investor account + Admin/Agency access' : 'Admin/Agency',
+        },
+        ...current,
+      ]);
+    } else {
+      setAdminUsers((current) =>
+        current.map((item) => (item.id === userId ? { ...item, accountStatus: 'Active', lastActivity: formatDateTime(new Date()) } : item)),
+      );
+    }
+
+    setInvitations((current) => current.map((item) => (item.id === invitationId ? { ...item, status: 'Accepted' } : item)));
+    setMemberships((current) => [
+      {
+        id: id('mem'),
+        userId,
+        portalId: invitation.portalId,
+        roleId: invitation.roleId,
+        status: 'Active',
+        featurePermissions: getRole(invitation.roleId).permissions,
+      },
+      ...current.filter((item) => !(item.userId === userId && item.portalId === invitation.portalId)),
+    ]);
+    addAudit('Invitation accepted', invitation.email, `${invitation.accountPath}; routed to ${getPortal(invitation.portalId).name}.`);
+    showToast('Invitation accepted in prototype.');
+  };
+
+  const updateUserStatus = (userId: string, status: AccountStatus) => {
+    const user = adminUsers.find((item) => item.id === userId);
+    setAdminUsers((current) => current.map((item) => (item.id === userId ? { ...item, accountStatus: status, lastActivity: formatDateTime(new Date()) } : item)));
+    if (user) addAudit('User status updated', user.email, `Account status changed to ${status}.`);
+  };
+
+  const removeUserAccess = (userId: string) => {
+    const user = adminUsers.find((item) => item.id === userId);
+    setMemberships((current) => current.map((membership) => (membership.userId === userId ? { ...membership, status: 'Removed' } : membership)));
+    setAdminUsers((current) => current.map((item) => (item.id === userId ? { ...item, accountStatus: 'Inactive' } : item)));
+    if (user) addAudit('User access removed', user.email, 'All Admin/Agency memberships marked as Removed; audit history retained.');
+    showToast('Access removed in prototype.');
+  };
+
+  const addMembership = () => {
+    if (!selectedUser) return;
+    if (memberships.some((membership) => membership.userId === selectedUser.id && membership.portalId === membershipForm.portalId && membership.status !== 'Removed')) {
+      showToast('This user already has active or pending membership in that portal.');
+      return;
+    }
+    const role = getRole(membershipForm.roleId);
+    setMemberships((current) => [
+      {
+        id: id('mem'),
+        userId: selectedUser.id,
+        portalId: membershipForm.portalId,
+        roleId: membershipForm.roleId,
+        status: 'Active',
+        featurePermissions: role.permissions,
+      },
+      ...current,
+    ]);
+    addAudit('Membership added', selectedUser.email, `Added ${role.name} in ${getPortal(membershipForm.portalId).name}.`);
+    showToast('Membership added.');
+  };
+
+  const updateMembershipStatus = (membershipId: string, status: MembershipStatus) => {
+    const membership = memberships.find((item) => item.id === membershipId);
+    const user = membership ? adminUsers.find((item) => item.id === membership.userId) : null;
+    setMemberships((current) => current.map((item) => (item.id === membershipId ? { ...item, status } : item)));
+    if (membership && user) addAudit('Membership status updated', user.email, `${getPortal(membership.portalId).name} membership changed to ${status}.`);
+  };
+
+  const updateMembershipRole = (membershipId: string, roleId: string) => {
+    const role = getRole(roleId);
+    const membership = memberships.find((item) => item.id === membershipId);
+    const user = membership ? adminUsers.find((item) => item.id === membership.userId) : null;
+    setMemberships((current) =>
+      current.map((item) => (item.id === membershipId ? { ...item, roleId, featurePermissions: role.permissions } : item)),
+    );
+    if (membership && user) addAudit('Role updated', user.email, `${getPortal(membership.portalId).name} role changed to ${role.name}.`);
+  };
+
+  const togglePermission = (membershipId: string, permission: string) => {
+    const membership = memberships.find((item) => item.id === membershipId);
+    if (!membership) return;
+    const role = getRole(membership.roleId);
+    if (role.permissionMode !== 'direct') {
+      showToast('Permissions are display-only for role-derived roles.');
+      return;
+    }
+    setMemberships((current) =>
+      current.map((item) =>
+        item.id === membershipId
+          ? {
+              ...item,
+              featurePermissions: item.featurePermissions.includes(permission)
+                ? item.featurePermissions.filter((value) => value !== permission)
+                : [...item.featurePermissions, permission],
+            }
+          : item,
+      ),
+    );
+    const user = adminUsers.find((item) => item.id === membership.userId);
+    if (user) addAudit('Permission updated', user.email, `${permission} toggled for ${getPortal(membership.portalId).name}.`);
+  };
+
+  const kpis = [
+    { label: 'Pending invitations', value: invitations.filter((item) => item.status === 'Pending').length, icon: <Clock size={18} /> },
+    { label: 'Active users', value: adminUsers.filter((item) => item.accountStatus === 'Active').length, icon: <UserCheck size={18} /> },
+    { label: 'Active memberships', value: memberships.filter((item) => item.status === 'Active').length, icon: <Shield size={18} /> },
+    { label: 'Audit events', value: auditEvents.length, icon: <History size={18} /> },
+  ];
 
   return (
     <div className="page-shell space-y-6">
-      <section className="section-panel border-sky-200 bg-sky-50/55 p-6">
+      {toast && (
+        <div className="fixed right-5 top-20 z-[90] border border-emerald-200 bg-white px-4 py-3 text-sm font-semibold text-emerald-800 shadow-xl">
+          {toast}
+        </div>
+      )}
+
+      <section className="section-panel border-[#e5e7eb] bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-800">
-              <Settings2 size={14} />
-              {copy('System Admin', 'Quản trị hệ thống')}
+            <div className="mb-3 inline-flex items-center gap-2 border border-[rgba(69,95,135,0.16)] bg-[#eef3f8] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[#455f87]">
+              <Shield size={14} />
+              Admin Portal Prototype
             </div>
-            <h1 className="section-heading mb-2">{t('Admin Console')}</h1>
+            <h1 className="section-heading mb-2">User Invitation, Portal Access, and Role Control</h1>
             <p className="section-subheading">
-              {copy(
-                'Control the operating model: user access, agency ownership, workflow catalogs, and the master data that keeps the platform consistent.',
-                'Quản trị mô hình vận hành: phân quyền người dùng, sở hữu theo cơ quan, danh mục quy trình và master data giúp toàn hệ thống nhất quán.',
-              )}
+              Interactive TSX prototype for Admin inviting users, assigning one portal and one role, managing invitations, editing memberships, and
+              reviewing audit events. Investor Portal access is intentionally isolated from this Admin/Agency flow.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setShowUserModal(true)}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]"
-            >
-              <Plus size={16} />
-              {copy('Add User', 'Thêm người dùng')}
-            </button>
-            <button
-              onClick={() => setShowAgencyModal(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-primary px-4 py-3 text-sm font-semibold text-primary hover:bg-sky-50"
-            >
-              <Plus size={16} />
-              {copy('Add Agency', 'Thêm cơ quan')}
-            </button>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {kpis.map((kpi) => (
+              <div key={kpi.label} className="min-w-[132px] border border-[#e5e7eb] bg-[#f9fafb] px-4 py-3">
+                <div className="flex items-center justify-between text-[#455f87]">
+                  {kpi.icon}
+                  <span className="text-xl font-bold text-[#191c1e]">{kpi.value}</span>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-[#455f87]">{kpi.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <div className="flex border-b border-border">
-        <TabButton active={activeTab === 'overview'} icon={<FolderCog size={14} />} label={copy('Overview', 'Tổng quan')} onClick={() => setActiveTab('overview')} />
-        <TabButton active={activeTab === 'access'} icon={<Users size={14} />} label={copy('Users & Roles', 'Người dùng & vai trò')} onClick={() => setActiveTab('access')} />
-        <TabButton active={activeTab === 'agencies'} icon={<Building2 size={14} />} label={copy('Agency', 'Cơ quan')} onClick={() => setActiveTab('agencies')} />
-        <TabButton active={activeTab === 'master_data'} icon={<Database size={14} />} label={copy('Master Data', 'Master data')} onClick={() => setActiveTab('master_data')} />
-      </div>
-
-      <section className="filter-bar">
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={copy('Search users, agencies, or master data...', 'Tìm người dùng, cơ quan hoặc master data...')}
-            className="app-input pl-9"
-          />
-        </div>
-      </section>
-
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1.05fr,0.95fr]">
-            <section className="section-panel p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <Network size={16} className="text-sky-700" />
-                <h2 className="section-heading mb-0">{copy('What This Admin Page Should Control', 'Trang admin này nên kiểm soát gì')}</h2>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {recommendedMasterData.map((item) => (
-                  <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-                    <div className="text-sm font-semibold text-slate-900">{item.title}</div>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{item.body}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="section-panel p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <Workflow size={16} className="text-violet-700" />
-                <h2 className="section-heading mb-0">{copy('Current Governance Surface', 'Phạm vi quản trị hiện tại')}</h2>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { label: copy('Projects', 'Dự án'), value: projects.length },
-                  { label: copy('Project Jobs', 'Đầu việc dự án'), value: projectJobs.length },
-                  { label: copy('Required Data Assignments', 'Đầu việc dữ liệu được giao'), value: requiredDataAssignments.length },
-                  { label: copy('Opportunities', 'Cơ hội đầu tư'), value: opportunities.length },
-                  { label: copy('Permits', 'Giấy phép'), value: permits.length },
-                  { label: copy('Issues', 'Vướng mắc'), value: issues.length },
-                  { label: copy('Milestones', 'Mốc tiến độ'), value: milestones.length },
-                  { label: copy('Service Requests', 'Yêu cầu dịch vụ'), value: serviceRequests.length },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                    <span className="text-lg font-semibold text-slate-900">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <section className="section-panel p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <Shield size={16} className="text-amber-700" />
-              <h2 className="section-heading mb-0">{copy('Recommended Ownership Rules', 'Quy tắc sở hữu nên áp dụng')}</h2>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {ownershipRules.map((rule) => (
-                <div key={rule} className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-900">
-                  {rule}
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activeTab === 'access' && (
-        <div className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[0.8fr,1.2fr]">
-            <section className="section-panel p-6">
-              <h2 className="section-heading mb-4">{copy('Role Templates', 'Mẫu vai trò')}</h2>
-              <div className="space-y-3">
-                {roleOptions.map((role) => (
-                  <div key={role} className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-center gap-2">
-                      <StatusPill tone={roleTone[role] || 'default'}>{t(role)}</StatusPill>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-500">
-                      {role === 'Government Operator' &&
-                        copy('Should manage project records, publication, assignment, and execution coordination.', 'Nên quản lý hồ sơ dự án, công bố, phân công và điều phối thực thi.')}
-                      {role === 'Agency User' &&
-                        copy('Should receive assigned work, update progress, and submit agency-owned data or permits.', 'Nên nhận việc được giao, cập nhật tiến độ và nộp dữ liệu hoặc giấy phép thuộc cơ quan mình.')}
-                      {role === 'Investor' &&
-                        copy('Should discover projects, submit interest, and follow execution support for their own portfolio.', 'Nên khám phá dự án, gửi quan tâm và theo dõi hỗ trợ thực thi cho danh mục của mình.')}
-                      {role === 'Admin' &&
-                        copy('Should manage users, agencies, master data, and system-wide workflow settings.', 'Nên quản lý người dùng, cơ quan, master data và cấu hình quy trình toàn hệ thống.')}
-                      {role === 'Executive' &&
-                        copy('Should read cross-portfolio dashboards, analytics, and risk views without editing transactional data.', 'Nên xem dashboard, phân tích và rủi ro toàn danh mục mà không sửa dữ liệu giao dịch.')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="section-panel p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="section-heading mb-0">{copy('Users & Access', 'Người dùng & truy cập')}</h2>
-                <StatusPill tone="info">{filteredUsers.length}</StatusPill>
-              </div>
-              <div className="space-y-3">
-                {visibleUsers.map((user) => (
-                  <DataRow key={user.id} className={user.id === highlightedId ? 'border-sky-300 ring-2 ring-sky-100' : ''}>
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <div className="text-sm font-semibold text-slate-900">{user.name}</div>
-                        <StatusPill tone={roleTone[user.role] || 'default'}>{t(user.role)}</StatusPill>
-                        <StatusPill tone={user.status === 'active' ? 'success' : 'warning'}>{t(user.status)}</StatusPill>
-                      </div>
-                      <div className="text-xs text-slate-500">{user.email}</div>
-                      <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
-                        <span>{user.organization}</span>
-                        <span>{copy('Last login', 'Đăng nhập gần nhất')} {user.lastLogin}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openEditUser(user.id)} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-primary" title="Edit">
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => updateUser(user.id, { status: user.status === 'active' ? 'inactive' : 'active' })}
-                        className="rounded-md p-2 text-slate-500 hover:bg-amber-50 hover:text-amber-700"
-                        title="Toggle access"
-                      >
-                        <Shield size={14} />
-                      </button>
-                    </div>
-                  </DataRow>
-                ))}
-                {!showAllUsers && filteredUsers.length > DEFAULT_LIST_COUNT && (
-                  <SeeAllButton label={t('See All')} onClick={() => setShowAllUsers(true)} />
-                )}
-              </div>
-            </section>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'agencies' && (
-        <div className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[0.82fr,1.18fr]">
-            <section className="section-panel p-6">
-              <h2 className="section-heading mb-4">{copy('Agency Ownership Model', 'Mô hình sở hữu theo cơ quan')}</h2>
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm font-semibold text-slate-900">{copy('Coordinating Unit', 'Đơn vị điều phối')}</div>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {copy(
-                      'Primary organization responsible for a project task, data request, permit, or service workflow item.',
-                      'Tổ chức chính chịu trách nhiệm cho đầu việc dự án, dữ liệu được giao, giấy phép hoặc một hạng mục dịch vụ.',
-                    )}
-                  </p>
-                </div>
-
-              </div>
-            </section>
-
-            <section className="section-panel p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="section-heading mb-0">{copy('Agency Directory', 'Danh mục cơ quan')}</h2>
-                <StatusPill tone="info">{filteredAgencies.length}</StatusPill>
-              </div>
-              <div className="space-y-3">
-                {visibleAgencies.map((agency) => (
-                  <DataRow key={agency.id} className={`items-start ${agency.id === highlightedId ? 'border-sky-300 ring-2 ring-sky-100' : ''}`}>
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <div className="text-sm font-semibold text-slate-900">{agency.name}</div>
-                        <StatusPill tone="info">{agency.shortName}</StatusPill>
-                        <StatusPill tone={agency.status === 'active' ? 'success' : 'warning'}>{t(agency.status)}</StatusPill>
-                      </div>
-                      <div className="text-xs text-slate-500">{agency.contactPerson}</div>
-                      <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
-                        <span>{agency.type}</span>
-                        <span>{agency.jurisdiction}</span>
-                        <span>{agency.email}</span>
-                        <span>{agency.phone}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-slate-900">{agency.activeRequests}</div>
-                      <div className="text-xs text-slate-500">{copy('active requests', 'yêu cầu đang hoạt động')}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openEditAgency(agency.id)} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-primary">
-                        <Edit size={15} />
-                      </button>
-                      <button
-                        onClick={() => updateAgency(agency.id, { status: agency.status === 'active' ? 'inactive' : 'active' })}
-                        className="rounded-md p-2 text-slate-500 hover:bg-violet-50 hover:text-violet-700"
-                      >
-                        <Shield size={15} />
-                      </button>
-                    </div>
-                  </DataRow>
-                ))}
-                {!showAllAgencies && filteredAgencies.length > DEFAULT_LIST_COUNT && (
-                  <SeeAllButton label={t('See All')} onClick={() => setShowAllAgencies(true)} />
-                )}
-              </div>
-            </section>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'master_data' && (
-        <div className="space-y-6">
-          <section className="section-panel p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <Database size={16} className="text-rose-700" />
-              <h2 className="section-heading mb-0">{copy('Statuses of Each Object', 'Trạng thái của từng đối tượng')}</h2>
-            </div>
-            <div className="grid gap-4 xl:grid-cols-2">
-              {masterDataCatalogs
-                .filter((catalog) => !search || `${catalog.title} ${catalog.subtitle} ${catalog.values.join(' ')}`.toLowerCase().includes(search.toLowerCase()))
-                .map((catalog) => (
-                  <MasterDataCard key={catalog.title} title={catalog.title} subtitle={catalog.subtitle} values={catalog.values} />
-                ))}
-            </div>
-          </section>
-
-        </div>
-      )}
-
-      {showUserModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border px-6 py-5">
-              <h3 className="text-lg font-semibold text-slate-900">
-                {copy(editingUserId ? 'Edit User' : 'Add User', editingUserId ? 'Chỉnh sửa người dùng' : 'Thêm người dùng')}
-              </h3>
-              <button onClick={resetUserForm} className="rounded-md p-2 text-slate-500 hover:bg-slate-100">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="grid gap-4 px-6 py-6 sm:grid-cols-2">
-              {[
-                { label: copy('Full Name', 'Họ và tên'), key: 'name' },
-                { label: 'Email', key: 'email' },
-                { label: copy('Role', 'Vai trò'), key: 'role' },
-                { label: copy('Organization', 'Tổ chức'), key: 'organization' },
-              ].map((field) => (
-                <div key={field.key} className={field.key === 'organization' ? 'sm:col-span-2' : ''}>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">{field.label}</label>
-                  {field.key === 'role' ? (
-                    <select value={userForm.role} onChange={(event) => setUserForm((current) => ({ ...current, role: event.target.value }))} className="app-input">
-                      {roleOptions.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
-                  ) : field.key === 'organization' ? (
-                    <select
-                      value={userForm.organization}
-                      onChange={(event) => setUserForm((current) => ({ ...current, organization: event.target.value }))}
-                      className="app-input"
-                    >
-                      {agencyNameOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      value={userForm[field.key as keyof typeof userForm]}
-                      onChange={(event) => setUserForm((current) => ({ ...current, [field.key]: event.target.value }))}
-                      className="app-input"
-                    />
-                  )}
-                </div>
-              ))}
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">{copy('Status', 'Trạng thái')}</label>
-                <select value={userForm.status} onChange={(event) => setUserForm((current) => ({ ...current, status: event.target.value as 'active' | 'inactive' }))} className="app-input">
-                  <option value="active">{copy('active', 'active')}</option>
-                  <option value="inactive">{copy('inactive', 'inactive')}</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-3 border-t border-border px-6 py-5">
-              <button onClick={resetUserForm} className="flex-1 rounded-md border border-border px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                {copy('Cancel', 'Hủy')}
-              </button>
-              <button onClick={handleSaveUser} className="flex-1 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]">
-                {copy('Save User', 'Lưu người dùng')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAgencyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border px-6 py-5">
-              <h3 className="text-lg font-semibold text-slate-900">
-                {copy(editingAgencyId ? 'Edit Agency' : 'Add Agency', editingAgencyId ? 'Chỉnh sửa cơ quan' : 'Thêm cơ quan')}
-              </h3>
-              <button onClick={resetAgencyForm} className="rounded-md p-2 text-slate-500 hover:bg-slate-100">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="grid gap-4 px-6 py-6 sm:grid-cols-2">
-              {[
-                { label: copy('Agency Name', 'Tên cơ quan'), key: 'name', full: true },
-                { label: copy('Short Name', 'Tên viết tắt'), key: 'shortName' },
-                { label: copy('Agency Type', 'Loại cơ quan'), key: 'type' },
-                { label: copy('Jurisdiction', 'Thẩm quyền'), key: 'jurisdiction' },
-                { label: copy('Contact Person', 'Đầu mối liên hệ'), key: 'contactPerson' },
-                { label: 'Email', key: 'email' },
-                { label: copy('Phone', 'Số điện thoại'), key: 'phone' },
-              ].map((field) => (
-                <div key={field.key} className={field.full ? 'sm:col-span-2' : ''}>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">{field.label}</label>
+      <div className="space-y-6">
+          <section className="filter-bar">
+            {activeTab === 'invitations' && (
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="relative min-w-[260px] flex-1">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    value={agencyForm[field.key as keyof typeof agencyForm]}
-                    onChange={(event) => setAgencyForm((current) => ({ ...current, [field.key]: event.target.value }))}
-                    className="app-input"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search invitation email, portal, role, or status..."
+                    className="app-input pl-9"
                   />
                 </div>
-              ))}
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">{copy('Status', 'Trạng thái')}</label>
-                <select value={agencyForm.status} onChange={(event) => setAgencyForm((current) => ({ ...current, status: event.target.value as 'active' | 'inactive' }))} className="app-input">
-                  <option value="active">{copy('active', 'active')}</option>
-                  <option value="inactive">{copy('inactive', 'inactive')}</option>
+                <select value={invitationStatusFilter} onChange={(event) => setInvitationStatusFilter(event.target.value as 'All' | InvitationStatus)} className="app-input md:w-[220px] md:shrink-0">
+                  {invitationStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      Invitation status: {status}
+                    </option>
+                  ))}
                 </select>
               </div>
+            )}
+
+            {activeTab === 'users' && (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr),180px,170px,minmax(180px,1fr),190px,190px]">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search user name, email, portal, or role..."
+                    className="app-input pl-9"
+                  />
+                </div>
+                <select value={accountStatusFilter} onChange={(event) => setAccountStatusFilter(event.target.value as 'All' | AccountStatus)} className="app-input">
+                  {accountStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      Account: {status}
+                    </option>
+                  ))}
+                </select>
+                <select value={userPortalTypeFilter} onChange={(event) => handleUserPortalTypeFilterChange(event.target.value as 'All' | AdminPortalType)} className="app-input">
+                  {portalTypeFilterOptions.map((type) => (
+                    <option key={type} value={type}>
+                      Portal type: {type}
+                    </option>
+                  ))}
+                </select>
+                <select value={userPortalFilter} onChange={(event) => setUserPortalFilter(event.target.value)} className="app-input">
+                  <option value="All">Portal: All</option>
+                  {userPortalFilterOptions.map((portal) => (
+                    <option key={portal.id} value={portal.id}>
+                      Portal: {portal.name}
+                    </option>
+                  ))}
+                </select>
+                <select value={userRoleFilter} onChange={(event) => setUserRoleFilter(event.target.value)} className="app-input">
+                  <option value="All">Role: All</option>
+                  {userRoleFilterOptions.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      Role: {role.name}
+                    </option>
+                  ))}
+                </select>
+                <select value={userInvitationStatusFilter} onChange={(event) => setUserInvitationStatusFilter(event.target.value as 'All' | InvitationStatus)} className="app-input">
+                  {invitationStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      Invitation: {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {activeTab === 'audit' && (
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search audit action, target, or detail..."
+                  className="app-input pl-9"
+                />
+              </div>
+            )}
+          </section>
+
+          {activeTab === 'invitations' && (
+            <div className="grid gap-6 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)]">
+          <section className="section-panel p-6">
+            <div className="mb-5 flex items-center gap-2">
+              <Mail size={18} className="text-[#9D4300]" />
+              <h2 className="section-heading mb-0">Invite and Assign User</h2>
             </div>
-            <div className="flex gap-3 border-t border-border px-6 py-5">
-              <button onClick={resetAgencyForm} className="flex-1 rounded-md border border-border px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                {copy('Cancel', 'Hủy')}
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-[#455f87]">Email</label>
+                <input
+                  value={inviteForm.email}
+                  onChange={(event) => setInviteForm((current) => ({ ...current, email: event.target.value }))}
+                  className="app-input"
+                  placeholder="new.member@hcmc.gov.vn"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-[#455f87]">Portal Type</label>
+                  <select value={inviteForm.portalType} onChange={(event) => handlePortalTypeChange(event.target.value as AdminPortalType)} className="app-input">
+                    {portalTypeOptions.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-xs text-[#6b7280]">Investor Portal is isolated and not selectable.</p>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-[#455f87]">Portal</label>
+                  <select value={inviteForm.portalId} onChange={(event) => setInviteForm((current) => ({ ...current, portalId: event.target.value }))} className="app-input">
+                    {availablePortals.map((portal) => (
+                      <option key={portal.id} value={portal.id}>
+                        {portal.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-[#455f87]">Role</label>
+                <select value={inviteForm.roleId} onChange={(event) => setInviteForm((current) => ({ ...current, roleId: event.target.value }))} className="app-input">
+                  {availableRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="border border-[#e5e7eb] bg-[#f9fafb] px-4 py-3 text-sm text-[#455f87]">
+                Invitation email includes expiry time. Default expiry is generated as <strong>created time + 3 days</strong>.
+              </div>
+              <button type="button" onClick={createInvitation} className="app-button w-full">
+                <Plus size={16} />
+                Send Invitation
               </button>
-              <button onClick={handleSaveAgency} className="flex-1 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)]">
-                {copy('Save Agency', 'Lưu cơ quan')}
+            </div>
+          </section>
+
+          <section className="section-panel p-6">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Filter size={18} className="text-[#455f87]" />
+                <h2 className="section-heading mb-0">Invitation List</h2>
+              </div>
+              <StatusPill tone="info">{filteredInvitations.length} shown</StatusPill>
+            </div>
+            <div className="overflow-x-auto border border-[#e5e7eb] bg-white">
+              <table className="min-w-[980px] w-full border-collapse text-left text-sm">
+                <thead className="bg-[#f9fafb] text-xs font-bold uppercase tracking-[0.08em] text-[#455f87]">
+                  <tr>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Email</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Portal</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Role</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Status</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Account Path</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Invited</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3">Expires</th>
+                    <th className="border-b border-[#e5e7eb] px-3 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInvitations.map((invitation) => {
+                    const portal = getPortal(invitation.portalId);
+                    const role = getRole(invitation.roleId);
+                    return (
+                      <tr key={invitation.id} className="align-top hover:bg-[#fbfcfd]">
+                        <td className="border-b border-[#eef2f7] px-3 py-3 font-semibold text-[#191c1e]">{invitation.email}</td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3 text-[#455f87]">
+                          <div className="font-semibold text-[#191c1e]">{portal.name}</div>
+                          <div className="mt-1 text-xs text-[#6b7280]">{portal.type}</div>
+                        </td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3 text-[#455f87]">{role.name}</td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3"><StatusPill tone={statusTone(invitation.status)}>{invitation.status}</StatusPill></td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3"><StatusPill tone="default">{invitation.accountPath}</StatusPill></td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3 text-xs text-[#455f87]">{invitation.invitedAt}</td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3 text-xs text-[#455f87]">{invitation.expiresAt}</td>
+                        <td className="border-b border-[#eef2f7] px-3 py-3">
+                          <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => acceptInvitation(invitation.id)} disabled={invitation.status !== 'Pending'} className="app-button-secondary px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50" title="Accept">
+                              <CheckCircle2 size={14} />
+                            </button>
+                            <button type="button" onClick={() => resendInvitation(invitation.id)} disabled={invitation.status === 'Accepted'} className="app-button-secondary px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50" title="Resend">
+                              <RefreshCcw size={14} />
+                            </button>
+                            <button type="button" onClick={() => revokeInvitation(invitation.id)} disabled={invitation.status !== 'Pending'} className="app-button-secondary px-3 py-2 text-red-700 disabled:cursor-not-allowed disabled:opacity-50" title="Revoke">
+                              <Ban size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredInvitations.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-10 text-center text-sm text-[#6b7280]">No invitations match the current filter.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <section className="section-panel p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <UserCog size={18} className="text-[#9D4300]" />
+              <h2 className="section-heading mb-0">Users and Portal Access</h2>
+            </div>
+            <StatusPill tone="info">{filteredUsers.length} users</StatusPill>
+          </div>
+          <div className="overflow-x-auto border border-[#e5e7eb] bg-white">
+            <table className="min-w-[1180px] w-full border-collapse text-left text-sm">
+              <thead className="bg-[#f9fafb] text-xs font-bold uppercase tracking-[0.08em] text-[#455f87]">
+                <tr>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Name</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Email</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Account Status</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Portal Memberships</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Assigned Roles</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Invitation Status</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Last Activity</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => {
+                  const relatedMemberships = userMemberships(user.id);
+                  const invitation = latestInvitationFor(user.email);
+                  return (
+                    <tr key={user.id} className="align-top hover:bg-[#fbfcfd]">
+                      <td className="border-b border-[#eef2f7] px-3 py-3">
+                        <div className="font-semibold text-[#191c1e]">{user.name}</div>
+                        {user.source.includes('Investor') && <div className="mt-1 text-xs font-semibold text-[#9D4300]">Investor account isolated</div>}
+                      </td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3 text-[#455f87]">{user.email}</td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3"><StatusPill tone={statusTone(user.accountStatus)}>{user.accountStatus}</StatusPill></td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3">
+                        {relatedMemberships.length ? (
+                          <div className="space-y-2">
+                            {relatedMemberships.map((membership, index) => {
+                              const portal = getPortal(membership.portalId);
+                              return (
+                                <div key={membership.id} className="grid grid-cols-[24px,minmax(0,1fr),90px] items-center gap-2 border border-[#eef2f7] bg-[#f9fafb] px-2 py-1.5">
+                                  <span className="text-xs font-bold text-[#6b7280]">{index + 1}</span>
+                                  <span className="min-w-0">
+                                    <span className="block truncate font-semibold text-[#191c1e]">{portal.name}</span>
+                                    <span className="block text-xs text-[#6b7280]">{portal.type}</span>
+                                  </span>
+                                  <StatusPill tone={statusTone(membership.status)} className="justify-center">{membership.status}</StatusPill>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#6b7280]">No active portal</span>
+                        )}
+                      </td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3">
+                        {relatedMemberships.length ? (
+                          <div className="space-y-2">
+                            {relatedMemberships.map((membership, index) => (
+                              <div key={membership.id} className="grid grid-cols-[24px,minmax(0,1fr)] gap-2 px-2 py-1.5">
+                                <span className="text-xs font-bold text-[#6b7280]">{index + 1}</span>
+                                <span className="font-semibold text-[#455f87]">{getRole(membership.roleId).name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#6b7280]">Not assigned</span>
+                        )}
+                      </td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3">
+                        {invitation ? <StatusPill tone={statusTone(invitation.status)}>{invitation.status}</StatusPill> : <span className="text-xs text-[#6b7280]">No invitation</span>}
+                      </td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3 text-xs text-[#455f87]">{user.lastActivity}</td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3">
+                        <div className="flex justify-end gap-2">
+                          <button type="button" onClick={() => setSelectedUserId(user.id)} className="app-button-secondary px-3 py-2" title="Edit">
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateUserStatus(user.id, user.accountStatus === 'Active' ? 'Inactive' : 'Active')}
+                            className="app-button-secondary px-3 py-2"
+                            title={user.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
+                          >
+                            <Shield size={14} />
+                          </button>
+                          <button type="button" onClick={() => removeUserAccess(user.id)} className="app-button-secondary px-3 py-2 text-red-700" title="Remove">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-[#6b7280]">No users match the current filter.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+            </section>
+          )}
+
+          {activeTab === 'audit' && (
+            <section className="section-panel p-6">
+          <div className="mb-5 flex items-center gap-2">
+            <History size={18} className="text-[#9D4300]" />
+            <h2 className="section-heading mb-0">Read-only Audit Log</h2>
+          </div>
+          <div className="space-y-3">
+            {auditEvents
+              .filter((event) => !search || `${event.action} ${event.target} ${event.detail}`.toLowerCase().includes(search.toLowerCase()))
+              .map((event) => (
+                <DataRow key={event.id} className="items-start">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <StatusPill tone="info">{event.action}</StatusPill>
+                      <span className="text-sm font-bold text-[#191c1e]">{event.target}</span>
+                    </div>
+                    <div className="text-sm text-[#455f87]">{event.detail}</div>
+                    <div className="mt-2 text-xs text-[#6b7280]">By {event.actor} at {event.at}</div>
+                  </div>
+                </DataRow>
+              ))}
+          </div>
+            </section>
+          )}
+      </div>
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-[90] flex justify-end bg-slate-950/45">
+          <div className="flex h-full w-full max-w-3xl flex-col bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-[#e5e7eb] px-6 py-5">
+              <div>
+                <h3 className="text-lg font-bold text-[#191c1e]">Edit User Access</h3>
+                <p className="mt-1 text-sm text-[#455f87]">{selectedUser.name} · {selectedUser.email}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedUserId(null)} className="p-2 text-[#455f87] hover:bg-[#f3f4f6]">
+                <X size={18} />
               </button>
+            </div>
+
+            <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+              <section className="border border-[#e5e7eb] bg-[#f9fafb] p-4">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <StatusPill tone={statusTone(selectedUser.accountStatus)}>{selectedUser.accountStatus}</StatusPill>
+                  <StatusPill tone={selectedUser.source.includes('Investor') ? 'warning' : 'default'}>{selectedUser.source}</StatusPill>
+                </div>
+                <div className="grid gap-3 text-sm text-[#455f87] sm:grid-cols-2">
+                  <span>Invitation: {latestInvitationFor(selectedUser.email)?.status ?? 'No invitation record'}</span>
+                  <span>Last activity: {selectedUser.lastActivity}</span>
+                </div>
+                {selectedUser.source.includes('Investor') && (
+                  <p className="mt-3 text-sm font-semibold text-[#9D4300]">Investor Portal details are intentionally not editable in this Admin/Agency access view.</p>
+                )}
+              </section>
+
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <Plus size={16} className="text-[#9D4300]" />
+                  <h4 className="text-base font-bold text-[#191c1e]">Add Portal Membership</h4>
+                </div>
+                <div className="grid gap-3 md:grid-cols-[160px,minmax(0,1fr),190px,auto]">
+                  <select value={membershipForm.portalType} onChange={(event) => handleMembershipPortalTypeChange(event.target.value as AdminPortalType)} className="app-input">
+                    {portalTypeOptions.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <select value={membershipForm.portalId} onChange={(event) => setMembershipForm((current) => ({ ...current, portalId: event.target.value }))} className="app-input">
+                    {membershipPortals.map((portal) => (
+                      <option key={portal.id} value={portal.id}>{portal.name}</option>
+                    ))}
+                  </select>
+                  <select value={membershipForm.roleId} onChange={(event) => setMembershipForm((current) => ({ ...current, roleId: event.target.value }))} className="app-input">
+                    {membershipRoles.map((role) => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={addMembership} className="app-button px-4">
+                    Add
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-[#6b7280]">Allowed portal types are Admin Portal and Agency Portal. Investor Portal membership is blocked in this prototype.</p>
+              </section>
+
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound size={16} className="text-[#9D4300]" />
+                  <h4 className="text-base font-bold text-[#191c1e]">Memberships, Roles, and Permissions</h4>
+                </div>
+                {userMemberships(selectedUser.id).map((membership) => {
+                  const portal = getPortal(membership.portalId);
+                  const role = getRole(membership.roleId);
+                  const roleChoices = roleOptions.filter((item) => item.portalType === portal.type);
+                  const permissions = Array.from(new Set([...directPermissionOptions, ...role.permissions]));
+                  return (
+                    <div key={membership.id} className="border border-[#e5e7eb] bg-white p-4">
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-bold text-[#191c1e]">{portal.name}</div>
+                          <div className="mt-1 text-xs text-[#455f87]">{portal.type}</div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <StatusPill tone={statusTone(membership.status)}>{membership.status}</StatusPill>
+                          <StatusPill tone={role.permissionMode === 'direct' ? 'success' : 'default'}>
+                            {role.permissionMode === 'direct' ? 'Direct permissions' : 'Role-derived permissions'}
+                          </StatusPill>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr),170px,170px]">
+                        <select value={membership.roleId} onChange={(event) => updateMembershipRole(membership.id, event.target.value)} className="app-input">
+                          {roleChoices.map((item) => (
+                            <option key={item.id} value={item.id}>{item.name}</option>
+                          ))}
+                        </select>
+                        <select value={membership.status} onChange={(event) => updateMembershipStatus(membership.id, event.target.value as MembershipStatus)} className="app-input">
+                          {membershipStatusOptions.map((status) => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                        <button type="button" onClick={() => updateMembershipStatus(membership.id, 'Removed')} className="app-button-secondary text-red-700">
+                          <Trash2 size={14} />
+                          Remove
+                        </button>
+                      </div>
+
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        {permissions.map((permission) => {
+                          const checked = membership.featurePermissions.includes(permission);
+                          const disabled = role.permissionMode !== 'direct';
+                          return (
+                            <button
+                              key={permission}
+                              type="button"
+                              onClick={() => togglePermission(membership.id, permission)}
+                              disabled={disabled}
+                              className={`flex items-center justify-between border px-3 py-2 text-left text-xs font-semibold ${
+                                checked ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-[#e5e7eb] bg-[#f9fafb] text-[#455f87]'
+                              } ${disabled ? 'cursor-not-allowed opacity-70' : 'hover:border-[#ed6203]'}`}
+                            >
+                              {permission}
+                              {checked && <CheckCircle2 size={14} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <History size={16} className="text-[#9D4300]" />
+                  <h4 className="text-base font-bold text-[#191c1e]">User Audit Summary</h4>
+                </div>
+                <div className="space-y-2">
+                  {auditEvents
+                    .filter((event) => event.target.toLowerCase().includes(selectedUser.email.toLowerCase()) || event.target.toLowerCase().includes(selectedUser.name.toLowerCase()))
+                    .slice(0, 5)
+                    .map((event) => (
+                      <div key={event.id} className="border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-sm text-[#455f87]">
+                        <strong>{event.action}</strong> · {event.detail}
+                      </div>
+                    ))}
+                </div>
+              </section>
             </div>
           </div>
         </div>

@@ -194,8 +194,8 @@
   }
 
   .section-panel {
-    @apply rounded-none border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.05)];
-    border-color: rgba(224, 192, 177, 0.18);
+    @apply rounded-xl border bg-white shadow-[0_0_24px_rgba(0,0,0,0.04)];
+    border-color: #e5e7eb;
   }
 
   .section-heading {
@@ -210,32 +210,33 @@
   }
 
   .kpi-tile {
-    @apply rounded-none border bg-card px-5 py-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)];
-    border-color: rgba(224, 192, 177, 0.18);
+    @apply rounded-xl border bg-white px-5 py-5 shadow-[0_0_24px_rgba(0,0,0,0.04)];
+    border-color: #e5e7eb;
     font-family: Inter, var(--font-body), sans-serif;
   }
 
   .filter-bar {
-    @apply rounded-none border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)];
-    border-color: rgba(224, 192, 177, 0.18);
+    @apply rounded-xl border bg-white p-5 shadow-[0_0_24px_rgba(0,0,0,0.04)];
+    border-color: #e5e7eb;
     font-family: Inter, var(--font-body), sans-serif;
   }
 
   .app-input {
-    @apply w-full rounded-none border bg-[#f2f4f6] px-3 py-2.5 text-sm text-[#191c1e] focus:outline-none focus:ring-2;
+    @apply w-full rounded-lg border bg-[#f9fafb] px-3 py-2.5 text-sm text-[#191c1e] transition-colors focus:outline-none focus:ring-2;
     font-weight: var(--font-weight-normal);
     box-shadow: 0 0 0 0 transparent;
-    border-color: rgba(224, 192, 177, 0.18);
+    border-color: #d1d5db;
     font-family: Inter, var(--font-body), sans-serif;
   }
 
   .app-input:focus {
-    box-shadow: 0 0 0 3px var(--ring);
+    border-color: #ed6203;
+    box-shadow: 0 0 0 3px rgba(237, 98, 3, 0.14);
   }
 
   .app-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-none px-5 py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5;
-    background: linear-gradient(10deg, #9d4300 0%, #f97316 100%);
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5;
+    background: linear-gradient(10deg, #ed6203 0%, #f97316 100%);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     font-family: Inter, var(--font-body), sans-serif;
   }
@@ -251,9 +252,9 @@
   }
 
   .app-button-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-none border px-5 py-3 text-sm font-semibold text-[#3e5980] transition-colors;
-    background: #e6e8ea;
-    border-color: rgba(224, 192, 177, 0.18);
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border px-5 py-3 text-sm font-semibold text-[#3e5980] transition-colors;
+    background: #f9fafb;
+    border-color: #d1d5db;
     font-family: Inter, var(--font-body), sans-serif;
   }
 
