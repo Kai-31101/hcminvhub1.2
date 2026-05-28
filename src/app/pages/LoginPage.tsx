@@ -60,7 +60,7 @@ const roles: {
     color: 'text-purple-600',
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-200 hover:border-purple-400',
-    homeRoute: '/admin/roles',
+    homeRoute: '/admin?tab=users',
   },
   {
     id: 'executive',

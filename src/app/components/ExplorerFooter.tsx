@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle2, Mail } from 'lucide-react';
+import { Link } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { translateText } from '../utils/localization';
 import { ArobidLogo } from './ArobidLogo';
@@ -34,9 +35,11 @@ export function ExplorerFooter() {
 
           <div className="space-y-3">
             <div className="text-[16px] font-bold leading-6 text-[#ed6203]">{t('SUPPORT')}</div>
-            {['Quick Intake', 'Support', 'FAQs'].map((item) => (
-              <div key={item} className="text-[14px] leading-5 text-[#030712]">{t(item)}</div>
-            ))}
+            <div className="text-[14px] leading-5 text-[#030712]">{t('Quick Intake')}</div>
+            <div className="text-[14px] leading-5 text-[#030712]">{t('Support')}</div>
+            <Link to="/faqs" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+              {t('FAQs')}
+            </Link>
           </div>
 
           <div className="space-y-3">
@@ -52,8 +55,13 @@ export function ExplorerFooter() {
           </div>
         </div>
 
-        <div className="mt-3 border-t border-[#e5e7eb] pt-3 text-right text-[10px] leading-3 text-[#111827]">
-          Privacy Policy&nbsp;&nbsp;&nbsp; Term of Services
+        <div className="mt-3 flex flex-wrap justify-end gap-x-6 gap-y-2 border-t border-[#e5e7eb] pt-3 text-[10px] leading-3 text-[#111827]">
+          <Link to="/privacy-policy" className="transition-colors hover:text-[#ed6203]">
+            {t('Privacy Policy')}
+          </Link>
+          <Link to="/terms-of-service" className="transition-colors hover:text-[#ed6203]">
+            {t('Term of Services')}
+          </Link>
         </div>
       </div>
     </footer>

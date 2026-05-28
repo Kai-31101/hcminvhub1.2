@@ -109,6 +109,12 @@ function inferDistrict(project: Project) {
 }
 
 function inferCoordinates(project: Project, district: string) {
+  const latitude = Number(project.latitude);
+  const longitude = Number(project.longitude);
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return { lat: latitude, lng: longitude };
+  }
+
   return PROJECT_COORDINATES[project.id] ?? DISTRICT_COORDINATES[district] ?? DISTRICT_COORDINATES['Ho Chi Minh City'];
 }
 
