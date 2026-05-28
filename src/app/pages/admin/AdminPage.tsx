@@ -25,10 +25,12 @@ import { DataRow } from '../../components/ui/data-row';
 import { StatusPill } from '../../components/ui/status-pill';
 
 type AdminPortalType = 'Admin Portal' | 'Agency Portal';
+type PlatformAccessType = 'Investor' | AdminPortalType;
 type InvitationStatus = 'Pending' | 'Accepted' | 'Expired' | 'Revoked';
 type AccountStatus = 'Invited' | 'Active' | 'Inactive';
 type MembershipStatus = 'Pending' | 'Active' | 'Inactive' | 'Removed';
 type PermissionMode = 'direct' | 'role-derived';
+type InvestorProfileStatus = 'Not applicable' | 'Incomplete' | 'Pending review' | 'Complete';
 
 interface PortalOption {
   id: string;
@@ -71,7 +73,11 @@ interface AdminUserAccess {
   email: string;
   accountStatus: AccountStatus;
   lastActivity: string;
-  source: 'Admin/Agency' | 'Investor account + Admin/Agency access';
+  source: 'Admin/Agency' | 'Investor account + Admin/Agency access' | 'Investor only';
+  investorProfileStatus: InvestorProfileStatus;
+  investorOrganization?: string;
+  investorIntakeCount?: number;
+  joinedProjectCount?: number;
 }
 
 interface AuditEvent {
@@ -87,6 +93,7 @@ const portalTypeOptions: AdminPortalType[] = ['Admin Portal', 'Agency Portal'];
 const invitationStatusOptions: Array<'All' | InvitationStatus> = ['All', 'Pending', 'Accepted', 'Expired', 'Revoked'];
 const accountStatusOptions: Array<'All' | AccountStatus> = ['All', 'Invited', 'Active', 'Inactive'];
 const portalTypeFilterOptions: Array<'All' | AdminPortalType> = ['All', 'Admin Portal', 'Agency Portal'];
+const accessTypeFilterOptions: Array<'All' | PlatformAccessType> = ['All', 'Investor', 'Admin Portal', 'Agency Portal'];
 const membershipStatusOptions: MembershipStatus[] = ['Pending', 'Active', 'Inactive', 'Removed'];
 const directPermissionOptions = ['member.invite', 'member.edit_role', 'member.activate', 'project.review', 'audit.view'];
 
@@ -192,6 +199,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [invitationStatusFilter, setInvitationStatusFilter] = useState<'All' | InvitationStatus>('All');
   const [accountStatusFilter, setAccountStatusFilter] = useState<'All' | AccountStatus>('All');
+  const [accessTypeFilter, setAccessTypeFilter] = useState<'All' | PlatformAccessType>('All');
   const [userInvitationStatusFilter, setUserInvitationStatusFilter] = useState<'All' | InvitationStatus>('All');
   const [userPortalTypeFilter, setUserPortalTypeFilter] = useState<'All' | AdminPortalType>('All');
   const [userPortalFilter, setUserPortalFilter] = useState('All');
@@ -218,6 +226,7 @@ export default function AdminPage() {
       accountStatus: 'Active',
       lastActivity: '28/05/2026 09:15',
       source: 'Admin/Agency',
+      investorProfileStatus: 'Not applicable',
     },
     {
       id: 'admin-user-2',
@@ -226,6 +235,7 @@ export default function AdminPage() {
       accountStatus: 'Active',
       lastActivity: '28/05/2026 08:40',
       source: 'Admin/Agency',
+      investorProfileStatus: 'Not applicable',
     },
     {
       id: 'admin-user-3',
@@ -234,6 +244,22 @@ export default function AdminPage() {
       accountStatus: 'Active',
       lastActivity: '27/05/2026 17:20',
       source: 'Investor account + Admin/Agency access',
+      investorProfileStatus: 'Complete',
+      investorOrganization: 'Korea Infrastructure Partners',
+      investorIntakeCount: 3,
+      joinedProjectCount: 2,
+    },
+    {
+      id: 'investor-user-1',
+      name: 'Maria Santos',
+      email: 'maria.santos@globalcapital.com',
+      accountStatus: 'Active',
+      lastActivity: '26/05/2026 14:12',
+      source: 'Investor only',
+      investorProfileStatus: 'Pending review',
+      investorOrganization: 'Global Capital Partners',
+      investorIntakeCount: 1,
+      joinedProjectCount: 0,
     },
   ]);
 
@@ -343,6 +369,15 @@ export default function AdminPage() {
   const getRole = (roleId: string) => roleOptions.find((role) => role.id === roleId) ?? roleOptions[0];
   const userMemberships = (userId: string) => memberships.filter((membership) => membership.userId === userId && membership.status !== 'Removed');
   const latestInvitationFor = (email: string) => invitations.find((invitation) => invitation.email.toLowerCase() === email.toLowerCase());
+  const userAccessTypes = (user: AdminUserAccess): PlatformAccessType[] => {
+    const accessTypes: PlatformAccessType[] = [];
+    if (user.investorProfileStatus !== 'Not applicable') accessTypes.push('Investor');
+    userMemberships(user.id).forEach((membership) => {
+      const portalType = getPortal(membership.portalId).type;
+      if (!accessTypes.includes(portalType)) accessTypes.push(portalType);
+    });
+    return accessTypes;
+  };
 
   const filteredInvitations = invitations.filter((invitation) => {
     const portal = getPortal(invitation.portalId);
@@ -354,8 +389,10 @@ export default function AdminPage() {
   const filteredUsers = adminUsers.filter((user) => {
     const relatedMemberships = userMemberships(user.id);
     const latestInvitation = latestInvitationFor(user.email);
+    const accessTypes = userAccessTypes(user);
     const matchesPortalType =
       userPortalTypeFilter === 'All' || relatedMemberships.some((membership) => getPortal(membership.portalId).type === userPortalTypeFilter);
+    const matchesAccessType = accessTypeFilter === 'All' || accessTypes.includes(accessTypeFilter);
     const matchesPortal = userPortalFilter === 'All' || relatedMemberships.some((membership) => membership.portalId === userPortalFilter);
     const matchesRole = userRoleFilter === 'All' || relatedMemberships.some((membership) => membership.roleId === userRoleFilter);
     const matchesInvitationStatus = userInvitationStatusFilter === 'All' || latestInvitation?.status === userInvitationStatusFilter;
@@ -364,6 +401,9 @@ export default function AdminPage() {
       user.email,
       user.accountStatus,
       user.source,
+      accessTypes.join(' '),
+      user.investorOrganization ?? '',
+      user.investorProfileStatus,
       relatedMemberships
         .map((membership) => `${getPortal(membership.portalId).name} ${getRole(membership.roleId).name}`)
         .join(' '),
@@ -373,6 +413,7 @@ export default function AdminPage() {
     return (
       (!search || userText.includes(search.toLowerCase())) &&
       (accountStatusFilter === 'All' || user.accountStatus === accountStatusFilter) &&
+      matchesAccessType &&
       matchesPortalType &&
       matchesPortal &&
       matchesRole &&
@@ -453,6 +494,10 @@ export default function AdminPage() {
           accountStatus: 'Invited',
           lastActivity: 'No login yet',
           source: isInvestorAccount ? 'Investor account + Admin/Agency access' : 'Admin/Agency',
+          investorProfileStatus: isInvestorAccount ? 'Complete' : 'Not applicable',
+          investorOrganization: isInvestorAccount ? users.find((item) => item.email.toLowerCase() === email && item.role === 'Investor')?.organization : undefined,
+          investorIntakeCount: isInvestorAccount ? 1 : undefined,
+          joinedProjectCount: isInvestorAccount ? 1 : undefined,
         },
         ...current,
       ]);
@@ -498,6 +543,13 @@ export default function AdminPage() {
           accountStatus: 'Active',
           lastActivity: formatDateTime(new Date()),
           source: invitation.accountPath === 'Existing investor account' ? 'Investor account + Admin/Agency access' : 'Admin/Agency',
+          investorProfileStatus: invitation.accountPath === 'Existing investor account' ? 'Complete' : 'Not applicable',
+          investorOrganization:
+            invitation.accountPath === 'Existing investor account'
+              ? users.find((item) => item.email.toLowerCase() === invitation.email.toLowerCase() && item.role === 'Investor')?.organization
+              : undefined,
+          investorIntakeCount: invitation.accountPath === 'Existing investor account' ? 1 : undefined,
+          joinedProjectCount: invitation.accountPath === 'Existing investor account' ? 1 : undefined,
         },
         ...current,
       ]);
@@ -624,8 +676,8 @@ export default function AdminPage() {
             </div>
             <h1 className="section-heading mb-2">User Invitation, Portal Access, and Role Control</h1>
             <p className="section-subheading">
-              Interactive TSX prototype for Admin inviting users, assigning one portal and one role, managing invitations, editing memberships, and
-              reviewing audit events. Investor Portal access is intentionally isolated from this Admin/Agency flow.
+              Interactive TSX prototype for Admin managing all platform users, inviting users to one Admin/Agency portal role, editing portal
+              memberships, and reviewing audit events. Investor access is visible as a separate access domain.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -666,7 +718,7 @@ export default function AdminPage() {
             )}
 
             {activeTab === 'users' && (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr),180px,170px,minmax(180px,1fr),190px,190px]">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr),170px,170px,170px,minmax(180px,1fr),190px,190px]">
                 <div className="relative">
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -680,6 +732,13 @@ export default function AdminPage() {
                   {accountStatusOptions.map((status) => (
                     <option key={status} value={status}>
                       Account: {status}
+                    </option>
+                  ))}
+                </select>
+                <select value={accessTypeFilter} onChange={(event) => setAccessTypeFilter(event.target.value as 'All' | PlatformAccessType)} className="app-input">
+                  {accessTypeFilterOptions.map((type) => (
+                    <option key={type} value={type}>
+                      Access: {type}
                     </option>
                   ))}
                 </select>
@@ -865,11 +924,12 @@ export default function AdminPage() {
             <StatusPill tone="info">{filteredUsers.length} users</StatusPill>
           </div>
           <div className="overflow-x-auto border border-[#e5e7eb] bg-white">
-            <table className="min-w-[1180px] w-full border-collapse text-left text-sm">
+            <table className="min-w-[1320px] w-full border-collapse text-left text-sm">
               <thead className="bg-[#f9fafb] text-xs font-bold uppercase tracking-[0.08em] text-[#455f87]">
                 <tr>
                   <th className="border-b border-[#e5e7eb] px-3 py-3">Name</th>
                   <th className="border-b border-[#e5e7eb] px-3 py-3">Email</th>
+                  <th className="border-b border-[#e5e7eb] px-3 py-3">Access Types</th>
                   <th className="border-b border-[#e5e7eb] px-3 py-3">Account Status</th>
                   <th className="border-b border-[#e5e7eb] px-3 py-3">Portal Memberships</th>
                   <th className="border-b border-[#e5e7eb] px-3 py-3">Assigned Roles</th>
@@ -882,13 +942,25 @@ export default function AdminPage() {
                 {filteredUsers.map((user) => {
                   const relatedMemberships = userMemberships(user.id);
                   const invitation = latestInvitationFor(user.email);
+                  const accessTypes = userAccessTypes(user);
                   return (
                     <tr key={user.id} className="align-top hover:bg-[#fbfcfd]">
                       <td className="border-b border-[#eef2f7] px-3 py-3">
                         <div className="font-semibold text-[#191c1e]">{user.name}</div>
-                        {user.source.includes('Investor') && <div className="mt-1 text-xs font-semibold text-[#9D4300]">Investor account isolated</div>}
+                        {user.investorProfileStatus !== 'Not applicable' && <div className="mt-1 text-xs font-semibold text-[#9D4300]">Investor access section available</div>}
                       </td>
                       <td className="border-b border-[#eef2f7] px-3 py-3 text-[#455f87]">{user.email}</td>
+                      <td className="border-b border-[#eef2f7] px-3 py-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {accessTypes.length ? (
+                            accessTypes.map((type) => (
+                              <StatusPill key={type} tone={type === 'Investor' ? 'warning' : 'info'}>{type}</StatusPill>
+                            ))
+                          ) : (
+                            <StatusPill tone="default">No access</StatusPill>
+                          )}
+                        </div>
+                      </td>
                       <td className="border-b border-[#eef2f7] px-3 py-3"><StatusPill tone={statusTone(user.accountStatus)}>{user.accountStatus}</StatusPill></td>
                       <td className="border-b border-[#eef2f7] px-3 py-3">
                         {relatedMemberships.length ? (
@@ -952,7 +1024,7 @@ export default function AdminPage() {
                 })}
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-[#6b7280]">No users match the current filter.</td>
+                    <td colSpan={9} className="px-4 py-10 text-center text-sm text-[#6b7280]">No users match the current filter.</td>
                   </tr>
                 )}
               </tbody>
@@ -1010,10 +1082,29 @@ export default function AdminPage() {
                   <span>Invitation: {latestInvitationFor(selectedUser.email)?.status ?? 'No invitation record'}</span>
                   <span>Last activity: {selectedUser.lastActivity}</span>
                 </div>
-                {selectedUser.source.includes('Investor') && (
-                  <p className="mt-3 text-sm font-semibold text-[#9D4300]">Investor Portal details are intentionally not editable in this Admin/Agency access view.</p>
-                )}
               </section>
+
+              {selectedUser.investorProfileStatus !== 'Not applicable' && (
+                <section className="border border-[#f4d0b1] bg-[#fff8f2] p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-[#9D4300]" />
+                      <h4 className="text-base font-bold text-[#191c1e]">Investor Access</h4>
+                    </div>
+                    <StatusPill tone="warning">Separate access domain</StatusPill>
+                  </div>
+                  <div className="grid gap-3 text-sm text-[#455f87] sm:grid-cols-2">
+                    <span>Organization: {selectedUser.investorOrganization ?? 'Not provided'}</span>
+                    <span>Profile status: {selectedUser.investorProfileStatus}</span>
+                    <span>Submitted intakes: {selectedUser.investorIntakeCount ?? 0}</span>
+                    <span>Joined projects: {selectedUser.joinedProjectCount ?? 0}</span>
+                  </div>
+                  <p className="mt-3 text-sm text-[#6b7280]">
+                    Admin can see the Investor account in the unified platform user record. Investor profile and Investor Portal authorization stay
+                    separated from Admin/Agency role and permission controls.
+                  </p>
+                </section>
+              )}
 
               <section>
                 <div className="mb-3 flex items-center gap-2">
