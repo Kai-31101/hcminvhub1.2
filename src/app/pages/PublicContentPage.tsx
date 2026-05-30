@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
-import { ArrowLeft, ChevronDown, FileText, HelpCircle, ShieldCheck, User } from 'lucide-react';
+import { ArrowLeft, FileText, HelpCircle, ShieldCheck, User } from 'lucide-react';
 import { ExplorerFooter } from '../components/ExplorerFooter';
+import { LanguageDropdown } from '../components/LanguageDropdown';
 import { useApp } from '../context/AppContext';
 import { translateText } from '../utils/localization';
 
@@ -169,16 +170,7 @@ function HomeStyleHeader() {
             {t(item.label)}
           </Link>
         ))}
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          className="inline-flex cursor-default items-center gap-3 text-[18px] font-semibold leading-7 text-[#0b2447]"
-        >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#1f4b8f] text-[10px] font-bold text-white">EN</span>
-          EN
-          <ChevronDown size={24} />
-        </button>
+        <LanguageDropdown />
         <Link to="/login" className="inline-flex h-10 w-[151px] items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
           <User size={20} />
           {t('Login')}

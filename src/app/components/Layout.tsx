@@ -364,11 +364,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="flex h-10 items-center justify-end gap-1">
-                <button type="button" disabled className="flex cursor-default items-center gap-3 px-1 text-[#1f2937]">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1d4ed8] text-[9px] font-bold text-white">US</span>
-                  <span className="text-[18px] font-semibold leading-7">EN</span>
-                  <ChevronDown size={24} />
-                </button>
+                <LanguageDropdown />
 
                 <div className="relative">
                   <button

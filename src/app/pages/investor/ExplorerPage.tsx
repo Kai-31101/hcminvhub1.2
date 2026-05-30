@@ -774,8 +774,13 @@ export default function ExplorerPage() {
                 <p className="text-[12px] leading-4 text-[#6b7280]">{t('Providing cutting-edge investment management technology for modern government hubs.')}</p>
               </div>
             </div>
-            <div className="mt-3 border-t border-[#e5e7eb] pt-3 text-right text-[10px] leading-3 text-[#111827]">
-              Privacy Policy&nbsp;&nbsp;&nbsp; Term of Services
+            <div className="mt-3 flex flex-wrap justify-end gap-x-6 gap-y-2 border-t border-[#e5e7eb] pt-3 text-[10px] leading-3 text-[#111827]">
+              <Link to="/privacy-policy" className="transition-colors hover:text-[#ed6203]">
+                {t('Privacy Policy')}
+              </Link>
+              <Link to="/terms-of-service" className="transition-colors hover:text-[#ed6203]">
+                {t('Term of Services')}
+              </Link>
             </div>
           </div>
         </footer>
