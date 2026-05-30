@@ -53,6 +53,7 @@ const GOVERNMENT_PARTNER_LOGOS = [
   { name: 'Department of Health', src: '/figma-homepage/agency-logos/emblems/so-y-te.png' },
   { name: 'Department of Construction', src: '/figma-homepage/agency-logos/emblems/so-xay-dung.png' },
   { name: 'Department of Home Affairs', src: '/figma-homepage/agency-logos/emblems/so-noi-vu.png' },
+  { name: 'Saigon Hi-Tech Park Management Board', src: '/figma-homepage/agency-logos/emblems/shtp.svg', wide: true },
   { name: 'VIETRADE', src: '/figma-homepage/agency-logos/emblems/vietrade-new.jpg', wide: true },
   { name: 'HCMC ITPC', src: '/figma-homepage/agency-logos/emblems/hcmc-itpc-new.jpg', wide: true },
   { name: 'HEPZA', src: '/figma-homepage/agency-logos/emblems/hepza.png' },

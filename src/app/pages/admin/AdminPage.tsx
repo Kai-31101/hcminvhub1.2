@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   Activity,
@@ -95,7 +95,32 @@ const accountStatusOptions: Array<'All' | AccountStatus> = ['All', 'Invited', 'A
 const portalTypeFilterOptions: Array<'All' | AdminPortalType> = ['All', 'Admin Portal', 'Agency Portal'];
 const accessTypeFilterOptions: Array<'All' | PlatformAccessType> = ['All', 'Investor', 'Admin Portal', 'Agency Portal'];
 const membershipStatusOptions: MembershipStatus[] = ['Pending', 'Active', 'Inactive', 'Removed'];
-const directPermissionOptions = ['member.invite', 'member.edit_role', 'member.activate', 'project.review', 'audit.view'];
+const directPermissionOptions = [
+  'admin.dashboard.view',
+  'user.view',
+  'user.invite',
+  'user.edit',
+  'user.status.manage',
+  'portal_membership.view',
+  'portal_membership.manage',
+  'role.view',
+  'role.manage',
+  'role.assign',
+  'permission_matrix.view',
+  'permission_matrix.manage',
+  'audit_log.view',
+  'agency.member.view',
+  'agency.member.invite',
+  'agency.member.role.assign',
+  'project.view',
+  'project.create',
+  'project.update',
+  'project.submit',
+  'project.review',
+  'project.approve',
+  'project.publish',
+  'agency.audit.view',
+];
 
 const adminPortal: PortalOption = {
   id: 'admin-portal',
@@ -108,42 +133,72 @@ const roleOptions: RoleOption[] = [
     id: 'platform-admin',
     name: 'Platform Admin',
     portalType: 'Admin Portal',
-    permissions: ['admin.user.manage', 'admin.role.manage', 'admin.permission.manage', 'audit.view'],
+    permissions: [
+      'admin.dashboard.view',
+      'user.view',
+      'user.invite',
+      'user.edit',
+      'user.status.manage',
+      'portal_membership.view',
+      'portal_membership.manage',
+      'role.view',
+      'role.manage',
+      'role.assign',
+      'permission_matrix.view',
+      'permission_matrix.manage',
+      'audit_log.view',
+    ],
     permissionMode: 'direct',
   },
   {
     id: 'platform-operator',
     name: 'Platform Operator',
     portalType: 'Admin Portal',
-    permissions: ['admin.user.view', 'admin.invite.send', 'audit.view'],
+    permissions: ['admin.dashboard.view', 'user.view', 'portal_membership.view', 'role.view', 'permission_matrix.view', 'audit_log.view'],
     permissionMode: 'direct',
   },
   {
     id: 'agency-owner',
     name: 'Agency Owner',
     portalType: 'Agency Portal',
-    permissions: ['member.invite', 'member.edit_role', 'project.review', 'audit.view'],
+    permissions: [
+      'agency.member.view',
+      'agency.member.invite',
+      'agency.member.role.assign',
+      'project.view',
+      'project.create',
+      'project.update',
+      'project.submit',
+      'agency.audit.view',
+    ],
     permissionMode: 'direct',
   },
   {
-    id: 'agency-manager',
-    name: 'Agency Manager',
+    id: 'agency-operator',
+    name: 'Agency Operator',
     portalType: 'Agency Portal',
-    permissions: ['project.review', 'audit.view'],
+    permissions: ['agency.member.view', 'project.view', 'project.create', 'project.update', 'project.submit', 'agency.audit.view'],
     permissionMode: 'direct',
   },
   {
     id: 'agency-editor',
     name: 'Agency Editor',
     portalType: 'Agency Portal',
-    permissions: ['project.review'],
+    permissions: ['project.view', 'project.create', 'project.update'],
     permissionMode: 'role-derived',
   },
   {
     id: 'agency-viewer',
     name: 'Agency Viewer',
     portalType: 'Agency Portal',
-    permissions: ['audit.view'],
+    permissions: ['project.view'],
+    permissionMode: 'role-derived',
+  },
+  {
+    id: 'project-authority-reviewer',
+    name: 'Project Authority Reviewer',
+    portalType: 'Agency Portal',
+    permissions: ['project.view', 'project.review', 'project.approve', 'project.publish', 'agency.audit.view'],
     permissionMode: 'role-derived',
   },
 ];
@@ -215,7 +270,7 @@ export default function AdminPage() {
   const [membershipForm, setMembershipForm] = useState({
     portalType: 'Agency Portal' as AdminPortalType,
     portalId: initialAgencyPortal,
-    roleId: 'agency-manager',
+    roleId: 'agency-operator',
   });
 
   const [adminUsers, setAdminUsers] = useState<AdminUserAccess[]>([
@@ -270,7 +325,21 @@ export default function AdminPage() {
       portalId: adminPortal.id,
       roleId: 'platform-admin',
       status: 'Active',
-      featurePermissions: ['admin.user.manage', 'admin.role.manage', 'admin.permission.manage', 'audit.view'],
+      featurePermissions: [
+        'admin.dashboard.view',
+        'user.view',
+        'user.invite',
+        'user.edit',
+        'user.status.manage',
+        'portal_membership.view',
+        'portal_membership.manage',
+        'role.view',
+        'role.manage',
+        'role.assign',
+        'permission_matrix.view',
+        'permission_matrix.manage',
+        'audit_log.view',
+      ],
     },
     {
       id: 'mem-agency-1',
@@ -278,15 +347,24 @@ export default function AdminPage() {
       portalId: initialAgencyPortal,
       roleId: 'agency-owner',
       status: 'Active',
-      featurePermissions: ['member.invite', 'member.edit_role', 'project.review', 'audit.view'],
+      featurePermissions: [
+        'agency.member.view',
+        'agency.member.invite',
+        'agency.member.role.assign',
+        'project.view',
+        'project.create',
+        'project.update',
+        'project.submit',
+        'agency.audit.view',
+      ],
     },
     {
       id: 'mem-agency-1b',
       userId: 'admin-user-2',
       portalId: initialSecondAgencyPortal,
-      roleId: 'agency-manager',
+      roleId: 'agency-operator',
       status: 'Active',
-      featurePermissions: ['project.review', 'audit.view'],
+      featurePermissions: ['agency.member.view', 'project.view', 'project.create', 'project.update', 'project.submit', 'agency.audit.view'],
     },
     {
       id: 'mem-admin-2',
@@ -294,7 +372,7 @@ export default function AdminPage() {
       portalId: adminPortal.id,
       roleId: 'platform-operator',
       status: 'Inactive',
-      featurePermissions: ['admin.user.view', 'audit.view'],
+      featurePermissions: ['admin.dashboard.view', 'user.view', 'portal_membership.view', 'role.view', 'permission_matrix.view', 'audit_log.view'],
     },
     {
       id: 'mem-agency-2',
@@ -302,7 +380,7 @@ export default function AdminPage() {
       portalId: initialSecondAgencyPortal,
       roleId: 'agency-viewer',
       status: 'Active',
-      featurePermissions: ['audit.view'],
+      featurePermissions: ['project.view'],
     },
   ]);
 
@@ -311,7 +389,7 @@ export default function AdminPage() {
       id: 'invite-1',
       email: 'new.member@hcmc.gov.vn',
       portalId: initialAgencyPortal,
-      roleId: 'agency-manager',
+      roleId: 'agency-operator',
       status: 'Pending',
       invitedBy: 'System Admin',
       invitedAt: '28/05/2026 09:00',
@@ -1065,7 +1143,7 @@ export default function AdminPage() {
             <div className="flex items-start justify-between border-b border-[#e5e7eb] px-6 py-5">
               <div>
                 <h3 className="text-lg font-bold text-[#191c1e]">Edit User Access</h3>
-                <p className="mt-1 text-sm text-[#455f87]">{selectedUser.name} · {selectedUser.email}</p>
+                <p className="mt-1 text-sm text-[#455f87]">{selectedUser.name} Â· {selectedUser.email}</p>
               </div>
               <button type="button" onClick={() => setSelectedUserId(null)} className="p-2 text-[#455f87] hover:bg-[#f3f4f6]">
                 <X size={18} />
@@ -1212,7 +1290,7 @@ export default function AdminPage() {
                     .slice(0, 5)
                     .map((event) => (
                       <div key={event.id} className="border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-sm text-[#455f87]">
-                        <strong>{event.action}</strong> · {event.detail}
+                        <strong>{event.action}</strong> Â· {event.detail}
                       </div>
                     ))}
                 </div>
@@ -1224,3 +1302,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

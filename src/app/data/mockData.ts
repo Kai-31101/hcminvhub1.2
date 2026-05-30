@@ -1346,6 +1346,7 @@ const agencySeed: Array<{ id: string; nameVi: string; nameEn: string }> = [
   { id: 'ag13', nameVi: 'Sở Xây dựng', nameEn: 'Department of Construction' },
   { id: 'ag14', nameVi: 'Sở Nội vụ', nameEn: 'Department of Home Affairs' },
   { id: 'ag15', nameVi: 'Sở An toàn thực phẩm', nameEn: 'Department of Food Safety' },
+  { id: 'ag16', nameVi: 'Ban Quản lý Khu Công nghệ cao Thành phố Hồ Chí Minh', nameEn: 'Saigon Hi-Tech Park Management Board' },
 ];
 
 export const agencies: Agency[] = agencySeed.map(({ id, nameVi, nameEn }, agencyIndex) => {

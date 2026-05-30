@@ -711,6 +711,7 @@ const cleanTextMap: Record<string, string> = {
   "Department of Home Affairs": "Sở Nội vụ",
   "Department of Health": "Sở Y tế",
   "Department of Food Safety": "Sở An toàn thực phẩm",
+  "Saigon Hi-Tech Park Management Board": "Ban Quản lý Khu Công nghệ cao Thành phố Hồ Chí Minh",
   "Department of Planning and Investment":"Sở Kế hoạch và Đầu Tư Tp Hồ Chí Minh",
   "Department of Industry and Trade": "Sở Công thương",
   "Department of Natural Resources and Environment": "Sở Tài nguyên và Môi trường",
