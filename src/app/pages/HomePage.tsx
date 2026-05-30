@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../components/ui/textarea';
 import { SeeAllButton } from '../components/SeeAllButton';
 import { ArobidLogo } from '../components/ArobidLogo';
+import { LanguageDropdown } from '../components/LanguageDropdown';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../data/administrativeLocations';
 import { investmentNews } from '../data/investmentNews';
 import { useApp } from '../context/AppContext';
@@ -491,11 +492,7 @@ export default function HomePage() {
                   {t(item.label)}
                 </button>
               ))}
-              <div className="inline-flex h-9 items-center border border-white/25 bg-white/10 p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.08)] backdrop-blur-sm">
-                <span className="inline-flex h-7 min-w-[44px] cursor-default items-center justify-center bg-white px-3 text-[13px] font-semibold leading-5 text-[#1f4b8f] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
-                  EN
-                </span>
-              </div>
+              <LanguageDropdown variant="dark" />
               <Link to="/login" className="inline-flex h-10 w-[151px] items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
                 <User size={20} />
                 {t('Login')}

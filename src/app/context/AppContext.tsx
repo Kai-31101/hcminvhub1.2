@@ -204,6 +204,7 @@ const ACTIVE_USER_KEY = 'hcminvhub-active-user-id';
 const ACTIVE_AGENCY_KEY = 'hcminvhub-active-agency-id';
 const REQUIRED_DATA_ASSIGNMENTS_KEY = 'hcminvhub-required-data-assignments';
 const PROJECT_JOBS_KEY = 'hcminvhub-project-jobs';
+const LANGUAGE_KEY = 'hcminvhub-language';
 const DEMO_DATA_KEYS = [
   WATCHLIST_KEY,
   ACTIVE_INVESTOR_KEY,
@@ -1172,8 +1173,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedRole = window.localStorage.getItem('hcminvhub-role');
     return savedRole as UserRole | null;
   });
-  const [language] = useState<Language>('en');
-  const setLanguage = () => {};
+  const [language, setLanguageState] = useState<Language>(() => {
+    const savedLanguage = window.localStorage.getItem(LANGUAGE_KEY);
+    return savedLanguage === 'vi' ? 'vi' : 'en';
+  });
+  const setLanguage = (nextLanguage: Language) => {
+    setLanguageState(nextLanguage);
+  };
   const [activeUserId, setActiveUserId] = useState<string>(() => {
     return window.localStorage.getItem(ACTIVE_USER_KEY) ?? getDefaultActiveUserId(role);
   });
@@ -1449,7 +1455,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [role]);
 
   useEffect(() => {
-    window.localStorage.setItem('hcminvhub-language', 'en');
+    window.localStorage.setItem(LANGUAGE_KEY, language);
   }, [language]);
 
   useEffect(() => {
