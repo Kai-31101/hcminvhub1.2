@@ -81,7 +81,7 @@ const roleHomeRoute: Record<UserRole, string> = {
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { role, setRole, language, setLanguage, notifications, unreadCount, markNotificationRead, resetDemoData, projects, agencies, activeAgency, activeUserId, setActiveUserId, setActiveAgencyId, projectJobs, users } = useApp();
+  const { role, setRole, language, notifications, unreadCount, markNotificationRead, resetDemoData, projects, agencies, activeAgency, activeUserId, setActiveUserId, setActiveAgencyId, projectJobs, users } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -458,20 +458,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {/* Right actions */}
           <div className={`${role === 'investor' ? 'hidden' : 'flex'} items-center gap-2 lg:gap-4`}>
             <div className="hidden h-9 items-center border border-[rgba(69,95,135,0.16)] bg-white p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.04)] sm:inline-flex">
-              {(['vi', 'en'] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setLanguage(option)}
-                  className={`inline-flex h-7 min-w-[44px] items-center justify-center px-3 text-[13px] font-semibold leading-5 transition-colors ${
-                    language === option
-                      ? 'bg-[linear-gradient(22.81deg,#9D4300_0%,#F97316_100%)] text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
-                      : 'text-[#455F87] hover:bg-[#eef2f6]'
-                  }`}
-                >
-                  {option.toUpperCase()}
-                </button>
-              ))}
+              <span className="inline-flex h-7 min-w-[44px] cursor-default items-center justify-center bg-[linear-gradient(22.81deg,#9D4300_0%,#F97316_100%)] px-3 text-[13px] font-semibold leading-5 text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+                EN
+              </span>
             </div>
 
             <div className="relative">

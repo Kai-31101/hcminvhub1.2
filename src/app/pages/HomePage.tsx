@@ -121,7 +121,7 @@ function formatInvestmentAmount(totalBudgetInMillions: number, language: 'en' | 
 export default function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { language, setLanguage, projects, watchlist, toggleWatchlist, activeInvestorCompany, setActiveInvestorCompany, createOpportunity, createIssue, addNotification } = useApp();
+  const { language, projects, watchlist, toggleWatchlist, activeInvestorCompany, setActiveInvestorCompany, createOpportunity, createIssue, addNotification } = useApp();
   const t = (value: string) => translateText(value, language);
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const featuredProjectsRef = useRef<HTMLElement | null>(null);
@@ -492,20 +492,9 @@ export default function HomePage() {
                 </button>
               ))}
               <div className="inline-flex h-9 items-center border border-white/25 bg-white/10 p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.08)] backdrop-blur-sm">
-                {(['vi', 'en'] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setLanguage(option)}
-                    className={`inline-flex h-7 min-w-[44px] items-center justify-center px-3 text-[13px] font-semibold leading-5 transition-colors ${
-                      language === option
-                        ? 'bg-white text-[#1f4b8f] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
-                        : 'text-white hover:bg-white/15'
-                    }`}
-                  >
-                    {option.toUpperCase()}
-                  </button>
-                ))}
+                <span className="inline-flex h-7 min-w-[44px] cursor-default items-center justify-center bg-white px-3 text-[13px] font-semibold leading-5 text-[#1f4b8f] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+                  EN
+                </span>
               </div>
               <Link to="/login" className="inline-flex h-10 w-[151px] items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 text-[14px] font-medium text-white">
                 <User size={20} />
