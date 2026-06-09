@@ -94,7 +94,7 @@ function amountFromInvestmentSize(investmentSize: string) {
 
 function getMockFollowerCount(projectId: string, budget: number) {
   const seed = projectId.split('').reduce((total, character) => total + character.charCodeAt(0), 0) + budget;
-  return 120 + (seed % 38) * 17;
+  return 28 + (seed % 32) * 4;
 }
 
 function formatFollowerCount(count: number) {

@@ -360,6 +360,39 @@ function buildImportedProjectReturnRate(sector: string) {
   return '10-14% IRR';
 }
 
+function getReasonableMockBudgetCap(seed: ImportedProjectSeed) {
+  if (seed.sector.includes('Logistics')) return seed.isPriority ? 680 : 320;
+  if (seed.sector.includes('Infrastructure')) return seed.isPriority ? 520 : 360;
+  if (seed.sector.includes('Real Estate') || seed.sector.includes('Housing')) return seed.isPriority ? 520 : 180;
+  if (seed.sector.includes('High-Tech') || seed.sector.includes('Digital')) return 420;
+  if (seed.sector.includes('Renewable') || seed.sector.includes('Clean Energy')) return seed.isPriority ? 420 : 260;
+  if (seed.sector.includes('Healthcare') || seed.sector.includes('Biotech')) return 160;
+  if (seed.sector.includes('AgriTech')) return 120;
+  return 280;
+}
+
+function normalizeImportedInvestmentBand(seed: ImportedProjectSeed) {
+  const rawMin = Math.round(seed.investmentMinUsd / 1_000_000);
+  const rawMax = Math.round(seed.investmentMaxUsd / 1_000_000);
+  const budgetCap = getReasonableMockBudgetCap(seed);
+  const budget = Math.max(35, Math.min(rawMax, budgetCap));
+  const minInvestment = Math.max(5, Math.min(rawMin, Math.round(budget * 0.35)));
+
+  return { minInvestment, budget };
+}
+
+function estimateMockJobCreation(sector: string, budget: number) {
+  const multiplier = sector.includes('Manufacturing') || sector.includes('High-Tech')
+    ? 18
+    : sector.includes('Tourism') || sector.includes('Healthcare')
+      ? 14
+      : sector.includes('Logistics') || sector.includes('Infrastructure')
+        ? 12
+        : 9;
+
+  return Math.max(450, Math.min(12000, Math.round(budget * multiplier)));
+}
+
 type GeneratedProjectSeed = Omit<Project, 'stage' | 'image' | 'sector_tag_color' | 'documents' | 'qa' | 'milestones'> & {
   documentName: string;
   qaQuestion: string;
@@ -390,7 +423,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '11-14% IRR',
     timeline: '2025-2033',
     landArea: '145 ha',
-    jobs: 28000,
+    jobs: 5200,
     followers: 198,
     dataCompleteness: 84,
     documentName: 'River District Investment Brief.pdf',
@@ -420,7 +453,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '10-12% IRR',
     timeline: '2025-2031',
     landArea: '36 ha',
-    jobs: 7200,
+    jobs: 1800,
     followers: 143,
     dataCompleteness: 76,
     documentName: 'Medical Campus Concept Note.pdf',
@@ -450,7 +483,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '11-13% IRR',
     timeline: '2024-2030',
     landArea: '62 ha',
-    jobs: 9400,
+    jobs: 2800,
     followers: 174,
     dataCompleteness: 87,
     documentName: 'Port Hub Investor Deck.pdf',
@@ -480,7 +513,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '10-13% IRR',
     timeline: '2025-2032',
     landArea: '88 ha',
-    jobs: 6800,
+    jobs: 1600,
     followers: 152,
     dataCompleteness: 79,
     documentName: 'Circular Economy Park Summary.pdf',
@@ -509,7 +542,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '9-11% IRR',
     timeline: '2025-2029',
     landArea: '24 ha',
-    jobs: 2900,
+    jobs: 850,
     followers: 118,
     dataCompleteness: 58,
     documentName: 'Mobility Depot Draft Scope.pdf',
@@ -537,7 +570,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '12-16% IRR',
     timeline: '2024-2030',
     landArea: '54 ha',
-    jobs: 16000,
+    jobs: 4200,
     followers: 201,
     dataCompleteness: 90,
     documentName: 'Electronics Cluster Prospectus.pdf',
@@ -566,7 +599,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '10-14% IRR',
     timeline: '2025-2030',
     landArea: '29 ha',
-    jobs: 6100,
+    jobs: 1450,
     followers: 127,
     dataCompleteness: 54,
     documentName: 'Creative Manufacturing Campus Outline.pdf',
@@ -594,7 +627,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '10-12% IRR',
     timeline: '2025-2031',
     landArea: '70 ha',
-    jobs: 8700,
+    jobs: 1850,
     followers: 149,
     dataCompleteness: 73,
     documentName: 'Food Innovation Center Brief.pdf',
@@ -624,7 +657,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '11-13% IRR',
     timeline: '2023-2026',
     landArea: '31 ha',
-    jobs: 5300,
+    jobs: 1300,
     followers: 222,
     dataCompleteness: 98,
     documentName: 'Warehousing Network Operations Pack.pdf',
@@ -654,7 +687,7 @@ const generatedProjectSeeds: GeneratedProjectSeed[] = [
     returnRate: '12-14% IRR',
     timeline: '2025-2032',
     landArea: '118 ha',
-    jobs: 11200,
+    jobs: 3600,
     followers: 186,
     dataCompleteness: 82,
     documentName: 'Offshore Logistics Base Overview.pdf',
@@ -746,8 +779,7 @@ const importedExternalMockProjects: Project[] = importedExternalProjectSeeds.map
   const createdAt = `2024-04-${String((index % 20) + 1).padStart(2, '0')}`;
   const updatedAt = `2024-05-${String((index % 20) + 1).padStart(2, '0')}`;
   const publishedAt = normalizedStatus === 'draft' ? '' : updatedAt;
-  const minInvestment = Math.max(5, Math.round(seed.investmentMinUsd / 1_000_000));
-  const budget = Math.max(minInvestment, Math.round(seed.investmentMaxUsd / 1_000_000));
+  const { minInvestment, budget } = normalizeImportedInvestmentBand(seed);
 
   return {
     id: seed.id,
@@ -791,8 +823,8 @@ const importedExternalMockProjects: Project[] = importedExternalProjectSeeds.map
     ],
     returnRate: buildImportedProjectReturnRate(seed.sector),
     timeline: seed.isPriority ? '2025-2033' : '2025-2030',
-    landArea: `${Math.max(18, Math.round(budget / 8))} ha`,
-    jobs: Math.max(1200, Math.round(budget * 22)),
+    landArea: `${Math.max(12, Math.round(budget / 12))} ha`,
+    jobs: estimateMockJobCreation(seed.sector, budget),
     followers: 90 + index * 13,
     dataCompleteness: seed.isPriority ? 88 : 74,
     sector_tag_color: mapImportedSectorColor(seed.sector),
@@ -861,7 +893,7 @@ const baseProjectRecords = [
     returnRate: '12-15% IRR',
     timeline: '2024-2032',
     landArea: '850 ha',
-    jobs: 45000,
+    jobs: 6200,
     followers: 234,
     dataCompleteness: 95,
     createdAt: '2024-01-08',
@@ -901,7 +933,7 @@ const baseProjectRecords = [
     returnRate: '10-13% IRR',
     timeline: '2024-2030',
     landArea: '2,400 ha',
-    jobs: 12000,
+    jobs: 1700,
     followers: 189,
     dataCompleteness: 88,
     createdAt: '2024-01-20',
@@ -939,7 +971,7 @@ const baseProjectRecords = [
     returnRate: '14-18% IRR',
     timeline: '2024-2031',
     landArea: '1,200 ha',
-    jobs: 85000,
+    jobs: 7600,
     followers: 312,
     dataCompleteness: 92,
     createdAt: '2024-01-10',
@@ -974,7 +1006,7 @@ const baseProjectRecords = [
     returnRate: '11-14% IRR',
     timeline: '2024-2029',
     landArea: '45 ha',
-    jobs: 5000,
+    jobs: 1400,
     followers: 156,
     dataCompleteness: 78,
     createdAt: '2024-01-28',
@@ -1010,7 +1042,7 @@ const baseProjectRecords = [
     returnRate: '13-17% IRR',
     timeline: '2024-2030',
     landArea: '320 ha',
-    jobs: 25000,
+    jobs: 3200,
     followers: 98,
     dataCompleteness: 65,
     createdAt: '2024-02-26',
@@ -1043,7 +1075,7 @@ const baseProjectRecords = [
     returnRate: '10-12% IRR',
     timeline: '2025-2030',
     landArea: '180 ha',
-    jobs: 8000,
+    jobs: 1250,
     followers: 45,
     dataCompleteness: 42,
     createdAt: '2024-03-02',

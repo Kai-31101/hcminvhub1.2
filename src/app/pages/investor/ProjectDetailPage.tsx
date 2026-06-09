@@ -296,7 +296,7 @@ export default function ProjectDetailPage() {
                           ['Land Area', project.landArea, 'text-[#191c1e]'],
                           ['Construction Period', project.timeline, 'text-[#191c1e]'],
                           ['Est. Yearly Revenue', `$${project.budget ? Math.round(project.budget * 0.2) : 240}M USD`, 'text-[#006398]'],
-                          ['Job Creation', `${Math.max(project.jobs * 250, 12000).toLocaleString()}+`, 'text-[#191c1e]'],
+                          ['Job Creation', `${Math.max(project.jobs, 450).toLocaleString()}+`, 'text-[#191c1e]'],
                         ].map(([label, value, tone]) => <div key={label} className="flex min-h-[71px] items-center rounded-lg border border-[#c8d9ff] bg-white p-3"><div className="min-w-0"><div className="text-[14px] text-[#6b7280]">{t(label)}</div><div className={`mt-1 break-words text-[16px] font-bold ${tone}`}>{t(value)}</div></div></div>)}
                       </div>
                     </div>
