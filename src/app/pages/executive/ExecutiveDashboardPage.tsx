@@ -16,11 +16,13 @@ import { getProjectStageLabel } from '../../utils/projectStatus';
 const DEFAULT_LIST_COUNT = 6;
 const PAGINATION_PAGE_SIZE = 6;
 const UPCOMING_WINDOW_DAYS = 14;
+const INVESTOR_MATCHED_PROJECT_COUNT = 4;
 const DONUT_COLORS = ['#0f3557', '#1f6ea1', '#2f8cc8', '#7fb5de', '#c9dff0', '#9d4300', '#f59e0b'];
 
 type DashboardJobStatus = 'completed' | 'delayed' | 'upcoming' | 'in_progress';
 type FilterType = 'location' | 'type' | 'project_status' | 'job_status';
 type DashboardFilter = { type: FilterType; value: string } | null;
+type InvestmentStatus = 'Investor Matched' | 'Calling for Investment';
 
 type DashboardJobItem = {
   id: string;
@@ -72,6 +74,10 @@ function getJobStatusKey(job: DashboardJobItem): DashboardJobStatus {
   if (job.daysUntilDue < 0) return 'delayed';
   if (job.daysUntilDue <= UPCOMING_WINDOW_DAYS) return 'upcoming';
   return 'in_progress';
+}
+
+function getInvestmentStatus(projectId: string, investorMatchedProjectIds: Set<string>): InvestmentStatus {
+  return investorMatchedProjectIds.has(projectId) ? 'Investor Matched' : 'Calling for Investment';
 }
 
 function DashboardDonutChart({
@@ -197,6 +203,10 @@ export default function ExecutiveDashboardPage() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [projectStatusFilter, setProjectStatusFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState<DashboardJobItem | null>(null);
+  const investorMatchedProjectIds = useMemo(
+    () => new Set(projects.slice(0, INVESTOR_MATCHED_PROJECT_COUNT).map((project) => project.id)),
+    [projects],
+  );
 
   const projectJobAlertMap = useMemo(
     () =>
@@ -235,7 +245,7 @@ export default function ExecutiveDashboardPage() {
       }
 
       if (activeFilter.type === 'project_status') {
-        return getProjectStageLabel(project.status, project.stage) === activeFilter.value;
+        return getInvestmentStatus(project.id, investorMatchedProjectIds) === activeFilter.value;
       }
 
       const projectJobSummary = projectJobAlertMap[project.id] ?? { pending: 0, delayed: 0, upcoming: 0 };
@@ -250,7 +260,7 @@ export default function ExecutiveDashboardPage() {
       }
       return projectJobSummary.pending > 0 && projectJobSummary.delayed === 0 && projectJobSummary.upcoming === 0;
     });
-  }, [activeFilter, getProjectProcessingSummary, projectJobAlertMap, projects]);
+  }, [activeFilter, getProjectProcessingSummary, investorMatchedProjectIds, projectJobAlertMap, projects]);
 
   const dashboardProjectIds = useMemo(() => new Set(dashboardProjects.map((project) => project.id)), [dashboardProjects]);
 
@@ -303,12 +313,8 @@ export default function ExecutiveDashboardPage() {
     [dashboardProjects],
   );
   const groupedByProjectStatus = useMemo(
-    () => buildCountGroups(dashboardProjects.map((project) => getProjectStageLabel(project.status, project.stage))),
-    [dashboardProjects],
-  );
-  const groupedByProjectJobStatus = useMemo(
-    () => buildCountGroups(dashboardJobs.map((job) => getJobStatusKey(job))),
-    [dashboardJobs],
+    () => buildCountGroups(dashboardProjects.map((project) => getInvestmentStatus(project.id, investorMatchedProjectIds))),
+    [dashboardProjects, investorMatchedProjectIds],
   );
 
   const keyStats = useMemo(
@@ -375,17 +381,17 @@ export default function ExecutiveDashboardPage() {
   );
   const projectStatusOptions = useMemo(
     () =>
-      Array.from(new Set(dashboardProjects.map((project) => getProjectStageLabel(project.status, project.stage))))
+      Array.from(new Set(dashboardProjects.map((project) => getInvestmentStatus(project.id, investorMatchedProjectIds))))
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right)),
-    [dashboardProjects],
+    [dashboardProjects, investorMatchedProjectIds],
   );
 
   const listFilteredProjects = useMemo(() => {
     const normalizedNameFilter = projectNameFilter.trim().toLowerCase();
 
     return dashboardProjects.filter((project) => {
-      const projectStatus = getProjectStageLabel(project.status, project.stage);
+      const projectStatus = getInvestmentStatus(project.id, investorMatchedProjectIds);
       const projectLocation = getProjectAdministrativeLocation(project);
       const matchesName =
         normalizedNameFilter.length === 0 ||
@@ -396,7 +402,7 @@ export default function ExecutiveDashboardPage() {
 
       return matchesName && matchesLocation && matchesStatus;
     });
-  }, [dashboardProjects, locationFilter, projectNameFilter, projectStatusFilter]);
+  }, [dashboardProjects, investorMatchedProjectIds, locationFilter, projectNameFilter, projectStatusFilter]);
 
   const totalProjectPages = Math.max(1, Math.ceil(listFilteredProjects.length / PAGINATION_PAGE_SIZE));
   const visibleProjects = showAllProjects
@@ -569,16 +575,6 @@ export default function ExecutiveDashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <DashboardDonutChart
-          title={t('Projects by Location')}
-          rows={groupedByLocation}
-          filterType="location"
-          activeFilter={activeFilter}
-          onSelect={handleFilterSelect}
-          itemLabel={t('projects')}
-          formatLabel={(value) => getAdministrativeLocationLabel(value, language)}
-          t={t}
-        />
-        <DashboardDonutChart
           title={t('Projects by Type')}
           rows={groupedByType}
           filterType="type"
@@ -596,16 +592,6 @@ export default function ExecutiveDashboardPage() {
           onSelect={handleFilterSelect}
           itemLabel={t('projects')}
           formatLabel={(value) => t(value)}
-          t={t}
-        />
-        <DashboardDonutChart
-          title={t('Project Jobs by Status')}
-          rows={groupedByProjectJobStatus}
-          filterType="job_status"
-          activeFilter={activeFilter}
-          onSelect={handleFilterSelect}
-          itemLabel={t('jobs')}
-          formatLabel={(value) => getJobStatusLabel(value as DashboardJobStatus)}
           t={t}
         />
       </div>
