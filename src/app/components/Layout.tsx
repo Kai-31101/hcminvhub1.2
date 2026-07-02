@@ -321,7 +321,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-[#F1F5F9] overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className={`hidden flex-shrink-0 lg:flex ${role === 'investor' ? 'w-[248px] bg-white' : 'w-64 bg-[#ECEEF0]'}`}>
+      <aside className={`hidden flex-shrink-0 ${sidebarOpen ? 'lg:flex' : 'lg:hidden'} ${role === 'investor' ? 'w-[248px] bg-white' : 'w-64 bg-[#ECEEF0]'}`}>
         <Sidebar />
       </aside>
 
@@ -349,10 +349,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             : 'border-[rgba(224,192,177,0.12)] bg-[#F7F9FB]'
         }`}>
           <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-[#455F87] transition-colors hover:text-[#1E3A5F] lg:hidden"
+            type="button"
+            onClick={() => setSidebarOpen((current) => !current)}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] text-[#455F87] transition-colors hover:bg-white/70 hover:text-[#1E3A5F]"
+            aria-label={t(sidebarOpen ? 'Hide sidebar' : 'Show sidebar')}
+            title={t(sidebarOpen ? 'Hide sidebar' : 'Show sidebar')}
           >
-            <Menu size={22} />
+            {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
           {role === 'investor' && (
