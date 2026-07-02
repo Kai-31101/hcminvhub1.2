@@ -420,6 +420,7 @@ const cleanTextMap: Record<string, string> = {
   "Sector": "Lĩnh vực",
   "Investment size": "Quy mô đầu tư",
   "Project status": "Trạng thái dự án",
+  "All project statuses": "Trạng thái dự án",
   "Status": "Trạng thái",
   "Location mapping": "Bản đồ vị trí",
   "Key highlights": "Điểm nhấn chính",

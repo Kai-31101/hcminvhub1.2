@@ -15,6 +15,7 @@ import { getProjectStageLabel } from '../../utils/projectStatus';
 
 const DEFAULT_LIST_COUNT = 6;
 const PAGINATION_PAGE_SIZE = 6;
+const JOB_PAGE_SIZE = 5;
 const UPCOMING_WINDOW_DAYS = 14;
 const INVESTOR_MATCHED_PROJECT_COUNT = 4;
 const DONUT_COLORS = ['#0f3557', '#1f6ea1', '#2f8cc8', '#7fb5de', '#c9dff0', '#9d4300', '#f59e0b'];
@@ -203,6 +204,8 @@ export default function ExecutiveDashboardPage() {
   const [locationFilter, setLocationFilter] = useState('all');
   const [projectStatusFilter, setProjectStatusFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState<DashboardJobItem | null>(null);
+  const [upcomingJobPage, setUpcomingJobPage] = useState(1);
+  const [delayedJobPage, setDelayedJobPage] = useState(1);
   const investorMatchedProjectIds = useMemo(
     () => new Set(projects.slice(0, INVESTOR_MATCHED_PROJECT_COUNT).map((project) => project.id)),
     [projects],
@@ -303,6 +306,10 @@ export default function ExecutiveDashboardPage() {
     () => dashboardJobs.filter((job) => job.status !== 'complete').length,
     [dashboardJobs],
   );
+  const totalUpcomingJobPages = Math.max(1, Math.ceil(upcomingJobs.length / JOB_PAGE_SIZE));
+  const totalDelayedJobPages = Math.max(1, Math.ceil(delayedJobs.length / JOB_PAGE_SIZE));
+  const visibleUpcomingJobs = upcomingJobs.slice((upcomingJobPage - 1) * JOB_PAGE_SIZE, upcomingJobPage * JOB_PAGE_SIZE);
+  const visibleDelayedJobs = delayedJobs.slice((delayedJobPage - 1) * JOB_PAGE_SIZE, delayedJobPage * JOB_PAGE_SIZE);
 
   const groupedByLocation = useMemo(
     () => buildCountGroups(dashboardProjects.map((project) => getProjectAdministrativeLocation(project)).filter(Boolean)),
@@ -455,6 +462,23 @@ export default function ExecutiveDashboardPage() {
     setExpandedProjectId(null);
   }, [locationFilter, projectNameFilter, projectStatusFilter]);
 
+  useEffect(() => {
+    setUpcomingJobPage(1);
+    setDelayedJobPage(1);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    if (upcomingJobPage > totalUpcomingJobPages) {
+      setUpcomingJobPage(totalUpcomingJobPages);
+    }
+  }, [totalUpcomingJobPages, upcomingJobPage]);
+
+  useEffect(() => {
+    if (delayedJobPage > totalDelayedJobPages) {
+      setDelayedJobPage(totalDelayedJobPages);
+    }
+  }, [delayedJobPage, totalDelayedJobPages]);
+
   function getJobStatusLabel(status: DashboardJobStatus) {
     switch (status) {
       case 'completed':
@@ -518,6 +542,117 @@ export default function ExecutiveDashboardPage() {
     setLocationFilter('all');
     setProjectStatusFilter('all');
     setExpandedProjectId(null);
+  }
+
+  function renderJobPagination(currentPage: number, totalPages: number, onPageChange: (page: number) => void) {
+    if (totalPages <= 1) return null;
+
+    return (
+      <Pagination className="justify-center pt-2">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              onClick={(event) => {
+                event.preventDefault();
+                if (currentPage > 1) onPageChange(currentPage - 1);
+              }}
+              className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+            />
+          </PaginationItem>
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+            <PaginationItem key={pageNumber}>
+              <PaginationLink
+                href="#"
+                isActive={currentPage === pageNumber}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onPageChange(pageNumber);
+                }}
+              >
+                {pageNumber}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={(event) => {
+                event.preventDefault();
+                if (currentPage < totalPages) onPageChange(currentPage + 1);
+              }}
+              className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  }
+
+  function renderJobSection({
+    title,
+    jobs,
+    totalCount,
+    emptyMessage,
+    statusTone,
+    hoverTone,
+    currentPage,
+    totalPages,
+    onPageChange,
+  }: {
+    title: string;
+    jobs: DashboardJobItem[];
+    totalCount: number;
+    emptyMessage: string;
+    statusTone: 'warning' | 'danger';
+    hoverTone: 'sky' | 'rose';
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  }) {
+    const hoverClass = hoverTone === 'rose'
+      ? 'hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700'
+      : 'hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700';
+
+    return (
+      <section className="section-panel p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="section-heading mb-0">{title}</h2>
+          <StatusPill tone={statusTone}>{totalCount}</StatusPill>
+        </div>
+        <div className="space-y-3">
+          {jobs.length ? (
+            jobs.map((job) => {
+              const jobStatus = getJobStatusKey(job);
+              return (
+                <DataRow key={job.id}>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-slate-900">{t(job.title)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusPill tone={getJobStatusTone(jobStatus)}>{getJobStatusLabel(jobStatus)}</StatusPill>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedJob(job)}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition ${hoverClass}`}
+                      aria-label={t('View job details')}
+                      title={t('View job details')}
+                    >
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </DataRow>
+              );
+            })
+          ) : (
+            <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
+              {emptyMessage}
+            </div>
+          )}
+          {renderJobPagination(currentPage, totalPages, onPageChange)}
+        </div>
+      </section>
+    );
   }
 
   if (!projects.length) {
@@ -594,6 +729,31 @@ export default function ExecutiveDashboardPage() {
           formatLabel={(value) => t(value)}
           t={t}
         />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        {renderJobSection({
+          title: t('Upcoming Project Jobs'),
+          jobs: visibleUpcomingJobs,
+          totalCount: upcomingJobs.length,
+          emptyMessage: t('No upcoming jobs fall within the next two weeks for the current filters.'),
+          statusTone: 'warning',
+          hoverTone: 'sky',
+          currentPage: upcomingJobPage,
+          totalPages: totalUpcomingJobPages,
+          onPageChange: setUpcomingJobPage,
+        })}
+        {renderJobSection({
+          title: t('Delayed Project Jobs'),
+          jobs: visibleDelayedJobs,
+          totalCount: delayedJobs.length,
+          emptyMessage: t('No delayed jobs are open for the current filters.'),
+          statusTone: 'danger',
+          hoverTone: 'rose',
+          currentPage: delayedJobPage,
+          totalPages: totalDelayedJobPages,
+          onPageChange: setDelayedJobPage,
+        })}
       </div>
 
       <section className="section-panel p-6">
@@ -754,82 +914,6 @@ export default function ExecutiveDashboardPage() {
           )}
         </div>
       </section>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <section className="section-panel p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="section-heading mb-0">{t('Upcoming Project Jobs')}</h2>
-            <StatusPill tone="warning">{upcomingJobs.length}</StatusPill>
-          </div>
-          <div className="space-y-3">
-            {upcomingJobs.length ? (
-              upcomingJobs.map((job) => {
-                const jobStatus = getJobStatusKey(job);
-                return (
-                  <DataRow key={job.id}>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-slate-900">{t(job.title)}</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <StatusPill tone={getJobStatusTone(jobStatus)}>{getJobStatusLabel(jobStatus)}</StatusPill>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedJob(job)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
-                        aria-label={t('View job details')}
-                        title={t('View job details')}
-                      >
-                        <ArrowRight size={16} />
-                      </button>
-                    </div>
-                  </DataRow>
-                );
-              })
-            ) : (
-              <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
-                {t('No upcoming jobs fall within the next two weeks for the current filters.')}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="section-panel p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="section-heading mb-0">{t('Delayed Project Jobs')}</h2>
-            <StatusPill tone="danger">{delayedJobs.length}</StatusPill>
-          </div>
-          <div className="space-y-3">
-            {delayedJobs.length ? (
-              delayedJobs.map((job) => {
-                const jobStatus = getJobStatusKey(job);
-                return (
-                  <DataRow key={job.id}>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-slate-900">{t(job.title)}</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <StatusPill tone={getJobStatusTone(jobStatus)}>{getJobStatusLabel(jobStatus)}</StatusPill>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedJob(job)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
-                        aria-label={t('View job details')}
-                        title={t('View job details')}
-                      >
-                        <ArrowRight size={16} />
-                      </button>
-                    </div>
-                  </DataRow>
-                );
-              })
-            ) : (
-              <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
-                {t('No delayed jobs are open for the current filters.')}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
 
       <section className="section-panel p-6">
         <div className="mb-4 flex items-center justify-between">
