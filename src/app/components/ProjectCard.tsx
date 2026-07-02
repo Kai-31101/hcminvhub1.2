@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronUp, Clock3, Edit, Eye, Globe, Heart, MapPin } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock3, Edit, Eye, Globe, MapPin, Star } from 'lucide-react';
 import { Link } from 'react-router';
 import { Project } from '../data/mockData';
 import { StatusPill } from './ui/status-pill';
@@ -56,8 +56,8 @@ export function ProjectCard({
   onPublish,
 }: ProjectCardProps) {
   const followerCount = getProjectFollowerCount(project);
-  const interestCount = project.followers || followerCount;
-  const viewsCount = interestCount * 10 + processingSummary.total * 14;
+  const interestCount = Math.min(project.followers || followerCount, 29);
+  const viewsCount = Math.min(99, Math.max(interestCount + 12, interestCount * 3 + processingSummary.total * 2));
   const stageLabel = translate(getProjectStageLabel(project.status, project.stage));
   const statusTone = getProjectStatusTone(project.status, project.stage);
   const summaryLocation = translate(project.location || project.province);
@@ -134,7 +134,7 @@ export function ProjectCard({
                 {new Intl.NumberFormat().format(viewsCount)} {translate('views')}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Heart size={14} />
+                <Star size={14} />
                 {new Intl.NumberFormat().format(interestCount)} {translate('Interests')}
               </span>
               <span className="inline-flex items-center gap-1.5">

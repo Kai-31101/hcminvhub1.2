@@ -1,4 +1,5 @@
 import { administrativeLocationMasterData } from './administrativeLocations';
+import { itpcProjects } from './itpcProjects';
 import { getProjectStageLabel, normalizeProjectStatus, ProjectStatus } from '../utils/projectStatus';
 
 export interface Project {
@@ -1091,7 +1092,7 @@ const baseProjectRecords = [
 
 const privateProjectIds = new Set(['s2', 's8', 'm8', 'm21', 'm29', 'm30']);
 
-export const projects: Project[] = baseProjectRecords.map((project) => ({
+export const projects: Project[] = itpcProjects.map((project) => ({
   ...project,
   projectType: privateProjectIds.has(project.id) ? 'private' : project.projectType ?? 'public',
 }));
@@ -1287,7 +1288,7 @@ export const serviceRequests: ServiceRequest[] = [
 ];
 
 export const users: User[] = [
-  { id: 'u1', name: 'Nguyen Van Anh', email: 'nvanh@mpi.gov.vn', role: 'Government Operator', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 09:30', permissions: ['project.create', 'project.edit', 'opportunity.manage', 'execution.view'] },
+  { id: 'u1', name: 'Nguyễn Văn A', email: 'nguyenvana@shtp.tphcm.gov.vn', role: 'Government Operator', organization: 'Saigon Hi-Tech Park Management Board', status: 'active', lastLogin: '2024-03-15 09:30', permissions: ['project.create', 'project.edit', 'opportunity.manage', 'execution.view'] },
   { id: 'u2', name: 'Tran Thi Bich', email: 'ttbich@mpi.gov.vn', role: 'Government Operator', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 08:15', permissions: ['project.view', 'opportunity.manage', 'execution.view'] },
   { id: 'u3', name: 'Pham Gia Huy', email: 'pghuy.skhdt@hcmc.gov.vn', role: 'Agency User', organization: 'Department of Planning and Investment', status: 'active', lastLogin: '2024-03-14 16:45', permissions: ['permit.process', 'service.process'] },
   { id: 'u4', name: 'Vo Thu Lan', email: 'vtlan.stnmt@hcmc.gov.vn', role: 'Agency User', organization: 'Department of Natural Resources and Environment', status: 'active', lastLogin: '2024-03-13 11:00', permissions: ['permit.process', 'service.process', 'issue.update'] },

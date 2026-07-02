@@ -94,7 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const nav = navConfig[role];
   const t = (value: string) => translateText(value, language);
-  const hideSharedFooter = location.pathname === '/investor/explorer';
+  const hideSharedFooter = ['/investor/explorer', '/gov/projects'].includes(location.pathname);
   const currentRoute = `${location.pathname}${location.search}`;
   const availableUserOptions = role === 'gov_operator'
     ? users

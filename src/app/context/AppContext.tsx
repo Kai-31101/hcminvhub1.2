@@ -202,8 +202,8 @@ const AGENCY_ADDITIONS_KEY = 'hcminvhub-agency-additions';
 const AGENCY_OVERRIDES_KEY = 'hcminvhub-agency-overrides';
 const ACTIVE_USER_KEY = 'hcminvhub-active-user-id';
 const ACTIVE_AGENCY_KEY = 'hcminvhub-active-agency-id';
-const REQUIRED_DATA_ASSIGNMENTS_KEY = 'hcminvhub-required-data-assignments';
-const PROJECT_JOBS_KEY = 'hcminvhub-project-jobs';
+const REQUIRED_DATA_ASSIGNMENTS_KEY = 'hcminvhub-required-data-assignments-itpc-v3';
+const PROJECT_JOBS_KEY = 'hcminvhub-project-jobs-itpc-v3';
 const LANGUAGE_KEY = 'hcminvhub-language';
 const DEMO_DATA_KEYS = [
   WATCHLIST_KEY,
@@ -417,9 +417,10 @@ function cloneRequiredDataAssignments(): RequiredDataAssignment[] {
     Education: ['ag15', 'ag3'],
   };
   const generatedAssignments = baseProjects
-    .filter((project) => Number(project.id.slice(1)) >= 7)
+    .filter((project) => !/^p[1-6]$/i.test(project.id))
     .flatMap((project, index) => {
-      const [primaryAgencyId, secondaryAgencyId] = agencyBySector[project.sector] ?? ['ag6', 'ag17'];
+      const [sectorPrimaryAgencyId, secondaryAgencyId] = agencyBySector[project.sector] ?? ['ag6', 'ag17'];
+      const primaryAgencyId = project.ownerAgencyId ?? sectorPrimaryAgencyId;
       const assignmentBaseId = 5 + index * 2;
       return [
         {
@@ -814,9 +815,10 @@ function cloneProjectJobs(): ProjectJob[] {
     'Affordable Housing': ['ag8', 'ag3', 'ag9'],
   };
   const generatedJobs = baseProjects
-    .filter((project) => /^[sm]\d+$/i.test(project.id) || (/^p\d+$/i.test(project.id) && Number(project.id.slice(1)) >= 7))
+    .filter((project) => !/^p[1-6]$/i.test(project.id))
     .flatMap((project, index) => {
-      const [leadAgencyId, coordinationAgencyId, technicalAgencyId] = jobAgencyBySector[project.sector] ?? ['ag3', 'ag8', 'ag10'];
+      const [sectorLeadAgencyId, coordinationAgencyId, technicalAgencyId] = jobAgencyBySector[project.sector] ?? ['ag3', 'ag8', 'ag10'];
+      const leadAgencyId = project.ownerAgencyId ?? sectorLeadAgencyId;
       const jobBaseId = 20 + index * 3;
       const filePrefix = toKebabCase(project.name);
       return [
