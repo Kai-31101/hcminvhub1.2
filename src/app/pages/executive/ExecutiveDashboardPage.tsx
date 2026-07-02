@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, FileText, FolderOpen, Search, X } from 'lucide-react';
 import { Link } from 'react-router';
-import { Cell, Pie, PieChart } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import { ProjectCard } from '../../components/ProjectCard';
 import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
@@ -19,6 +19,13 @@ const JOB_PAGE_SIZE = 5;
 const UPCOMING_WINDOW_DAYS = 14;
 const INVESTOR_MATCHED_PROJECT_COUNT = 4;
 const DONUT_COLORS = ['#0f3557', '#1f6ea1', '#2f8cc8', '#7fb5de', '#c9dff0', '#9d4300', '#f59e0b'];
+const COUNTRY_ENGAGEMENT_ROWS = [
+  { country: 'South Korea', countryVi: 'Hàn Quốc', views: 86, follows: 18 },
+  { country: 'Japan', countryVi: 'Nhật Bản', views: 74, follows: 14 },
+  { country: 'Singapore', countryVi: 'Singapore', views: 68, follows: 12 },
+  { country: 'United States', countryVi: 'Hoa Kỳ', views: 57, follows: 9 },
+  { country: 'Germany', countryVi: 'Đức', views: 43, follows: 7 },
+];
 
 type DashboardJobStatus = 'completed' | 'delayed' | 'upcoming' | 'in_progress';
 type FilterType = 'location' | 'type' | 'project_status' | 'job_status';
@@ -189,6 +196,77 @@ function DashboardDonutChart({
           {t('No grouped data is available for this section yet.')}
         </div>
       )}
+    </section>
+  );
+}
+
+function CountryEngagementChart({
+  rows,
+  language,
+  t,
+}: {
+  rows: typeof COUNTRY_ENGAGEMENT_ROWS;
+  language: 'en' | 'vi';
+  t: (value: string) => string;
+}) {
+  const chartData = rows.map((row) => ({
+    ...row,
+    label: language === 'vi' ? row.countryVi : row.country,
+  }));
+
+  return (
+    <section className="section-panel p-6 xl:col-span-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="section-heading mb-1">{t('Views and Follows by Country')}</h2>
+          <p className="text-sm text-slate-500">{t('Mock investor engagement by country')}</p>
+        </div>
+        <StatusPill tone="info">{rows.length}</StatusPill>
+      </div>
+
+      <ChartContainer
+        config={{
+          views: { label: t('Views'), color: '#0f3557' },
+          follows: { label: t('Follows'), color: '#9d4300' },
+        }}
+        className="h-[280px] w-full"
+      >
+        <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke="#e2e8f0" />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} />
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
+          <ChartTooltip
+            cursor={{ fill: 'rgba(15, 53, 87, 0.06)' }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              return (
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
+                  <div className="font-semibold text-slate-900">{label}</div>
+                  {payload.map((item) => (
+                    <div key={item.dataKey} className="mt-1 flex items-center gap-2 text-slate-600">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span>{item.name === 'views' ? t('Views') : t('Follows')}: {item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
+          />
+          <Bar dataKey="views" name="views" fill="#0f3557" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="follows" name="follows" fill="#9d4300" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ChartContainer>
+
+      <div className="mt-4 flex flex-wrap gap-4 text-xs font-semibold text-slate-600">
+        <span className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full bg-[#0f3557]" />
+          {t('Views')}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full bg-[#9d4300]" />
+          {t('Follows')}
+        </span>
+      </div>
     </section>
   );
 }
@@ -767,6 +845,11 @@ export default function ExecutiveDashboardPage() {
           onSelect={handleFilterSelect}
           itemLabel={t('projects')}
           formatLabel={(value) => t(value)}
+          t={t}
+        />
+        <CountryEngagementChart
+          rows={COUNTRY_ENGAGEMENT_ROWS}
+          language={language}
           t={t}
         />
       </div>
