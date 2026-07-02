@@ -214,6 +214,7 @@ const cleanTextMap: Record<string, string> = {
   "Last upload date": "Ngày tải lên gần nhất",
   "Coordination note": "Ghi chú điều phối",
   "Project Jobs": "Đầu việc dự án",
+  "Total Project Jobs": "Các đầu việc dự án",
   "Project job": "Đầu việc dự án",
   "Job Title": "Tên đầu việc",
   "Job Description": "Mô tả đầu việc",
