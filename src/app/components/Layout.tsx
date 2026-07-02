@@ -62,7 +62,7 @@ const roleInfo: Record<UserRole, { name: string; org: string; avatar: string; co
   gov_operator: { name: 'Nguyen Van Anh', org: 'Ministry of Planning & Investment', avatar: 'NA', color: 'bg-blue-600' },
   agency: { name: 'Nguyễn Văn B', org: 'ITPC', avatar: 'NV', color: 'bg-green-600' },
   admin: { name: 'System Admin', org: 'Ministry of Planning & Investment', avatar: 'SA', color: 'bg-purple-600' },
-  executive: { name: 'Hoang Minh Duc', org: 'Ministry of Planning & Investment', avatar: 'HD', color: 'bg-red-600' },
+  executive: { name: 'UBND Thành phố Hồ Chí Minh', org: '', avatar: 'UB', color: 'bg-red-600' },
 };
 
 const brandSubtitle: Record<UserRole, string> = {
@@ -94,7 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const nav = navConfig[role];
   const t = (value: string) => translateText(value, language);
-  const hideSharedFooter = ['/investor/explorer', '/gov/projects', '/agency/projects'].includes(location.pathname);
+  const hideSharedFooter = ['/investor/explorer', '/gov/projects', '/agency/projects', '/executive/dashboard'].includes(location.pathname);
   const currentRoute = `${location.pathname}${location.search}`;
   const availableUserOptions = role === 'gov_operator'
     ? users
@@ -243,7 +243,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-[13px] font-semibold text-white ${user.color}`}>{user.avatar}</div>
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-medium leading-5 text-[#030712]">{user.name}</div>
-                <div className="truncate text-[12px] leading-4 text-[#6b7280]">{user.org}</div>
+                {user.org && <div className="truncate text-[12px] leading-4 text-[#6b7280]">{user.org}</div>}
               </div>
             </div>
             <ChevronDown size={20} className="shrink-0 text-[#6b7280]" />
@@ -559,7 +559,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="hidden sm:block max-w-[180px] text-left">
                   <div className="truncate text-sm font-medium text-[#1E3A5F]">{user.name}</div>
-                  <div className="truncate text-xs text-[#455F87]">{t(user.org)}</div>
+                  {user.org && <div className="truncate text-xs text-[#455F87]">{t(user.org)}</div>}
                 </div>
                 <ChevronDown size={14} className="text-[#455F87]" />
               </button>
@@ -571,7 +571,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 >
                   <div className="px-4 py-2 border-b border-gray-100">
                     <div className="text-sm font-medium text-gray-800">{user.name}</div>
-                    <div className="text-xs text-gray-500">{t(user.org)}</div>
+                    {user.org && <div className="text-xs text-gray-500">{t(user.org)}</div>}
                   </div>
                   {availableUserOptions.length > 0 && (
                     <div className="border-b border-gray-100 py-1">

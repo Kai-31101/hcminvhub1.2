@@ -442,10 +442,6 @@ export default function ExecutiveDashboardPage() {
   const visibleUpcomingJobs = upcomingJobs.slice((upcomingJobPage - 1) * JOB_PAGE_SIZE, upcomingJobPage * JOB_PAGE_SIZE);
   const visibleDelayedJobs = delayedJobs.slice((delayedJobPage - 1) * JOB_PAGE_SIZE, delayedJobPage * JOB_PAGE_SIZE);
 
-  const groupedByLocation = useMemo(
-    () => buildCountGroups(dashboardProjects.map((project) => getProjectAdministrativeLocation(project)).filter(Boolean)),
-    [dashboardProjects],
-  );
   const groupedByType = useMemo(
     () => buildCountGroups(dashboardProjects.map((project) => project.sector)),
     [dashboardProjects],
@@ -546,46 +542,6 @@ export default function ExecutiveDashboardPage() {
   const visibleProjects = showAllProjects
     ? listFilteredProjects.slice((projectPage - 1) * PAGINATION_PAGE_SIZE, projectPage * PAGINATION_PAGE_SIZE)
     : listFilteredProjects.slice(0, DEFAULT_LIST_COUNT);
-
-  const topBusyAgency = useMemo(() => {
-    const activeJobCounts = dashboardJobs
-      .filter((job) => job.status !== 'complete')
-      .reduce<Record<string, number>>((accumulator, job) => {
-        accumulator[job.agencyName] = (accumulator[job.agencyName] ?? 0) + 1;
-        return accumulator;
-      }, {});
-
-    return Object.entries(activeJobCounts)
-      .map(([label, count]) => ({ label, count }))
-      .sort((left, right) => right.count - left.count)[0] ?? null;
-  }, [dashboardJobs]);
-
-  const topLocation = groupedByLocation[0] ?? null;
-  const readyProjects = dashboardProjects.filter((project) => ['published', 'processing'].includes(project.status));
-
-  const suggestionCards = [
-    {
-      title: delayedJobs.length ? t('Clear delayed execution blockers') : t('Maintain on-time execution discipline'),
-      body: delayedJobs.length
-        ? `${delayedJobs.length} ${t('active jobs are overdue. Start with')} ${delayedJobs[0]?.projectName ?? t('the highest-risk project')} ${t('and unblock')} ${delayedJobs[0]?.agencyName ?? t('the coordinating unit')}.`
-        : t('No delayed jobs are currently open in the filtered portfolio. Keep agency follow-up focused on the upcoming window.'),
-      tone: 'border-rose-200 bg-rose-50 text-rose-900',
-    },
-    {
-      title: upcomingJobs.length ? t('Prepare the next 14-day delivery wave') : t('Build the next coordination wave'),
-      body: upcomingJobs.length
-        ? `${upcomingJobs.length} ${t('jobs are due within')} ${UPCOMING_WINDOW_DAYS} ${t('days. Prioritize pre-briefing for')} ${topBusyAgency?.label ?? t('the lead agency')} ${t('to avoid new delays.')}`
-        : t('No near-term job deadlines match the current filters. This is a good window to validate future dependencies and agency readiness.'),
-      tone: 'border-amber-200 bg-amber-50 text-amber-900',
-    },
-    {
-      title: t('Watch portfolio concentration'),
-      body: topLocation
-        ? `${getAdministrativeLocationLabel(topLocation.label, language)} ${t('currently carries the highest share of projects in this view at')} ${topLocation.percentage}%. ${t('Balance leadership attention across locations, types, and execution load.')}`
-        : t('No project concentration signal is available for the current filters.'),
-      tone: 'border-sky-200 bg-sky-50 text-sky-900',
-    },
-  ];
 
   useEffect(() => {
     setProjectPage(1);
@@ -846,9 +802,6 @@ export default function ExecutiveDashboardPage() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="section-heading mb-0">{t('Executive Dashboard')}</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {t('Portfolio KPIs and grouped dashboards for the executive command view across all projects and project jobs.')}
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill tone="info">{dashboardProjects.length}</StatusPill>
@@ -1088,48 +1041,6 @@ export default function ExecutiveDashboardPage() {
               </PaginationContent>
             </Pagination>
           )}
-        </div>
-      </section>
-
-      <section className="section-panel p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="section-heading mb-0">{t('Suggested Executive Focus')}</h2>
-          <StatusPill tone="info">{suggestionCards.length}</StatusPill>
-        </div>
-        <div className="grid gap-4 xl:grid-cols-3">
-          {suggestionCards.map((card) => (
-            <div key={card.title} className={`rounded-xl border px-4 py-4 ${card.tone}`}>
-              <div className="text-sm font-semibold">{card.title}</div>
-              <div className="mt-2 text-sm leading-6">{card.body}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-emerald-900">
-            <div className="text-sm font-semibold">{t('Ready-to-advance projects')}</div>
-            <div className="mt-1 text-xs text-emerald-700">
-              {readyProjects.length
-                ? `${readyProjects.length} ${t('projects are showing strong processing progress without delayed jobs.')}`
-                : t('No projects currently meet the ready-to-advance criteria in this filtered view.')}
-            </div>
-            {topBusyAgency ? (
-              <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold">
-                {t('Most active agency')}: {t(topBusyAgency.label)} ({topBusyAgency.count})
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="section-panel p-6">
-        <div className="flex items-start gap-4">
-          <FolderOpen size={20} className="mt-1 text-slate-400" />
-          <div>
-            <div className="text-sm font-semibold text-slate-900">{t('Executive scope')}</div>
-            <div className="mt-1 text-sm leading-6 text-slate-600">
-              {t('This page now follows the watchlist dashboard pattern while keeping the executive-specific focus on project jobs, agency workload, and portfolio concentration.')}
-            </div>
-          </div>
         </div>
       </section>
 
