@@ -1177,7 +1177,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [language, setLanguageState] = useState<Language>(() => {
     const savedLanguage = window.localStorage.getItem(LANGUAGE_KEY);
-    return savedLanguage === 'vi' ? 'vi' : 'en';
+    return savedLanguage === 'en' ? 'en' : 'vi';
   });
   const setLanguage = (nextLanguage: Language) => {
     setLanguageState(nextLanguage);
