@@ -5,7 +5,7 @@ import { Cell, Pie, PieChart } from 'recharts';
 import { ProjectCard } from '../../components/ProjectCard';
 import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../components/ui/pagination';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../components/ui/pagination';
 import { StatusPill } from '../../components/ui/status-pill';
 import { ChartContainer, ChartTooltip } from '../../components/ui/chart';
 import { useApp } from '../../context/AppContext';
@@ -546,10 +546,13 @@ export default function ExecutiveDashboardPage() {
 
   function renderJobPagination(currentPage: number, totalPages: number, onPageChange: (page: number) => void) {
     if (totalPages <= 1) return null;
+    const leadingPages = Array.from({ length: Math.min(4, totalPages) }, (_, index) => index + 1);
+    const showCurrentPage = currentPage > 4 && currentPage < totalPages;
+    const showTrailingEllipsis = totalPages > 5 && (!showCurrentPage || currentPage < totalPages - 1);
 
     return (
-      <Pagination className="justify-center pt-2">
-        <PaginationContent>
+      <Pagination className="justify-end overflow-hidden pt-2">
+        <PaginationContent className="max-w-full flex-wrap justify-end gap-1">
           <PaginationItem>
             <PaginationPrevious
               href="#"
@@ -560,7 +563,7 @@ export default function ExecutiveDashboardPage() {
               className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
             />
           </PaginationItem>
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+          {leadingPages.map((pageNumber) => (
             <PaginationItem key={pageNumber}>
               <PaginationLink
                 href="#"
@@ -574,6 +577,43 @@ export default function ExecutiveDashboardPage() {
               </PaginationLink>
             </PaginationItem>
           ))}
+          {totalPages > 4 && (
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+          )}
+          {showCurrentPage && (
+            <PaginationItem>
+              <PaginationLink
+                href="#"
+                isActive
+                onClick={(event) => {
+                  event.preventDefault();
+                }}
+              >
+                {currentPage}
+              </PaginationLink>
+            </PaginationItem>
+          )}
+          {showTrailingEllipsis && (
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+          )}
+          {totalPages > 4 && (
+            <PaginationItem>
+              <PaginationLink
+                href="#"
+                isActive={currentPage === totalPages}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onPageChange(totalPages);
+                }}
+              >
+                {totalPages}
+              </PaginationLink>
+            </PaginationItem>
+          )}
           <PaginationItem>
             <PaginationNext
               href="#"
