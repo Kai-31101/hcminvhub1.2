@@ -60,7 +60,7 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
 const roleInfo: Record<UserRole, { name: string; org: string; avatar: string; color: string }> = {
   investor: { name: 'Kim Jae-won', org: 'Korea Infrastructure Partners', avatar: 'KJ', color: 'bg-amber-500' },
   gov_operator: { name: 'Nguyen Van Anh', org: 'Ministry of Planning & Investment', avatar: 'NA', color: 'bg-blue-600' },
-  agency: { name: 'Pham Gia Huy', org: 'Department of Planning and Investment', avatar: 'PG', color: 'bg-green-600' },
+  agency: { name: 'Nguyễn Văn B', org: 'ITPC', avatar: 'NV', color: 'bg-green-600' },
   admin: { name: 'System Admin', org: 'Ministry of Planning & Investment', avatar: 'SA', color: 'bg-purple-600' },
   executive: { name: 'Hoang Minh Duc', org: 'Ministry of Planning & Investment', avatar: 'HD', color: 'bg-red-600' },
 };
@@ -94,7 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const nav = navConfig[role];
   const t = (value: string) => translateText(value, language);
-  const hideSharedFooter = ['/investor/explorer', '/gov/projects'].includes(location.pathname);
+  const hideSharedFooter = ['/investor/explorer', '/gov/projects', '/agency/projects'].includes(location.pathname);
   const currentRoute = `${location.pathname}${location.search}`;
   const availableUserOptions = role === 'gov_operator'
     ? users

@@ -1290,7 +1290,7 @@ export const serviceRequests: ServiceRequest[] = [
 export const users: User[] = [
   { id: 'u1', name: 'Nguyễn Văn A', email: 'nguyenvana@shtp.tphcm.gov.vn', role: 'Government Operator', organization: 'Saigon Hi-Tech Park Management Board', status: 'active', lastLogin: '2024-03-15 09:30', permissions: ['project.create', 'project.edit', 'opportunity.manage', 'execution.view'] },
   { id: 'u2', name: 'Tran Thi Bich', email: 'ttbich@mpi.gov.vn', role: 'Government Operator', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 08:15', permissions: ['project.view', 'opportunity.manage', 'execution.view'] },
-  { id: 'u3', name: 'Pham Gia Huy', email: 'pghuy.skhdt@hcmc.gov.vn', role: 'Agency User', organization: 'Department of Planning and Investment', status: 'active', lastLogin: '2024-03-14 16:45', permissions: ['permit.process', 'service.process'] },
+  { id: 'u3', name: 'Nguyễn Văn B', email: 'nguyenvanb@itpc.gov.vn', role: 'Agency User', organization: 'ITPC', status: 'active', lastLogin: '2024-03-14 16:45', permissions: ['permit.process', 'service.process'] },
   { id: 'u4', name: 'Vo Thu Lan', email: 'vtlan.stnmt@hcmc.gov.vn', role: 'Agency User', organization: 'Department of Natural Resources and Environment', status: 'active', lastLogin: '2024-03-13 11:00', permissions: ['permit.process', 'service.process', 'issue.update'] },
   { id: 'u5', name: 'Hoang Minh Duc', email: 'hmduc@mpi.gov.vn', role: 'Executive', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 07:30', permissions: ['dashboard.view', 'analytics.view'] },
   { id: 'u6', name: 'Kim Jae-won', email: 'kjw@kip.co.kr', role: 'Investor', organization: 'Korea Infrastructure Partners', status: 'active', lastLogin: '2024-03-15 10:00', permissions: ['explorer.view', 'intake.submit', 'execution.view', 'service.apply'] },
@@ -1300,7 +1300,7 @@ export const users: User[] = [
 const AGENCY_SHORTNAME_STOP_WORDS = new Set(['of', 'and', 'the', 'for']);
 
 const AGENCY_OFFICER_NAME_POOL: Array<{ nameEn: string; nameVi: string }> = [
-  { nameEn: 'Nguyen Minh Anh', nameVi: 'Nguyen Minh Anh' },
+  { nameEn: 'Nguyễn Văn B', nameVi: 'Nguyễn Văn B' },
   { nameEn: 'Tran Quoc Bao', nameVi: 'Tran Quoc Bao' },
   { nameEn: 'Le Thanh Ha', nameVi: 'Le Thanh Ha' },
   { nameEn: 'Pham Gia Huy', nameVi: 'Pham Gia Huy' },
@@ -1364,7 +1364,7 @@ function buildAgencyOfficers(agencyId: string, shortName: string, agencyIndex: n
 }
 
 const agencySeed: Array<{ id: string; nameVi: string; nameEn: string }> = [
-  { id: 'ag1', nameVi: 'Văn phòng UBND TP.HCM', nameEn: "Office of the Ho Chi Minh City People's Committee" },
+  { id: 'ag1', nameVi: 'ITPC', nameEn: 'ITPC' },
   { id: 'ag2', nameVi: 'Sở Công Thương', nameEn: 'Department of Industry and Trade' },
   { id: 'ag3', nameVi: 'Thanh tra TP.HCM', nameEn: 'Ho Chi Minh City Inspectorate' },
   { id: 'ag4', nameVi: 'Sở Giáo dục và Đào tạo', nameEn: 'Department of Education and Training' },
