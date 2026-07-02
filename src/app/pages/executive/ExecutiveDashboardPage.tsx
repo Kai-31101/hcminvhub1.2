@@ -19,12 +19,17 @@ const JOB_PAGE_SIZE = 5;
 const UPCOMING_WINDOW_DAYS = 14;
 const INVESTOR_MATCHED_PROJECT_COUNT = 4;
 const DONUT_COLORS = ['#0f3557', '#1f6ea1', '#2f8cc8', '#7fb5de', '#c9dff0', '#9d4300', '#f59e0b'];
+const COUNTRY_ENGAGEMENT_VIEW_COLOR = '#2563eb';
+const COUNTRY_ENGAGEMENT_FOLLOW_COLOR = '#f97316';
 const COUNTRY_ENGAGEMENT_ROWS = [
-  { country: 'South Korea', countryVi: 'Hàn Quốc', views: 86, follows: 18 },
-  { country: 'Japan', countryVi: 'Nhật Bản', views: 74, follows: 14 },
-  { country: 'Singapore', countryVi: 'Singapore', views: 68, follows: 12 },
-  { country: 'United States', countryVi: 'Hoa Kỳ', views: 57, follows: 9 },
-  { country: 'Germany', countryVi: 'Đức', views: 43, follows: 7 },
+  { country: 'South Korea', countryVi: 'Hàn Quốc', flagCode: 'kr', views: 86, follows: 18 },
+  { country: 'Japan', countryVi: 'Nhật Bản', flagCode: 'jp', views: 74, follows: 14 },
+  { country: 'Singapore', countryVi: 'Singapore', flagCode: 'sg', views: 68, follows: 12 },
+  { country: 'United States', countryVi: 'Hoa Kỳ', flagCode: 'us', views: 57, follows: 9 },
+  { country: 'Germany', countryVi: 'Đức', flagCode: 'de', views: 43, follows: 7 },
+  { country: 'Australia', countryVi: 'Úc', flagCode: 'au', views: 39, follows: 6 },
+  { country: 'France', countryVi: 'Pháp', flagCode: 'fr', views: 34, follows: 5 },
+  { country: 'Netherlands', countryVi: 'Hà Lan', flagCode: 'nl', views: 29, follows: 4 },
 ];
 
 type DashboardJobStatus = 'completed' | 'delayed' | 'upcoming' | 'in_progress';
@@ -213,6 +218,44 @@ function CountryEngagementChart({
     ...row,
     label: language === 'vi' ? row.countryVi : row.country,
   }));
+  const chartWidth = Math.max(chartData.length, 5) * 210;
+  const renderCountryTick = ({
+    x = 0,
+    y = 0,
+    payload,
+  }: {
+    x?: number;
+    y?: number;
+    payload?: { value: string };
+  }) => {
+    const row = chartData.find((item) => item.label === payload?.value);
+    if (!row) return null;
+    const clipPathId = `country-flag-${row.flagCode}`;
+    const flagUrl = `https://flagcdn.com/w40/${row.flagCode}.png`;
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <defs>
+          <clipPath id={clipPathId}>
+            <circle cx={-42} cy={14} r={12} />
+          </clipPath>
+        </defs>
+        <circle cx={-42} cy={14} r={13} fill="#ffffff" stroke="#dbeafe" strokeWidth={1.5} />
+        <image
+          href={flagUrl}
+          x={-54}
+          y={2}
+          width={24}
+          height={24}
+          preserveAspectRatio="xMidYMid slice"
+          clipPath={`url(#${clipPathId})`}
+        />
+        <text x={-24} y={18} textAnchor="start" fill="#475569" fontSize={12}>
+          {row.label}
+        </text>
+      </g>
+    );
+  };
 
   return (
     <section className="section-panel p-6 xl:col-span-2">
@@ -224,46 +267,56 @@ function CountryEngagementChart({
         <StatusPill tone="info">{rows.length}</StatusPill>
       </div>
 
-      <ChartContainer
-        config={{
-          views: { label: t('Views'), color: '#0f3557' },
-          follows: { label: t('Follows'), color: '#9d4300' },
-        }}
-        className="h-[280px] w-full"
-      >
-        <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-          <CartesianGrid vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} />
-          <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
-          <ChartTooltip
-            cursor={{ fill: 'rgba(15, 53, 87, 0.06)' }}
-            content={({ active, payload, label }) => {
-              if (!active || !payload?.length) return null;
-              return (
-                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
-                  <div className="font-semibold text-slate-900">{label}</div>
-                  {payload.map((item) => (
-                    <div key={item.dataKey} className="mt-1 flex items-center gap-2 text-slate-600">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span>{item.name === 'views' ? t('Views') : t('Follows')}: {item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            }}
-          />
-          <Bar dataKey="views" name="views" fill="#0f3557" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="follows" name="follows" fill="#9d4300" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ChartContainer>
+      <div className="overflow-x-auto pb-2">
+        <ChartContainer
+          config={{
+            views: { label: t('Views'), color: COUNTRY_ENGAGEMENT_VIEW_COLOR },
+            follows: { label: t('Follows'), color: COUNTRY_ENGAGEMENT_FOLLOW_COLOR },
+          }}
+          className="h-[310px]"
+          style={{ width: chartWidth, minWidth: '100%' }}
+        >
+          <BarChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 18 }}>
+            <CartesianGrid vertical={false} stroke="#dbeafe" />
+            <XAxis
+              dataKey="label"
+              tick={renderCountryTick}
+              tickLine={false}
+              axisLine={false}
+              interval={0}
+              height={52}
+            />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
+            <ChartTooltip
+              cursor={{ fill: 'rgba(37, 99, 235, 0.08)' }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                return (
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
+                    <div className="font-semibold text-slate-900">{label}</div>
+                    {payload.map((item) => (
+                      <div key={item.dataKey} className="mt-1 flex items-center gap-2 text-slate-600">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span>{item.name === 'views' ? t('Views') : t('Follows')}: {item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
+            />
+            <Bar dataKey="views" name="views" fill={COUNTRY_ENGAGEMENT_VIEW_COLOR} radius={[4, 4, 0, 0]} barSize={38} />
+            <Bar dataKey="follows" name="follows" fill={COUNTRY_ENGAGEMENT_FOLLOW_COLOR} radius={[4, 4, 0, 0]} barSize={38} />
+          </BarChart>
+        </ChartContainer>
+      </div>
 
       <div className="mt-4 flex flex-wrap gap-4 text-xs font-semibold text-slate-600">
         <span className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-[#0f3557]" />
+          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: COUNTRY_ENGAGEMENT_VIEW_COLOR }} />
           {t('Views')}
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-[#9d4300]" />
+          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: COUNTRY_ENGAGEMENT_FOLLOW_COLOR }} />
           {t('Follows')}
         </span>
       </div>
