@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, Building2, Calendar, ChevronDown, ChevronRight, Crosshair, Download, Eye, FileText, Info, Landmark, MapPin, MessageSquareText, Minus, Plus, RefreshCcw, Send, Star, Upload, ZoomIn, ZoomOut } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { ExplorerActionModal } from '../../components/ExplorerActionModal';
@@ -75,6 +75,7 @@ function getCustomProjectFields(projectId: string, sector: string) {
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const {
     language, projects, agencies, projectJobs, getProjectProcessingSummary, activeInvestorCompany,
     setActiveInvestorCompany, createIssue, createOpportunity, createServiceRequest, updateProject, toggleWatchlist, watchlist,
@@ -398,6 +399,7 @@ export default function ProjectDetailPage() {
               <button type="button" onClick={() => { setActiveAction('interest'); setActionStep('form'); }} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#ed6203] px-4 py-2.5 text-[14px] font-medium text-white"><Send size={20} />{t('Express Interest')}</button>
               <button type="button" onClick={() => { setActiveAction('meeting'); setActionStep('form'); }} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#f3f4f6] bg-white px-4 py-2.5 text-[14px] font-medium text-[#1f2937]"><Calendar size={20} />{t('Request Meeting')}</button>
               <button type="button" onClick={() => { setActiveAction('question'); setActionStep('form'); }} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#f3f4f6] bg-white px-4 py-2.5 text-[14px] font-medium text-[#1f2937]"><MessageSquareText size={20} />{t('Ask question')}</button>
+              <button type="button" onClick={() => navigate('/investor/report-chairman/' + project.id)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#fecaca] bg-[#fff1f2] px-4 py-2.5 text-[14px] font-medium text-[#be123c]"><Landmark size={20} />{t('Report to Chairman of HCMC People Committee')}</button>
             </div>
             {contactOfficer ? <div className="mt-4 border-t border-[#e5e7eb] pt-4"><div className="flex items-center gap-2"><div className="flex h-10 w-10 items-center justify-center rounded bg-[#f3f4f6] text-[#5b6b79]"><Building2 size={16} /></div><div><div className="text-[14px] font-medium text-[#030712]">{contactOfficer.name}</div><div className="text-[12px] text-[#6b7280]">{t(contactOfficer.title)}</div></div></div></div> : null}
           </div>

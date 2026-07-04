@@ -20,13 +20,15 @@ import {
 import { getLocalizedData, getLocalizedNotifications, Language, translateText } from '../utils/localization';
 import { getProjectStageLabel, normalizeProjectStatus } from '../utils/projectStatus';
 
-export type UserRole = 'investor' | 'gov_operator' | 'agency' | 'admin' | 'executive';
+export type UserRole = 'investor' | 'gov_operator' | 'agency' | 'itpc_lite' | 'admin' | 'executive';
 
 export function getDemoUserIdForRole(role: UserRole | null): string {
   switch (role) {
     case 'gov_operator':
       return 'u1';
     case 'agency':
+      return 'u3';
+    case 'itpc_lite':
       return 'u3';
     case 'investor':
       return 'u6';
@@ -233,6 +235,7 @@ function getRoleFromPathname(pathname: string): UserRole | null {
   if (pathname.startsWith('/investor')) return 'investor';
   if (pathname.startsWith('/gov')) return 'gov_operator';
   if (pathname.startsWith('/agency')) return 'agency';
+  if (pathname.startsWith('/itpc-lite')) return 'itpc_lite';
   if (pathname.startsWith('/admin')) return 'admin';
   if (pathname.startsWith('/executive')) return 'executive';
   return null;

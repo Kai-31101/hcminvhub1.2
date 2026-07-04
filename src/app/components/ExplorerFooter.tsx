@@ -18,7 +18,7 @@ export function ExplorerFooter() {
               <img src="/figma-homepage/header-logo.png" alt="" className="h-[50px] w-[50px] object-contain" />
               <div className="text-[22px] font-bold leading-6 text-[#1f2937]">HCMC<br />INVESTMENT HUB</div>
             </div>
-            <p className="text-[12px] leading-4 text-[#6b7280]">&copy; 2026 HCMC Investment Promotion Center. All Rights Reserved.</p>
+            <p className="text-[12px] leading-4 text-[#6b7280]">{t('© 2026 HCMC Investment Promotion Center. All Rights Reserved.')}</p>
             <div className="flex gap-3 text-[#1f2937]">
               <span className="flex h-[25px] w-[25px] items-center justify-center rounded-full bg-[#1877f2] text-[12px] font-bold text-white">f</span>
               <Mail size={25} />
@@ -44,12 +44,15 @@ export function ExplorerFooter() {
             <Link to="/faqs" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
               {t('FAQs')}
             </Link>
+            <Link to="/support-policy" className="block text-[14px] leading-5 text-[#030712] transition-colors hover:text-[#ed6203]">
+              {t('Support Policy')}
+            </Link>
           </div>
 
           <div className="space-y-3">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 py-1.5 text-[10px] leading-3 text-[#166534]">
               <CheckCircle2 size={15} />
-              Digital Trade & Investment Infrastructure
+              {t('Digital Trade & Investment Infrastructure')}
             </div>
             <div className="flex flex-wrap items-center gap-[13px]">
               <span className="text-[12px] leading-4 text-[#030712]">{t('Powered by')}</span>
@@ -65,6 +68,9 @@ export function ExplorerFooter() {
           </Link>
           <Link to="/terms-of-service" className="transition-colors hover:text-[#ed6203]">
             {t('Term of Services')}
+          </Link>
+          <Link to="/support-policy" className="transition-colors hover:text-[#ed6203]">
+            {t('Support Policy')}
           </Link>
         </div>
       </div>

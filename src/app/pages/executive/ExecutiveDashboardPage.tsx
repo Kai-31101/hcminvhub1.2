@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, FileText, FolderOpen, Search, X } from 'lucide-react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, ChevronDown, Eye, FileText, FolderOpen, Search, Star, X } from 'lucide-react';
 import { Link } from 'react-router';
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import { ProjectCard } from '../../components/ProjectCard';
 import { SeeAllButton } from '../../components/SeeAllButton';
 import { DataRow } from '../../components/ui/data-row';
@@ -12,6 +12,7 @@ import { useApp } from '../../context/AppContext';
 import { administrativeLocationOptions, getAdministrativeLocationLabel, getProjectAdministrativeLocation } from '../../data/administrativeLocations';
 import { translateText } from '../../utils/localization';
 import { getProjectStageLabel } from '../../utils/projectStatus';
+import { formatFollowerCount, getProjectFollowerCount } from '../../utils/projectFollowers';
 
 const DEFAULT_LIST_COUNT = 6;
 const PAGINATION_PAGE_SIZE = 6;
@@ -30,6 +31,15 @@ const COUNTRY_ENGAGEMENT_ROWS = [
   { country: 'Australia', countryVi: 'Úc', flagCode: 'au', views: 39, follows: 6 },
   { country: 'France', countryVi: 'Pháp', flagCode: 'fr', views: 34, follows: 5 },
   { country: 'Netherlands', countryVi: 'Hà Lan', flagCode: 'nl', views: 29, follows: 4 },
+];
+const VISITOR_TREND_ROWS = [
+  { month: 'Jan', visitors: 860 },
+  { month: 'Feb', visitors: 1120 },
+  { month: 'Mar', visitors: 1380 },
+  { month: 'Apr', visitors: 1640 },
+  { month: 'May', visitors: 1980 },
+  { month: 'Jun', visitors: 2260 },
+  { month: 'Jul', visitors: 2410 },
 ];
 
 type DashboardJobStatus = 'completed' | 'delayed' | 'upcoming' | 'in_progress';
@@ -51,6 +61,36 @@ type DashboardJobItem = {
   latestAttachmentName?: string;
   latestAttachmentDate?: string;
 };
+
+type ProjectCountryFollowRow = {
+  country: string;
+  countryVi: string;
+  flagCode: string;
+  follows: number;
+};
+
+function buildProjectCountryFollows(projectId: string, totalFollows: number): ProjectCountryFollowRow[] {
+  if (totalFollows <= 0) return [];
+
+  const seed = Array.from(projectId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const rotatedRows = COUNTRY_ENGAGEMENT_ROWS.map((_, index, rows) => rows[(index + seed) % rows.length]);
+  const weights = [0.36, 0.24, 0.18, 0.13, 0.09];
+  let allocated = 0;
+
+  return rotatedRows.slice(0, 5).map((row, index) => {
+    const follows = index === 4
+      ? Math.max(0, totalFollows - allocated)
+      : Math.max(1, Math.round(totalFollows * weights[index]));
+    allocated += follows;
+
+    return {
+      country: row.country,
+      countryVi: row.countryVi,
+      flagCode: row.flagCode,
+      follows,
+    };
+  }).sort((left, right) => right.follows - left.follows || left.country.localeCompare(right.country));
+}
 
 function startOfToday() {
   const today = new Date();
@@ -320,6 +360,186 @@ function CountryEngagementChart({
           {t('Follows')}
         </span>
       </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {chartData.map((row) => (
+          <div key={`country-number-${row.flagCode}`} className="rounded-[6px] border border-slate-100 bg-slate-50 px-3 py-3">
+            <div className="flex items-center gap-2">
+              <img src={`https://flagcdn.com/w40/${row.flagCode}.png`} alt="" className="h-5 w-5 rounded-full object-cover" />
+              <div className="truncate text-sm font-semibold text-slate-900">{row.label}</div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div className="font-bold text-[#2563eb]">{row.views}</div>
+                <div className="text-slate-500">{t('Visitors')}</div>
+              </div>
+              <div>
+                <div className="font-bold text-[#f97316]">{row.follows}</div>
+                <div className="text-slate-500">{t('Follows')}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function VisitorTrendChart({
+  rows,
+  t,
+}: {
+  rows: typeof VISITOR_TREND_ROWS;
+  t: (value: string) => string;
+}) {
+  const chartData = rows.map((row) => ({ ...row, label: t(row.month) }));
+  return (
+    <section className="section-panel p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="section-heading mb-1">{t('Visitor trend')}</h2>
+          <p className="text-sm text-slate-500">{t('Monthly visitor volume for executive monitoring')}</p>
+        </div>
+        <StatusPill tone="info">{t('Line chart')}</StatusPill>
+      </div>
+      <ChartContainer
+        config={{ visitors: { label: t('Visitors'), color: '#2563eb' } }}
+        className="h-[280px] w-full"
+      >
+        <LineChart data={chartData} margin={{ top: 10, right: 18, left: -14, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke="#dbeafe" />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} />
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={56} />
+          <ChartTooltip
+            cursor={{ stroke: '#93c5fd', strokeWidth: 1 }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              return (
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
+                  <div className="font-semibold text-slate-900">{label}</div>
+                  <div className="mt-1 text-slate-600">{t('Visitors')}: {payload[0]?.value}</div>
+                </div>
+              );
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="visitors"
+            stroke="#2563eb"
+            strokeWidth={3}
+            dot={{ r: 4, fill: '#ffffff', stroke: '#2563eb', strokeWidth: 2 }}
+            activeDot={{ r: 6 }}
+          />
+        </LineChart>
+      </ChartContainer>
+    </section>
+  );
+}
+
+function TopFollowedProjectsList({
+  rows,
+  language,
+  t,
+}: {
+  rows: Array<{ id: string; name: string; agency: string; follows: number; countryFollows: ProjectCountryFollowRow[] }>;
+  language: 'en' | 'vi';
+  t: (value: string) => string;
+}) {
+  const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
+
+  return (
+    <section className="section-panel p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="section-heading mb-1">{t('Top 5 followed projects')}</h2>
+          <p className="text-sm text-slate-500">{t('Projects ranked by number of followers')}</p>
+        </div>
+        <StatusPill tone="warning">{rows.length}</StatusPill>
+      </div>
+      {rows.length > 0 ? (
+        <div className="space-y-3">
+          {rows.map((project, index) => {
+            const isExpanded = expandedProjectId === project.id;
+
+            return (
+              <div key={project.id} className="rounded-[6px] border border-[rgba(224,192,177,0.14)] bg-white">
+                <div className="flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[#fff7ed]">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedProjectId((current) => (current === project.id ? null : project.id))}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    aria-expanded={isExpanded}
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff4ec] text-xs font-bold text-[#9d4300]">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-slate-900">
+                        {project.name}
+                      </span>
+                      <span className="mt-1 block truncate text-xs text-slate-500">
+                        {t('Project Owner (Agency)')}: {t(project.agency)}
+                      </span>
+                    </span>
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="text-right">
+                      <div className="text-base font-bold text-[#9d4300]">{formatFollowerCount(project.follows)}</div>
+                      <div className="text-xs text-slate-500">{t('Follows')}</div>
+                    </div>
+                    <Link
+                      to={`/gov/projects/${project.id}`}
+                      className="inline-flex h-9 items-center justify-center rounded-[4px] border border-slate-200 bg-white px-3 text-xs font-semibold text-[#455f87] transition-colors hover:border-[#9d4300] hover:text-[#9d4300]"
+                    >
+                      {t('View Detail')}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedProjectId((current) => (current === project.id ? null : project.id))}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-white hover:text-[#9d4300]"
+                      aria-label={isExpanded ? t('Collapse') : t('Expand')}
+                      aria-expanded={isExpanded}
+                    >
+                      <ChevronDown size={18} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded ? (
+                  <div className="border-t border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      {t('Top 5 countries following this project')}
+                    </div>
+                    <div className="space-y-2">
+                      {project.countryFollows.map((country) => (
+                        <div key={`${project.id}-${country.flagCode}`} className="flex items-center justify-between gap-3 rounded-[4px] bg-white px-3 py-2">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <img
+                              src={`https://flagcdn.com/w40/${country.flagCode}.png`}
+                              alt=""
+                              className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                            />
+                            <span className="truncate text-sm font-semibold text-slate-800">
+                              {language === 'vi' ? country.countryVi : country.country}
+                            </span>
+                          </div>
+                          <div className="shrink-0 text-sm font-bold text-[#9d4300]">
+                            {formatFollowerCount(country.follows)} {t('Follows')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
+          {t('No followed projects are available yet.')}
+        </div>
+      )}
     </section>
   );
 }
@@ -460,6 +680,53 @@ export default function ExecutiveDashboardPage() {
     ],
     [activeJobs, dashboardProjects.length, delayedJobs.length, t, upcomingJobs.length],
   );
+
+  const followedProjectRows = useMemo(
+    () =>
+      dashboardProjects
+        .map((project) => ({
+          id: project.id,
+          name: language === 'vi' && project.nameVi ? project.nameVi : project.name,
+          agency: project.agency,
+          sector: project.sector,
+          location: getProjectAdministrativeLocation(project),
+          follows: project.followers || getProjectFollowerCount(project),
+          countryFollows: buildProjectCountryFollows(project.id, project.followers || getProjectFollowerCount(project)),
+        }))
+        .filter((project) => project.follows > 0)
+        .sort((left, right) => right.follows - left.follows || left.name.localeCompare(right.name)),
+    [dashboardProjects, language],
+  );
+
+  const topFollowedProjects = useMemo(() => followedProjectRows.slice(0, 5), [followedProjectRows]);
+
+  const executiveAnalyticsStats = useMemo(() => {
+    const totalVisitors = COUNTRY_ENGAGEMENT_ROWS.reduce((sum, row) => sum + row.views, 0);
+    const totalFollows = followedProjectRows.reduce((sum, row) => sum + row.follows, 0);
+    const topProject = followedProjectRows[0];
+
+    return [
+      {
+        label: t('Total visitors'),
+        value: formatFollowerCount(totalVisitors),
+        tone: 'text-[#0f3557]',
+        icon: Eye,
+      },
+      {
+        label: t('Total follows'),
+        value: formatFollowerCount(totalFollows),
+        tone: 'text-[#9d4300]',
+        icon: Star,
+      },
+      {
+        label: t('Most followed project'),
+        value: topProject ? formatFollowerCount(topProject.follows) : '0',
+        detail: topProject?.name ?? t('No followed projects'),
+        tone: 'text-rose-700',
+        icon: FolderOpen,
+      },
+    ];
+  }, [followedProjectRows, t]);
 
   const executiveAssignmentMap = useMemo(
     () =>
@@ -801,10 +1068,13 @@ export default function ExecutiveDashboardPage() {
       <section className="section-panel p-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="section-heading mb-0">{t('Executive Dashboard')}</h2>
+            <h2 className="section-heading mb-1">{t('Executive Dashboard')}</h2>
+            <p className="text-sm text-slate-500">
+              {t('Investor traffic, country reach, and project follow analytics for leadership monitoring.')}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusPill tone="info">{dashboardProjects.length}</StatusPill>
+            <StatusPill tone="info">{t('Analytics')}</StatusPill>
             {activeFilter ? (
               <>
                 <StatusPill tone="warning">{`${t('Filter')}: ${formatDashboardFilterLabel(activeFilter)}`}</StatusPill>
@@ -820,69 +1090,39 @@ export default function ExecutiveDashboardPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {keyStats.map((metric) => (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {executiveAnalyticsStats.map((metric) => {
+            const Icon = metric.icon;
+            return (
             <div key={metric.label} className="kpi-tile">
-              <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>
-                {metric.value}
+              <div className="flex items-start justify-between gap-3">
+                <div className={`text-4xl font-bold ${metric.tone}`} style={{ fontFamily: 'var(--font-heading)' }}>
+                  {metric.value}
+                </div>
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fff4ec] text-[#9d4300]">
+                  <Icon size={18} />
+                </span>
               </div>
               <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{metric.label}</div>
+              {'detail' in metric && metric.detail ? (
+                <div className="mt-2 truncate text-sm font-semibold text-slate-700" title={metric.detail}>
+                  {metric.detail}
+                </div>
+              ) : null}
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <DashboardDonutChart
-          title={t('Projects by Type')}
-          rows={groupedByType}
-          filterType="type"
-          activeFilter={activeFilter}
-          onSelect={handleFilterSelect}
-          itemLabel={t('projects')}
-          formatLabel={(value) => t(value)}
-          t={t}
-        />
-        <DashboardDonutChart
-          title={t('Projects by Status')}
-          rows={groupedByProjectStatus}
-          filterType="project_status"
-          activeFilter={activeFilter}
-          onSelect={handleFilterSelect}
-          itemLabel={t('projects')}
-          formatLabel={(value) => t(value)}
-          t={t}
-        />
+      <div className="space-y-6">
+        <VisitorTrendChart rows={VISITOR_TREND_ROWS} t={t} />
         <CountryEngagementChart
           rows={COUNTRY_ENGAGEMENT_ROWS}
           language={language}
           t={t}
         />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        {renderJobSection({
-          title: t('Upcoming Project Jobs'),
-          jobs: visibleUpcomingJobs,
-          totalCount: upcomingJobs.length,
-          emptyMessage: t('No upcoming jobs fall within the next two weeks for the current filters.'),
-          statusTone: 'warning',
-          hoverTone: 'sky',
-          currentPage: upcomingJobPage,
-          totalPages: totalUpcomingJobPages,
-          onPageChange: setUpcomingJobPage,
-        })}
-        {renderJobSection({
-          title: t('Delayed Project Jobs'),
-          jobs: visibleDelayedJobs,
-          totalCount: delayedJobs.length,
-          emptyMessage: t('No delayed jobs are open for the current filters.'),
-          statusTone: 'danger',
-          hoverTone: 'rose',
-          currentPage: delayedJobPage,
-          totalPages: totalDelayedJobPages,
-          onPageChange: setDelayedJobPage,
-        })}
+        <TopFollowedProjectsList rows={topFollowedProjects} language={language} t={t} />
       </div>
 
       <section className="section-panel p-6">
@@ -896,7 +1136,7 @@ export default function ExecutiveDashboardPage() {
                     projectNameFilter.trim() ? `${t('Project name')}: ${projectNameFilter.trim()}` : '',
                     locationFilter !== 'all' ? `${t('Location')}: ${getAdministrativeLocationLabel(locationFilter, language)}` : '',
                     projectStatusFilter !== 'all' ? `${t('Project status')}: ${t(projectStatusFilter)}` : '',
-                  ].filter(Boolean).join(' • ')}.`
+                  ].filter(Boolean).join(' â€¢ ')}.`
                 : t('Project cards follow the same expandable management behavior as the watchlist page, tailored for executive review.')}
             </p>
           </div>
@@ -1121,3 +1361,4 @@ export default function ExecutiveDashboardPage() {
     </div>
   );
 }
+

@@ -52,6 +52,17 @@ const roles: {
     homeRoute: '/agency/projects',
   },
   {
+    id: 'itpc_lite',
+    title: 'ITPC Lite',
+    subtitle: 'Intake & Route',
+    description: 'Receive investor requests, route cases to agencies, monitor SLA, and record coordination responses.',
+    icon: <Shield size={28} />,
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50',
+    borderColor: 'border-teal-200 hover:border-teal-400',
+    homeRoute: '/itpc-lite/interest',
+  },
+  {
     id: 'admin',
     title: 'System Admin',
     subtitle: 'Configure & Control',
@@ -94,6 +105,12 @@ function dueDate(daysFromNow: number) {
   const next = new Date();
   next.setDate(next.getDate() + daysFromNow);
   return next.toISOString().split('T')[0];
+}
+
+function workspacePathForRole(roleId: UserRole, projectId?: string) {
+  if (roleId === 'agency') return projectId ? `/agency/projects/${projectId}` : '/agency/projects';
+  if (roleId === 'itpc_lite') return '/itpc-lite/interest';
+  return projectId ? `/gov/projects/${projectId}` : '/gov/projects';
 }
 
 export default function LoginPage() {
@@ -166,7 +183,7 @@ export default function LoginPage() {
         title: 'Fast-track lead captured',
         message: 'Fast-track request routed to the investor matching queue.',
         type: 'success',
-        path: roleId === 'agency' ? `/agency/projects/${matchedProject.id}` : `/gov/projects/${matchedProject.id}`,
+        path: workspacePathForRole(roleId, matchedProject.id),
       });
     }
 
@@ -191,7 +208,7 @@ export default function LoginPage() {
         title: 'Support request submitted',
         message: 'Support request routed to the responsible desk.',
         type: pendingAction.payload.urgent ? 'warning' : 'info',
-        path: roleId === 'agency' ? '/agency/projects' : '/gov/projects',
+        path: workspacePathForRole(roleId),
       });
     }
 

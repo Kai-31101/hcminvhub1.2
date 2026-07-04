@@ -1292,7 +1292,7 @@ export const users: User[] = [
   { id: 'u2', name: 'Tran Thi Bich', email: 'ttbich@mpi.gov.vn', role: 'Government Operator', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 08:15', permissions: ['project.view', 'opportunity.manage', 'execution.view'] },
   { id: 'u3', name: 'Nguyễn Văn B', email: 'nguyenvanb@itpc.gov.vn', role: 'Agency User', organization: 'ITPC', status: 'active', lastLogin: '2024-03-14 16:45', permissions: ['permit.process', 'service.process'] },
   { id: 'u4', name: 'Vo Thu Lan', email: 'vtlan.stnmt@hcmc.gov.vn', role: 'Agency User', organization: 'Department of Natural Resources and Environment', status: 'active', lastLogin: '2024-03-13 11:00', permissions: ['permit.process', 'service.process', 'issue.update'] },
-  { id: 'u5', name: 'Hoang Minh Duc', email: 'hmduc@mpi.gov.vn', role: 'Executive', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 07:30', permissions: ['dashboard.view', 'analytics.view'] },
+  { id: 'u5', name: 'UBND Thành phố Hồ Chí Minh', email: 'ubnd@tphcm.gov.vn', role: 'Executive', organization: '', status: 'active', lastLogin: '2024-03-15 07:30', permissions: ['dashboard.view', 'analytics.view'] },
   { id: 'u6', name: 'Kim Jae-won', email: 'kjw@kip.co.kr', role: 'Investor', organization: 'Korea Infrastructure Partners', status: 'active', lastLogin: '2024-03-15 10:00', permissions: ['explorer.view', 'intake.submit', 'execution.view', 'service.apply'] },
   { id: 'u7', name: 'Admin System', email: 'admin@mpi.gov.vn', role: 'Admin', organization: 'Ministry of Planning & Investment', status: 'active', lastLogin: '2024-03-15 06:00', permissions: ['admin.*'] },
 ];

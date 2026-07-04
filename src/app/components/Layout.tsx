@@ -9,7 +9,7 @@ import {
   Settings, Users, Building2, Bell, ChevronDown, LogOut, Menu, X,
   FolderOpen, Wrench, MapPin, Package,
   HardHat, Milestone, Globe, ChevronRight,
-  Home, Activity, Star,
+  Home, Activity, Star, ShieldCheck, LockKeyhole,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,8 +37,19 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
   agency: {
     label: 'ITPC Portal',
     items: [
+      { label: 'ITPC Intake', path: '/agency/intake', icon: <ShieldCheck size={18} /> },
+      { label: 'Agency Lite', path: '/agency/lite', icon: <LockKeyhole size={18} /> },
       { label: 'Project Management', path: '/agency/projects', icon: <FolderOpen size={18} /> },
       { label: 'Request Management', path: '/agency/request-management', icon: <ClipboardList size={18} /> },
+    ],
+  },
+  itpc_lite: {
+    label: 'ITPC Lite',
+    items: [
+      { label: 'Interest', path: '/itpc-lite/interest', icon: <Star size={18} /> },
+      { label: 'Request Meeting', path: '/itpc-lite/request-meeting', icon: <ClipboardList size={18} /> },
+      { label: 'Question', path: '/itpc-lite/question', icon: <FileText size={18} /> },
+      { label: 'Support', path: '/itpc-lite/support', icon: <Wrench size={18} /> },
     ],
   },
   admin: {
@@ -52,7 +63,9 @@ const navConfig: Record<UserRole, { label: string; items: NavItem[] }> = {
   executive: {
     label: 'Executive View',
     items: [
-      { label: 'Executive Dashboard', path: '/executive/dashboard', icon: <LayoutDashboard size={18} /> },
+      { label: 'Investor Traffic', path: '/executive/dashboard', icon: <LayoutDashboard size={18} /> },
+      { label: 'Response SLA', path: '/executive/sla-monitoring', icon: <Activity size={18} /> },
+      { label: 'Direct Report', path: '/executive/direct-report', icon: <LockKeyhole size={18} /> },
     ],
   },
 };
@@ -61,6 +74,7 @@ const roleInfo: Record<UserRole, { name: string; org: string; avatar: string; co
   investor: { name: 'Kim Jae-won', org: 'Korea Infrastructure Partners', avatar: 'KJ', color: 'bg-amber-500' },
   gov_operator: { name: 'Nguyen Van Anh', org: 'Ministry of Planning & Investment', avatar: 'NA', color: 'bg-blue-600' },
   agency: { name: 'Nguyễn Văn B', org: 'ITPC', avatar: 'NV', color: 'bg-green-600' },
+  itpc_lite: { name: 'ITPC Intake Desk', org: 'ITPC', avatar: 'IT', color: 'bg-teal-600' },
   admin: { name: 'System Admin', org: 'Ministry of Planning & Investment', avatar: 'SA', color: 'bg-purple-600' },
   executive: { name: 'UBND Thành phố Hồ Chí Minh', org: '', avatar: 'UB', color: 'bg-red-600' },
 };
@@ -69,6 +83,7 @@ const brandSubtitle: Record<UserRole, string> = {
   investor: 'Investor Portal',
   gov_operator: 'Project Management Authority',
   agency: 'ITPC Portal',
+  itpc_lite: 'ITPC Lite',
   admin: 'Admin Console',
   executive: 'Executive View',
 };
@@ -77,6 +92,7 @@ const roleHomeRoute: Record<UserRole, string> = {
   investor: '/investor/explorer',
   gov_operator: '/gov/projects',
   agency: '/agency/projects',
+  itpc_lite: '/itpc-lite/interest',
   admin: '/admin',
   executive: '/executive/dashboard',
 };
@@ -85,7 +101,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { role, setRole, language, notifications, unreadCount, markNotificationRead, resetDemoData, projects, agencies, activeAgency, activeUserId, setActiveUserId, setActiveAgencyId, projectJobs, users } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => (
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches
+  ));
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showEnvironmentMenu, setShowEnvironmentMenu] = useState(false);
@@ -134,7 +152,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const handleGoHome = () => {
-    setSidebarOpen(false);
     setShowNotifications(false);
     setShowUserMenu(false);
     setShowEnvironmentMenu(false);
@@ -143,7 +160,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const handleSwitchEnvironment = (nextRole: UserRole) => {
     setRole(nextRole);
-    setSidebarOpen(false);
     setShowNotifications(false);
     setShowUserMenu(false);
     setShowEnvironmentMenu(false);
@@ -197,7 +213,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={() => setSidebarOpen(false)}
                     className={`flex h-10 items-center gap-2 rounded-lg px-2 py-2.5 text-[14px] font-medium leading-5 transition-colors ${
                       isActive ? 'bg-[#fff1e7] text-[#ed6203]' : 'text-[#030712] hover:bg-[#f3f4f6]'
                     }`}
@@ -224,7 +239,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => {
-                  setSidebarOpen(false);
                   navigate('/investor/explorer?fastTrack=1');
                 }}
                 className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md bg-[#ed6203] px-3 text-[13px] font-medium text-white"
@@ -280,7 +294,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setSidebarOpen(false)}
                   className={`flex h-[45px] items-center gap-3 px-4 transition-colors ${
                     isActive
                       ? 'border-l-4 border-[#9D4300] bg-white font-bold text-[#9D4300] shadow-[0px_1px_2px_rgba(0,0,0,0.05)]'
